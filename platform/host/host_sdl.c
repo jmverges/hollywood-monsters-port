@@ -2,7 +2,6 @@
 #define _GNU_SOURCE
 #include "host.h"
 #include <SDL.h>
-#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,11 +18,14 @@ static SDL_Window *g_win;
 static SDL_Renderer *g_ren;
 static SDL_Texture *g_tex;
 static int g_tw, g_th;
-static pthread_t g_main_thread;
+static SDL_threadID g_main_thread;
 static int g_scale = 2;
 
 /* pending frame shared between the game thread(s) and the renderer */
-static pthread_mutex_t g_frame_mx = PTHREAD_MUTEX_INITIALIZER;
+static SDL_mutex *g_ev_mx;       /* host events (Win32 event objects) */
+static SDL_cond *g_ev_cv;
+static SDL_mutex *g_frame_mx;   /* SDL primitives: they work from any thread, including SDL's own audio thread
+                                    * (on the Vita, pthread calls from a thread SDL created crash) */
 static unsigned char *g_frame;          /* 8bpp */
 static int g_fw, g_fh, g_frame_dirty;
 static unsigned char g_pal[1024];
@@ -51,11 +53,14 @@ void host_log(const char *fmt, ...)
     va_end(ap);
 }
 
-int host_is_main_thread(void) { return pthread_equal(pthread_self(), g_main_thread); }
+int host_is_main_thread(void) { return SDL_ThreadID() == g_main_thread; }
 
 void host_init_main_thread(void)
 {
-    g_main_thread = pthread_self();
+    g_main_thread = SDL_ThreadID();
+    g_frame_mx = SDL_CreateMutex();
+    g_ev_mx = SDL_CreateMutex();
+    g_ev_cv = SDL_CreateCond();
     const char *s = getenv("HM_SCALE");
     if (s && atoi(s) > 0) g_scale = atoi(s);
 }
@@ -122,7 +127,7 @@ void host_sleep_ms(unsigned ms)
 /* ------------------------------------------------------------------ video */
 void host_submit_frame(const unsigned char *pixels, int pitch, int width, int height, const unsigned char *pal4)
 {
-    pthread_mutex_lock(&g_frame_mx);
+    SDL_LockMutex(g_frame_mx);
     if (!g_frame || g_fw != width || g_fh != height) {
         free(g_frame);
         g_frame = malloc((size_t)width * height);
@@ -132,7 +137,7 @@ void host_submit_frame(const unsigned char *pixels, int pitch, int width, int he
         memcpy(g_frame + (size_t)y * width, pixels + (size_t)y * pitch, width);
     memcpy(g_pal, pal4, 1024);
     g_frame_dirty = 1;
-    pthread_mutex_unlock(&g_frame_mx);
+    SDL_UnlockMutex(g_frame_mx);
     if (host_is_main_thread()) host_render_pending();
 }
 
@@ -162,7 +167,7 @@ static void save_shot(const char *name)
     const char *dir = getenv("HM_SHOT_DIR");
     char path[512];
     snprintf(path, sizeof path, "%s/%s.ppm", dir ? dir : ".", name);
-    pthread_mutex_lock(&g_frame_mx);
+    SDL_LockMutex(g_frame_mx);
     FILE *f = g_frame ? fopen(path, "wb") : NULL;
     if (f) {
         fprintf(f, "P6\n%d %d\n255\n", g_fw, g_fh);
@@ -170,7 +175,7 @@ static void save_shot(const char *name)
         fclose(f);
         host_log("shot %s", path);
     }
-    pthread_mutex_unlock(&g_frame_mx);
+    SDL_UnlockMutex(g_frame_mx);
 }
 
 /* ------------------------------------------------------------------ software cursor */
@@ -225,9 +230,9 @@ void host_render_pending(void)
     if (now - last_present < 14) return;            /* ~70 Hz cap; the dirty frame is shown on a later call */
     last_present = now;
     g_cursor_dirty = 0;
-    pthread_mutex_lock(&g_frame_mx);
+    SDL_LockMutex(g_frame_mx);
     if (!g_frame_dirty) {                           /* only the cursor moved: present the last frame again */
-        pthread_mutex_unlock(&g_frame_mx);
+        SDL_UnlockMutex(g_frame_mx);
         if (!g_tex) return;
         SDL_RenderClear(g_ren);
         SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
@@ -260,7 +265,7 @@ void host_render_pending(void)
         SDL_UnlockTexture(g_tex);
     }
     g_frame_dirty = 0;
-    pthread_mutex_unlock(&g_frame_mx);
+    SDL_UnlockMutex(g_frame_mx);
     SDL_RenderClear(g_ren);
     SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
     draw_cursor();
@@ -672,38 +677,28 @@ void host_set_mouse(int x, int y)
 
 /* ------------------------------------------------------------------ threads + events */
 struct thread_start { host_thread_fn fn; void *arg; };
-static void *thread_tramp(void *p)
+static int thread_tramp(void *p)
 {
     struct thread_start ts = *(struct thread_start *)p;
     free(p);
     ts.fn(ts.arg);
-    return NULL;
+    return 0;
 }
 void *host_thread_create(host_thread_fn fn, void *arg)
 {
-    pthread_t t;
     struct thread_start *ts = malloc(sizeof *ts);
     ts->fn = fn; ts->arg = arg;
-    if (pthread_create(&t, NULL, thread_tramp, ts) != 0) { free(ts); return NULL; }
-    pthread_detach(t);
-    return (void *)(uintptr_t)t;
+    SDL_Thread *t = SDL_CreateThread(thread_tramp, "game", ts);
+    if (!t) { free(ts); return NULL; }
+    SDL_DetachThread(t);
+    return (void *)t;
 }
 
-void *host_mutex_create(void)
-{
-    pthread_mutex_t *m = malloc(sizeof *m);
-    pthread_mutexattr_t a;
-    pthread_mutexattr_init(&a);
-    pthread_mutexattr_settype(&a, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(m, &a);
-    return m;
-}
-void host_mutex_lock(void *m) { pthread_mutex_lock((pthread_mutex_t *)m); }
-void host_mutex_unlock(void *m) { pthread_mutex_unlock((pthread_mutex_t *)m); }
+void *host_mutex_create(void) { return SDL_CreateMutex(); }        /* SDL2 mutexes are recursive */
+void host_mutex_lock(void *m) { SDL_LockMutex((SDL_mutex *)m); }
+void host_mutex_unlock(void *m) { SDL_UnlockMutex((SDL_mutex *)m); }
 
 struct hevent { int manual, state; };
-static pthread_mutex_t g_ev_mx = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t g_ev_cv = PTHREAD_COND_INITIALIZER;
 
 void *host_event_create(int manual_reset, int initial_state)
 {
@@ -713,34 +708,28 @@ void *host_event_create(int manual_reset, int initial_state)
 }
 void host_event_set(void *p)
 {
-    pthread_mutex_lock(&g_ev_mx);
+    SDL_LockMutex(g_ev_mx);
     ((struct hevent *)p)->state = 1;
-    pthread_cond_broadcast(&g_ev_cv);
-    pthread_mutex_unlock(&g_ev_mx);
+    SDL_CondBroadcast(g_ev_cv);
+    SDL_UnlockMutex(g_ev_mx);
 }
 void host_event_reset(void *p)
 {
-    pthread_mutex_lock(&g_ev_mx);
+    SDL_LockMutex(g_ev_mx);
     ((struct hevent *)p)->state = 0;
-    pthread_mutex_unlock(&g_ev_mx);
+    SDL_UnlockMutex(g_ev_mx);
 }
 int host_event_wait_any(int count, void **events, int wait_all, unsigned timeout_ms)
 {
-    struct timespec dl;
-    clock_gettime(CLOCK_REALTIME, &dl);
-    if (timeout_ms != 0xFFFFFFFFu) {
-        dl.tv_sec += timeout_ms / 1000;
-        dl.tv_nsec += (long)(timeout_ms % 1000) * 1000000L;
-        if (dl.tv_nsec >= 1000000000L) { dl.tv_sec++; dl.tv_nsec -= 1000000000L; }
-    }
-    pthread_mutex_lock(&g_ev_mx);
+    Uint32 deadline = SDL_GetTicks() + timeout_ms;
+    SDL_LockMutex(g_ev_mx);
     for (;;) {
         if (wait_all) {
             int all = 1;
             for (int i = 0; i < count; i++) if (!((struct hevent *)events[i])->state) all = 0;
             if (all) {
                 for (int i = 0; i < count; i++) if (!((struct hevent *)events[i])->manual) ((struct hevent *)events[i])->state = 0;
-                pthread_mutex_unlock(&g_ev_mx);
+                SDL_UnlockMutex(g_ev_mx);
                 return 0;
             }
         } else {
@@ -748,13 +737,19 @@ int host_event_wait_any(int count, void **events, int wait_all, unsigned timeout
                 struct hevent *e = events[i];
                 if (e && e->state) {
                     if (!e->manual) e->state = 0;
-                    pthread_mutex_unlock(&g_ev_mx);
+                    SDL_UnlockMutex(g_ev_mx);
                     return i;
                 }
             }
         }
-        int r = timeout_ms == 0xFFFFFFFFu ? pthread_cond_wait(&g_ev_cv, &g_ev_mx) : pthread_cond_timedwait(&g_ev_cv, &g_ev_mx, &dl);
-        if (r == ETIMEDOUT) { pthread_mutex_unlock(&g_ev_mx); return -1; }
+        if (timeout_ms == 0xFFFFFFFFu) SDL_CondWait(g_ev_cv, g_ev_mx);
+        else {
+            Sint32 left = (Sint32)(deadline - SDL_GetTicks());
+            if (left <= 0 || SDL_CondWaitTimeout(g_ev_cv, g_ev_mx, (Uint32)left) == SDL_MUTEX_TIMEDOUT) {
+                SDL_UnlockMutex(g_ev_mx);
+                return -1;
+            }
+        }
     }
 }
 
