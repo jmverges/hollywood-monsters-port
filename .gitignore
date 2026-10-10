@@ -1,0 +1,13 @@
+# Never commit original game data or binaries
+/gamedata/
+*.exe
+*.EXE
+RESOURCE.*
+*.bin
+*.dll
+*.pdb
+/build/
+/out/
+__pycache__/
+*.pyc
+/src/gen/

@@ -1,0 +1,18 @@
+# address	type	ptrdepth	count	name
+006d22a0	IDirectDraw7	1	1	g_pDD
+006bae58	IDirectDrawSurface7	1	1	g_pDDSPrimary
+0068fd68	IDirectDrawSurface7	1	1	g_pDDSBack
+006cef78	IDirectDrawPalette	1	1	g_pDDPalette
+00691020	DDSURFACEDESC2	0	1	g_ddsd
+00676568	IDirectSound	1	1	g_pDS
+006b61f8	IDirectSoundBuffer	1	1	g_pDSBPrimary
+006d1f74	IDirectSoundBuffer	1	1
+006cead0	IDirectSoundBuffer	1	3
+006d20f0	IDirectSoundBuffer	1	2
+00692f80	IDirectSoundBuffer	1	16
+00688fe8	IDirectSoundNotify	1	1
+00676560	IDirectSoundNotify	1	1
+00676564	IDirectSoundNotify	1	1
+00668c80	IDirectSoundNotify	1	1
+00668c84	IDirectSoundNotify	1	1
+00668c88	IDirectSoundNotify	1	1
