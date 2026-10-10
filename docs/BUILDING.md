@@ -45,3 +45,18 @@ Re-run `cmake` after regenerating (the source list is a glob).
 | `HM_DUMP_FRAMES=dir`, `HM_DUMP_EVERY=n` | dump every n-th presented frame as PPM |
 
 Headless: `SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dummy` (or `disk` with `SDL_DISKAUDIOFILE`).
+
+## Windows build (cross-compiled from Linux)
+
+```
+sudo apt install gcc-mingw-w64-i686
+# SDL2 MinGW development files: SDL2-devel-2.32.x-mingw.tar.gz from github.com/libsdl-org/SDL/releases
+cmake -S . -B build-win -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake \
+      -DSDL2_MINGW_DIR=/path/to/SDL2-2.32.10/i686-w64-mingw32
+ninja -C build-win
+```
+
+Ship `build-win/hollywood-monsters.exe` with `SDL2.dll` (from the same SDL2 package). The executable is
+linked at 0x400000 without ASLR and contains an empty `.hmimg` section covering 0x401000–0x709000, which is
+where the game's data is placed at run time (`cmake/mingw-hm.ld`, `platform/host/win32_reserve.c`).
+It has been tested under Wine 9.0; it has not been tested on real Windows yet.

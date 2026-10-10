@@ -12,15 +12,17 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Boot | DirectDraw/DirectSound initialisation, resource files, streaming threads, timers |
 | Intro | Plays from the FX/Péndulo logos through the credits and the drive-in sequence (~7 min) without crashing |
 | Gameplay | Reaches the first playable scene (Sue outside the mansion), verb line under the cursor |
-| Menu | Escape opens the options screen with a live thumbnail; save slot list and description input work |
+| Menu | Escape opens the options screen with a live thumbnail |
+| Save / load | Saving writes `SAVEGAME.000` with the typed description; a fresh start loads it from the menu |
+| Walking | Click-to-walk with screen scrolling; hotspot labels ("Ir a escalera", "Mirar escalera"); right click toggles the verb; walking up the stairs changes room to the terrace |
+| Windows | The MinGW build runs under Wine 9.0 headless: intro logo, menu, loading the savegame |
 | Audio | Music streams from `RESOURCE.M09`; sound effects play (measured output levels) |
 
 ## Not verified yet
 
-* Saving to disk and loading back (see below).
 * Speech: the voice stream buffer is created and started; audible speech has not been confirmed by ear.
-* Walking, hotspots, inventory, dialogue trees, chapter changes, end game.
-* The Windows build at run time.
+* Inventory, dialogue trees, puzzles, chapter changes, end game.
+* The Windows build on real Windows (only Wine so far).
 * Long sessions beyond ~7 minutes.
 
 ## Known issues / open work
