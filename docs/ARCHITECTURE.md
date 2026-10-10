@@ -115,7 +115,7 @@ changes behaviour where the original would hang or crash, and `HM_ORIGINAL_BUGS=
 
 | Bug | Effect in the original | Fix |
 |---|---|---|
-| Start-up shuffle in `FUN_00512c00` (48 values, slot i never gets i) can be left with only 48 for slot 48 | freezes before the first frame for about 1.9 % of `srand(time)` seeds (seed 1007 reproduces it with `HM_SEED`) | move 48 into a random earlier slot first |
+| Start-up shuffle in `FUN_00512c00` (48 values, slot i never gets i) can be left with only 48 for slot 48 | freezes before the first frame for about 2 % of `srand(time)` seeds (seed 1007 reproduces it with `HM_SEED`) | move 48 into a random earlier slot first |
 
 ## Known decompiler pitfalls (and what handles them)
 

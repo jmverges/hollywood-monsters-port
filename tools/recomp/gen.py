@@ -128,6 +128,7 @@ if a.override and os.path.isdir(a.override):
 
 protos = []
 stats = collections.Counter()
+applied_fixups = set()
 func_c_names = {}
 for e in sorted(game):
     d = game[e]
@@ -326,6 +327,7 @@ for e in sorted(game):
                 sys.exit('fixup for %08x: snippet not found in the generated code (%s)' % (e, fx['why'][:60]))
             body = body.replace(fx['old'], fx['new'], 1)
             stats['fixups'] += 1
+            applied_fixups.add(e)
 
     if e in override:
         stats['overridden'] += 1
@@ -456,4 +458,8 @@ with open(os.path.join(a.rx, 'types.h')) as fh:
     open(os.path.join(a.out, 'hm_types.h'), 'w').write(fix_types(fh.read()))
 
 print(dict(stats))
+missing_fixups = [fx for fx in FIXUPS if fx['addr'] not in applied_fixups]
+if missing_fixups:
+    sys.exit('fixups not applied (function missing from the export?): ' +
+             ', '.join('%08x' % fx['addr'] for fx in missing_fixups))
 print('imports needed:', len(import_decls))

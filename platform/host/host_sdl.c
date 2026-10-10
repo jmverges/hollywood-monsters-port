@@ -327,6 +327,7 @@ int host_poll_event(struct host_event *ev)
         case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
             ev->type = e.type == SDL_MOUSEBUTTONDOWN ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
             ev->x = e.button.x; ev->y = e.button.y;
+            if (g_warp_pending) { ev->x = g_warp_x; ev->y = g_warp_y; }   /* Windows: a click happens where the cursor was warped */
             ev->button = e.button.button == SDL_BUTTON_LEFT ? 1 : e.button.button == SDL_BUTTON_MIDDLE ? 2 : 3;
             return 1;
         case SDL_MOUSEWHEEL: ev->type = HOST_EV_WHEEL; ev->wheel = e.wheel.y > 0 ? 1 : -1; host_get_mouse(&ev->x, &ev->y); return 1;

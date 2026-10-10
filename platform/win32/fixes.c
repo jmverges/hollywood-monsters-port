@@ -8,7 +8,10 @@ int crt__rand(void);
 static int fixes_enabled(void)
 {
     static int state = -1;
-    if (state < 0) state = hm_getenv("HM_ORIGINAL_BUGS") == 0;
+    if (state < 0) {
+        const char *v = hm_getenv("HM_ORIGINAL_BUGS");
+        state = !(v && v[0] && !(v[0] == '0' && !v[1]));   /* set to anything but "" or "0": original behaviour */
+    }
     return state;
 }
 

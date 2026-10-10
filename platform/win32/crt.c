@@ -45,8 +45,13 @@ undefined4 crt__srand(unsigned seed)
 {
     const char *fixed = hm_getenv("HM_SEED");          /* tests: replace the game's srand(time) seed */
     if (fixed) {
-        seed = 0;
-        for (const char *c = fixed; *c >= '0' && *c <= '9'; c++) seed = seed * 10 + (unsigned)(*c - '0');
+        unsigned long long v = 0;
+        const char *c = fixed;
+        for (; *c >= '0' && *c <= '9' && v <= 0xffffffffull; c++) v = v * 10 + (unsigned)(*c - '0');
+        if (c == fixed || *c || v > 0xffffffffull)
+            host_log("HM_SEED=%s ignored: expected a decimal number below 2^32", fixed);
+        else
+            seed = (unsigned)v;
     }
     HM_TRACE("srand(%u)", seed);
     holdrand = seed;

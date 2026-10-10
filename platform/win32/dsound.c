@@ -216,7 +216,8 @@ static long buf_GetFormat(IDirectSoundBuffer *This, DXWAVEFORMATEX *f, ulong sz,
     if (f && sz >= 16) {
         f->wFormatTag = 1; f->nChannels = (unsigned short)b->channels; f->nSamplesPerSec = (ulong)b->base_rate;
         f->wBitsPerSample = (unsigned short)b->bits; f->nBlockAlign = (unsigned short)b->align;
-        f->nAvgBytesPerSec = (ulong)(b->base_rate * b->align); f->cbSize = 0;
+        f->nAvgBytesPerSec = (ulong)(b->base_rate * b->align);
+        if (sz >= 18) f->cbSize = 0;                    /* WAVEFORMATEX is 18 bytes on Windows, 20 here (padding) */
     }
     if (written) *written = 18;
     return DS_OK;

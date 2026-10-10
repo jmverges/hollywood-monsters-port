@@ -32,7 +32,8 @@ These hold on x86 and on 32-bit ARM Linux; check them before starting on anythin
 * **Fixed mapping** of 0x400000–0x709000: `mmap` with `MAP_FIXED_NOREPLACE` (Linux 4.17+, `MAP_EXCL` on FreeBSD;
   elsewhere the address is a hint and the result is checked), `VirtualProtect` over a reserved section on
   Windows.
-* **Headless tests** use SDL's `offscreen` video driver, which needs SDL 2.0.22 or later.
+* **SDL 2.0.18 or later** for `host_sdl.c` (`SDL_RenderWindowToLogical`); headless tests use SDL's `offscreen`
+  video driver.
 
 ## Targets that only run 64-bit code (Apple Silicon, recent Android, consoles)
 

@@ -10,7 +10,7 @@ FIXUPS = [
     dict(
         addr=0x00512c00,
         why='Start-up shuffle of a 48-entry table (slot i never gets value i) can deadlock in the last slot: '
-            'when the only unused value is 48, the original retries forever. About 1.9 % of random seeds '
+            'when the only unused value is 48, the original retries forever. About 2 % of random seeds '
             '(srand(time) at start-up) freeze the game before the first frame.',
         old='''  DAT_006bae56 = 1;
   do {
