@@ -71,6 +71,8 @@ int host_window_open(const char *title, int width, int height)
     }
     for (int i = 0; i < SDL_NumJoysticks() && !g_pad; i++)
         if (SDL_IsGameController(i)) g_pad = SDL_GameControllerOpen(i);
+    host_log("controllers: %d joystick(s), %s", SDL_NumJoysticks(),
+             g_pad ? SDL_GameControllerName(g_pad) : "none opened as game controller");
     Uint32 flags = SDL_WINDOW_RESIZABLE;
     if (getenv("HM_FULLSCREEN")) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     int ww = width * g_scale, wh = height * g_scale;
@@ -454,6 +456,7 @@ int host_poll_event(struct host_event *ev)
         case SDL_CONTROLLERBUTTONDOWN: case SDL_CONTROLLERBUTTONUP: {
             int down = e.type == SDL_CONTROLLERBUTTONDOWN;
             int b = e.cbutton.button;
+            if (getenv("HM_DEBUG")) host_log("controller button %d %s", b, down ? "down" : "up");
             if (b == SDL_CONTROLLER_BUTTON_START || b == SDL_CONTROLLER_BUTTON_BACK) {
                 ev->type = down ? HOST_EV_KEYDOWN : HOST_EV_KEYUP; ev->vk = 27; return 1;
             }
