@@ -13,6 +13,34 @@ Everything above `platform/host/host.h` is plain C with no OS dependencies. A ne
    file access with case-insensitive names. `host_sdl.c` (~500 lines) is the reference; with SDL2 available
    on the target it may work unchanged.
 
+## Targets that only run 64-bit code (Apple Silicon, recent Android, consoles)
+
+These need the game to run as 64-bit code. The obstacle is not the CPU but the data model: the game stores
+pointers in 4-byte memory slots everywhere (globals, structures, resource tables, the stack frames reproduced
+by `gen.py`) and does integer arithmetic on them. Two routes, from least to most work:
+
+**A. 64-bit code, 32-bit addresses ("low 4 GB" model).** Keep every byte the game can point to below 4 GB, so
+truncating a pointer to 32 bits is lossless, and make every *memory-resident* pointer a 32-bit integer:
+
+* the image stays at 0x400000; the port binary is linked low (e.g. `-Wl,-Ttext-segment=0x10000000`);
+* `crt__malloc` allocates from an arena mapped below 4 GB (`MAP_32BIT` on Linux x86-64, a fixed low
+  reservation elsewhere);
+* the game runs on its own thread whose stack is allocated in that arena (stack locals live in `hm_frame`
+  and their addresses are stored in globals);
+* `FILE *` and other host objects become small integer handles;
+* `gen.py` must emit 32-bit types for memory: `ulong`/`long` as `uint32_t`/`int32_t` (they are 4 bytes on
+  Windows, 8 on LP64), and pointer-typed globals, struct members and frame variables as 32-bit integers
+  with explicit conversion at each use. Pointer-typed *registers/locals* (`puVar5`) may stay native.
+* The emulated COM objects (vtables) must also be laid out with 32-bit slots.
+
+The hard part is the last two points: Ghidra's types decide which members are pointers, and a wrong guess
+silently truncates or widens a field. The per-access types exported by `ExportRecomp.java` are the right
+starting point, because they already reflect the size of every memory access.
+
+**B. Real C structures.** Name and type the data in Ghidra, replace address macros with C variables loaded
+from the executable at start-up, and clean the code module by module (see below). This is the long-term path
+and makes A unnecessary.
+
 ## Removing the 32-bit / fixed-address constraint (roadmap)
 
 To reach 64-bit and arbitrary memory layouts, the globals have to move from "address macros" to real C
