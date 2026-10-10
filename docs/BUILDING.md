@@ -37,6 +37,21 @@ build/hollywood-monsters /path/to/gamedata
 `pipeline.sh` accepts `STEP=export` or `STEP=gen` to resume from a later step once the Ghidra project exists.
 Re-run `cmake` after regenerating (the source list is a glob).
 
+## PS Vita (not tested on hardware yet)
+
+Built with VitaSDK, for example with its Docker image:
+
+```
+docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/src -w /src vitasdk/vitasdk:latest sh -c \
+  'cmake -S . -B build-vita -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DCMAKE_BUILD_TYPE=Release && make -C build-vita -j8'
+```
+
+This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita build is always relocatable
+(see PORTING.md). Install it with VitaShell and copy the game data (MONSTERS.EXE, the RESOURCE files, and
+hm_lang.tsv for English) to `ux0:data/hollywood-monsters/`. Controls: touch screen as mouse, or the left stick
+and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
+for the menu. The same controls work with any game controller on the other builds.
+
 ## English
 
 The game only exists in Spanish and Italian. A fan translation (ShinjiGR and A.P.$lasH, v1.0.0, 2012, made for
@@ -66,6 +81,8 @@ with the verbs and menus taken from the patch's own executable (which the port c
 | `HM_NO_IDLE_SLEEP=1` | never sleep in `PeekMessage` (default: 1 ms sleep after 32 empty polls, ~17 % CPU instead of 100 %) |
 | `HM_SEED=n` | replace the game's `srand(time)` seed, for reproducible runs |
 | `HM_ORIGINAL_BUGS=1` | disable the fixes for bugs of the original game (`tools/recomp/fixups.py`) |
+| `HM_BIN=path` | (test scripts) run another build, e.g. `build-reloc/hollywood-monsters` |
+| `HM_NO_GUARD=1` | relocatable build on Linux: do not make 0x400000-0x709000 inaccessible |
 | `HM_HIDE_CURSOR=1` | never draw the game's cursor |
 | `HM_FOCUS_PAUSE=1` | tell the game when the window loses focus, as Windows does (it then stops its sounds) |
 | `HM_NO_WARP=1` | ignore the game's requests to move the mouse pointer |

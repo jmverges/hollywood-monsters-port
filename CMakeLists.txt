@@ -6,7 +6,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 add_compile_options(-fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -fno-omit-frame-pointer)
-if(NOT WIN32)
+if(VITA)
+  # PS Vita (cmake -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake): 32-bit ARM, little-endian,
+  # no fixed mapping, so the image is relocatable.
+  include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
+  set(HM_RELOCATABLE ON CACHE BOOL "" FORCE)
+  add_compile_options(-O2)
+elseif(NOT WIN32)
   add_compile_options(-m32 -fno-pie)
   add_link_options(-m32 -no-pie)
 endif()
@@ -42,7 +48,11 @@ endif()
 # Generated game code: decompiler output, warnings are expected and not actionable here.
 add_library(hm_game OBJECT ${GAME_SOURCES})
 target_include_directories(hm_game PRIVATE src/include src/gen)
-target_compile_options(hm_game PRIVATE -w)
+# GCC 14+ turns these into errors; the decompiled code relies on the old C behaviour (pointer/integer mixing).
+target_compile_options(hm_game PRIVATE -w -Wno-error=incompatible-pointer-types -Wno-error=int-conversion
+                       -Wno-error=implicit-function-declaration -Wno-error=implicit-int
+                       $<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,14>:-Wno-error=return-mismatch>
+                       $<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,14>:-Wno-error=declaration-missing-parameter-type>)
 
 # Hand-written overrides: full prototypes, warnings on.
 add_library(hm_override OBJECT ${OVERRIDE_SOURCES})
@@ -53,10 +63,18 @@ target_compile_options(hm_override PRIVATE -Wall -Wno-unused-parameter -Werror=i
 # Emulated Win32/DirectX layer, built against the game's types.
 add_library(hm_win32 OBJECT ${WIN32_SOURCES})
 target_include_directories(hm_win32 PRIVATE src/include src/gen)
-target_compile_options(hm_win32 PRIVATE -Wall -Wno-unused-parameter -Wno-int-conversion)
+target_compile_options(hm_win32 PRIVATE -Wall -Wno-unused-parameter -Wno-int-conversion -Wno-error=int-conversion
+                       -Wno-error=incompatible-pointer-types)
 
 # Host layer (SDL2 + POSIX).
-if(WIN32)
+if(VITA)
+  set(SDL2_INCLUDE_DIRS $ENV{VITASDK}/arm-vita-eabi/include/SDL2)
+  set(SDL2_LDFLAGS SDL2 vitaGL vitashark SceShaccCgExt taihen_stub mathneon SceShaccCg_stub SceKernelDmacMgr_stub SceIme_stub SceGxm_stub
+      SceDisplay_stub SceCtrl_stub SceAppMgr_stub SceAppUtil_stub SceAudio_stub SceAudioIn_stub SceSysmodule_stub
+      SceIofilemgr_stub SceCommonDialog_stub SceTouch_stub SceHid_stub SceMotion_stub ScePower_stub
+      SceProcessmgr_stub stdc++ pthread m)
+  set(SDL2_CFLAGS_OTHER "")
+elseif(WIN32)
   set(SDL2_MINGW_DIR "" CACHE PATH "SDL2 MinGW development directory (…/i686-w64-mingw32)")
   set(SDL2_INCLUDE_DIRS ${SDL2_MINGW_DIR}/include/SDL2)
   set(SDL2_LDFLAGS -L${SDL2_MINGW_DIR}/lib -lSDL2)
@@ -80,7 +98,11 @@ target_include_directories(hm_host PRIVATE ${SDL2_INCLUDE_DIRS})
 target_compile_options(hm_host PRIVATE -Wall ${SDL2_CFLAGS_OTHER})
 
 add_executable(hollywood-monsters $<TARGET_OBJECTS:hm_game> $<TARGET_OBJECTS:hm_override> $<TARGET_OBJECTS:hm_win32> $<TARGET_OBJECTS:hm_host>)
-if(WIN32)
+if(VITA)
+  target_link_libraries(hollywood-monsters PRIVATE ${SDL2_LDFLAGS})
+  vita_create_self(eboot.bin hollywood-monsters UNSAFE)
+  vita_create_vpk(hollywood-monsters.vpk HMON00001 eboot.bin VERSION 01.00 NAME "Hollywood Monsters")
+elseif(WIN32)
   # Linked at the game's original base with the image range reserved by the .hmimg section; no ASLR.
   target_link_options(hollywood-monsters PRIVATE -Wl,--image-base,0x400000 -Wl,--disable-dynamicbase
                       -Wl,-T,${CMAKE_SOURCE_DIR}/cmake/mingw-hm.ld -static-libgcc -mconsole)

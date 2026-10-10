@@ -12,6 +12,9 @@
 #include <windows.h>
 /* The Windows executable is linked at 0x400000 with an empty section reserving 0x401000-0x709000
  * (see platform/host/win32_reserve.c), so the game's image range is ours by construction. */
+#elif defined(__vita__)
+/* PS Vita (VitaSDK): relocatable build only; data in ux0:data/hollywood-monsters by default. */
+int _newlib_heap_size_user = 256 * 1024 * 1024;     /* newlib heap for the game's buffers (default is small) */
 #else
 #include <sys/mman.h>
 #include <signal.h>
@@ -72,7 +75,7 @@ static int map_image(const char *exe)
     m = (unsigned char *)(((unsigned long)m + 0xfff) & ~0xfffUL);
     hm_image_delta = (unsigned)(unsigned long)m - IMAGE_BASE;
     memcpy(m, d, hdrsize);
-#if !defined(_WIN32) && defined(MAP_FIXED_NOREPLACE)
+#if !defined(_WIN32) && !defined(__vita__) && defined(MAP_FIXED_NOREPLACE)
     /* Test aid: nothing may use the original range any more. A pointer that escaped relocation faults here and
      * the crash handler prints the address. */
     if (!getenv("HM_NO_GUARD"))
@@ -132,6 +135,8 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *ep)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 static void install_crash_handler(void) { SetUnhandledExceptionFilter(crash_filter); }
+#elif defined(__vita__)
+static void install_crash_handler(void) { }
 #else
 static void crash_handler(int sig, siginfo_t *si, void *uc)
 {
@@ -164,6 +169,9 @@ int main(int argc, char **argv)
 {
     install_crash_handler();
     const char *dir = argc > 1 ? argv[1] : getenv("HM_DATA");
+#ifdef __vita__
+    if (!dir) dir = "ux0:data/hollywood-monsters";
+#endif
     if (dir && chdir(dir) != 0) { host_log("cannot enter data directory %s", dir); return 1; }
     char exe[256];
     if (!find_exe(exe, sizeof exe)) {

@@ -46,16 +46,28 @@ void host_init_main_thread(void)
     if (s && atoi(s) > 0) g_scale = atoi(s);
 }
 
+/* Game controller as mouse (PS Vita, handhelds): the stick and d-pad move the pointer, A/Cross clicks, B/Circle is
+ * the right button (hold it for the verb bar), Y/Triangle opens the inventory, Start/Back is Escape. */
+static SDL_GameController *g_pad;
+static int g_pad_mode;                     /* the last pointer input came from the controller */
+static float g_px = 320, g_py = 240;       /* controller pointer, game pixels */
+
 int host_window_open(const char *title, int width, int height)
 {
     if (g_win) return 1;
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         host_log("SDL_Init failed: %s", SDL_GetError());
         return 0;
     }
+    for (int i = 0; i < SDL_NumJoysticks() && !g_pad; i++)
+        if (SDL_IsGameController(i)) g_pad = SDL_GameControllerOpen(i);
     Uint32 flags = SDL_WINDOW_RESIZABLE;
     if (getenv("HM_FULLSCREEN")) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-    g_win = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width * g_scale, height * g_scale, flags);
+    int ww = width * g_scale, wh = height * g_scale;
+#ifdef __vita__
+    flags = SDL_WINDOW_FULLSCREEN; ww = 960; wh = 544;
+#endif
+    g_win = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ww, wh, flags);
     if (!g_win) { host_log("SDL_CreateWindow: %s", SDL_GetError()); return 0; }
     /* No vsync by default: the game pumps messages one at a time and blits to the primary several times per
      * frame, so blocking on vblank there would slow its main loop. Presentation is rate-limited instead. */
@@ -281,6 +293,7 @@ static struct script_ev *g_script;
 static int g_script_n, g_script_i, g_script_loaded;
 static unsigned g_script_t0;
 static int g_mx = 320, g_my = 240;
+
 /* SetCursorPos semantics: after a warp, GetCursorPos reports the new position until the pointer really moves.
  * SDL cannot warp on some systems (Wayland) and may report the old position until the next event elsewhere. */
 static int g_warp_pending, g_warp_x, g_warp_y;
@@ -377,6 +390,37 @@ static void run_script(void)
     }
 }
 
+/* Stick and d-pad move the controller pointer: speed grows with deflection, up to ~500 game pixels/second. */
+static int pad_move(struct host_event *ev)
+{
+    static Uint32 last;
+    Uint32 now = SDL_GetTicks();
+    float dt = last ? (now - last) / 1000.0f : 0;
+    last = now;
+    if (!g_pad || dt <= 0 || dt > 0.1f) return 0;
+    float ax = SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_LEFTX) / 32767.0f;
+    float ay = SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_LEFTY) / 32767.0f;
+    if (ax > -0.2f && ax < 0.2f) ax = 0;
+    if (ay > -0.2f && ay < 0.2f) ay = 0;
+    if (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) ax = -0.5f;
+    if (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) ax = 0.5f;
+    if (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_DPAD_UP)) ay = -0.5f;
+    if (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) ay = 0.5f;
+    if (!ax && !ay) return 0;
+    if (!g_pad_mode) { int x, y; host_get_mouse(&x, &y); g_px = (float)x; g_py = (float)y; g_pad_mode = 1; }
+    int ox = (int)g_px, oy = (int)g_py;
+    g_px += ax * (ax < 0 ? -ax : ax) * 500 * dt + ax * 100 * dt;
+    g_py += ay * (ay < 0 ? -ay : ay) * 500 * dt + ay * 100 * dt;
+    if (g_px < 0) g_px = 0;
+    if (g_py < 0) g_py = 0;
+    if (g_px > g_tw - 1) g_px = (float)(g_tw - 1);
+    if (g_py > g_th - 1) g_py = (float)(g_th - 1);
+    if ((int)g_px == ox && (int)g_py == oy) return 0;
+    g_warp_pending = 0; g_cursor_dirty = 1; g_mouse_in = 1;
+    ev->type = HOST_EV_MOUSEMOVE; ev->x = (int)g_px; ev->y = (int)g_py;
+    return 1;
+}
+
 int host_poll_event(struct host_event *ev)
 {
     SDL_Event e;
@@ -386,10 +430,33 @@ int host_poll_event(struct host_event *ev)
     if (g_warp_request && host_is_main_thread()) apply_warp();
     if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pending_char >= 0) { ev->type = HOST_EV_CHAR; ev->ch = pending_char; pending_char = -1; return 1; }
+    if (pad_move(ev)) return 1;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
+        case SDL_CONTROLLERDEVICEADDED:
+            if (!g_pad) g_pad = SDL_GameControllerOpen(e.cdevice.which);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN: case SDL_CONTROLLERBUTTONUP: {
+            int down = e.type == SDL_CONTROLLERBUTTONDOWN;
+            int b = e.cbutton.button;
+            if (b == SDL_CONTROLLER_BUTTON_START || b == SDL_CONTROLLER_BUTTON_BACK) {
+                ev->type = down ? HOST_EV_KEYDOWN : HOST_EV_KEYUP; ev->vk = 27; return 1;
+            }
+            if (!g_pad_mode) { int x, y; host_get_mouse(&x, &y); g_px = (float)x; g_py = (float)y; g_pad_mode = 1; }
+            if (b == SDL_CONTROLLER_BUTTON_Y && down) {    /* inventory: the game opens it at the bottom edge */
+                g_py = g_py >= 470 ? 240 : 479;
+                g_cursor_dirty = 1; g_warp_pending = 0;
+                ev->type = HOST_EV_MOUSEMOVE; ev->x = (int)g_px; ev->y = (int)g_py; return 1;
+            }
+            if (b == SDL_CONTROLLER_BUTTON_A || b == SDL_CONTROLLER_BUTTON_B) {
+                ev->type = down ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
+                ev->x = (int)g_px; ev->y = (int)g_py; ev->button = b == SDL_CONTROLLER_BUTTON_A ? 1 : 3;
+                return 1;
+            }
+            break;
+        }
         case SDL_QUIT: host_log("SDL_QUIT (window closed or SIGINT/SIGTERM)"); ev->type = HOST_EV_QUIT; return 1;
-        case SDL_MOUSEMOTION: g_warp_pending = 0; g_cursor_dirty = 1; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
+        case SDL_MOUSEMOTION: g_pad_mode = 0; g_warp_pending = 0; g_cursor_dirty = 1; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
         case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
             ev->type = e.type == SDL_MOUSEBUTTONDOWN ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
             ev->x = e.button.x; ev->y = e.button.y;
@@ -443,6 +510,7 @@ void host_get_mouse(int *x, int *y)
 {
     if (g_script_n) { *x = g_mx; *y = g_my; return; }
     if (g_warp_pending) { *x = g_warp_x; *y = g_warp_y; return; }
+    if (g_pad_mode) { *x = (int)g_px; *y = (int)g_py; return; }
     int wx = 0, wy = 0;
     SDL_GetMouseState(&wx, &wy);
     if (g_ren) to_logical(wx, wy, x, y); else { *x = wx; *y = wy; }
@@ -488,6 +556,7 @@ void host_set_mouse(int x, int y)
     if (getenv("HM_NO_WARP") || g_quitting) return;
     if (g_script_n) { g_mx = x; g_my = y; }   /* scripted pointer: a warp moves it, as SetCursorPos does on Windows */
     g_warp_x = x; g_warp_y = y; g_warp_pending = 1; g_cursor_dirty = 1;
+    g_px = (float)x; g_py = (float)y;              /* the game clamps the controller pointer too */
     if (host_is_main_thread()) apply_warp();
     else g_warp_request = 1;
 }
