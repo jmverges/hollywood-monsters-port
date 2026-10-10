@@ -24,6 +24,7 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Verbs vs original | Look at, open, pick up and use on the doghouse, look at and pick up on Junior (`tools/test/scripts/verbs_first_scene.txt`): screens within 1.3 %, and the same four spoken answers in both, at a constant offset; the other two actions are silent in both |
 | Inventory puzzle vs original | Climbing to the terrace after talking to Junior, picking up the glass, opening the inventory and using the glass with the punch bowl (`scripts/glass_punch.txt`): the glass turns into a glass of punch in both, screens within 1.6 % |
 | Start-up hang | Found while testing: a bug of the original freezes about 1 start in 50 (see ARCHITECTURE.md, "Bugs of the original game"). Confirmed in the port with `HM_SEED=1007` and `HM_ORIGINAL_BUGS=1`; fixed by default |
+| Long session | 30 minutes of random clicks, verb gestures and occasional room warps in chapter 1: no crash, memory steady at about 112 MB (+0.5 MB over the run) |
 | Register leftovers | Since all ~3,000 are initialised to 0, the smoke test still passes in all 77 rooms |
 
 ## Not verified yet
@@ -36,7 +37,6 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
   and clamps its pointer with `SetCursorPos` every frame; the host reports the warped position until the next
   real motion, which is the Windows behaviour, but this was only tested with scripted input.
 * The Windows build on real Windows (only Wine so far).
-* Long sessions beyond ~7 minutes.
 
 ## Known issues / open work
 
