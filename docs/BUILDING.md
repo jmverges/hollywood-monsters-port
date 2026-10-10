@@ -37,6 +37,21 @@ build/hollywood-monsters /path/to/gamedata
 `pipeline.sh` accepts `STEP=export` or `STEP=gen` to resume from a later step once the Ghidra project exists.
 Re-run `cmake` after regenerating (the source list is a glob).
 
+## English
+
+The game only exists in Spanish and Italian. A fan translation (ShinjiGR and A.P.$lasH, v1.0.0, 2012, made for
+the 2002 FX CD edition) can be installed for the port; it translates all texts and subtitles, voices stay in
+Spanish:
+
+```
+tools/lang/english_patch.py /path/to/unpacked-patch /path/to/spanish-data /path/to/new-english-data
+build/hollywood-monsters /path/to/new-english-data
+```
+
+The script copies the Spanish data, puts the patch's RESOURCE files over the copy and writes `hm_lang.tsv`
+with the verbs and menus taken from the patch's own executable (which the port cannot run). Choose "Text" or
+"Both" in the options to see the subtitles.
+
 ## Run-time options (environment variables)
 
 | Variable | Effect |

@@ -64,7 +64,7 @@ case "$STEP" in import)
   ;& gen)
   log "generate C"
   rm -rf "$REPO/src/gen"
-  python3 "$REPO/tools/recomp/gen.py" --rx "$RX" --out "$REPO/src/gen" --override "$REPO/src/override"
+  python3 "$REPO/tools/recomp/gen.py" --rx "$RX" --out "$REPO/src/gen" --override "$REPO/src/override" --exe "$EXE"
   ;;
 esac
 log "done. Build with: cmake -S $REPO -B $REPO/build -G Ninja && ninja -C $REPO/build"

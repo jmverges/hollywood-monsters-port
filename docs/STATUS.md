@@ -26,6 +26,7 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Start-up hang | Found while testing: a bug of the original freezes about 1 start in 50 (see ARCHITECTURE.md, "Bugs of the original game"). Confirmed in the port with `HM_SEED=1007` and `HM_ORIGINAL_BUGS=1`; fixed by default |
 | Hall and Joseph vs original | Entering the hall and talking to Joseph (`scripts/talk_joseph.txt`): 21 screenshots within 5 % and the same ten spoken lines in the same order. This test found the `g_ddsd` bug below |
 | Chapter 7 cutscene vs original | Warping through chapter 7 as the room tour does, then 60 s of the cutscene that follows (café, Ron, Hannover's office, Bel Air, the street): 29 screenshots within 2.7 % |
+| English | With the fan translation installed by `tools/lang/english_patch.py`: options menu, load/save, verb bar, action line ("Look at purse"), object names and dialogue subtitles in English; voices stay Spanish. The Spanish build is unchanged (inventory screens identical to the original, smoke test) |
 | Long session | 30 minutes of random clicks, verb gestures and occasional room warps in chapter 1: no crash, memory steady at about 112 MB (+0.5 MB over the run) |
 | Register leftovers | Since all ~3,000 are initialised to 0, the smoke test still passes in all 77 rooms |
 

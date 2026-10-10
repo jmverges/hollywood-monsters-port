@@ -106,6 +106,15 @@ The COM objects are plain C structs whose first member is the vtable pointer; th
 8. **Generate** (`gen.py`): globals → address macros, thunks → targets, partial accesses (`x._1_3_`) →
    pointer arithmetic, stack frames, prototypes, imports list.
 
+### Texts and translations
+
+`gen.py --exe` turns string literals into `HM_STR(address)` when the text occurs once in the executable's data
+(`HM_TEXT("...")` otherwise), and addresses of texts passed as arguments (`&DAT_005d061c`) into `HM_STR` too.
+Both go through `hm_text()` (`platform/win32/lang.c`), which returns the text itself or, when the data
+directory has an `hm_lang.tsv`, its translation. Entries of tables the code indexes (the verbs at 0x5e4074)
+are written over the executable's data at start-up instead. This also means the generated code no longer
+carries the game's texts.
+
 ## Bugs of the original game
 
 Some bugs are in the original program, not in the recompilation; the port reproduces them faithfully.

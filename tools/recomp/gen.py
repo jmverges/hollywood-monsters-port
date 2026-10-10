@@ -24,6 +24,7 @@ ap.add_argument('--strict-void', action='store_true', help='keep void return typ
 ap.add_argument('--no-frame', action='store_true', help='do not reproduce the original stack frame layout')
 ap.add_argument('--unprototyped', action='store_true', help='declare game functions without parameter lists (old mode)')
 ap.add_argument('--fill-frame', action='store_true', help='fill reproduced stack frames with 0xCC like MSVC /RTC')
+ap.add_argument('--exe', default=None, help='the original MONSTERS.EXE: string literals found in it become references to its data (HM_STR)')
 ap.add_argument('--no-zero-regs', action='store_true', help='leave register leftovers (extraout_/in_/unaff_) uninitialised')
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
@@ -126,6 +127,107 @@ if a.override and os.path.isdir(a.override):
         if m:
             override.add(int(m.group(1), 16))
 
+
+# ---- string literals that live in the executable's data
+
+
+def load_image(path):
+    import struct
+    d = open(path, 'rb').read()
+    pe = struct.unpack_from('<I', d, 0x3c)[0]
+    nsec, optsz = struct.unpack_from('<H', d, pe + 6)[0], struct.unpack_from('<H', d, pe + 20)[0]
+    base = struct.unpack_from('<I', d, pe + 24 + 28)[0]
+    secs = []
+    for i in range(nsec):
+        name, vsize, va, rsize, rptr = struct.unpack_from('<8sIIII', d, pe + 24 + optsz + 40 * i)
+        if not name.startswith(b'.text'):
+            secs.append((base + va, d[rptr:rptr + min(vsize, rsize)]))
+    return secs
+
+
+C_ESC = {'a': 7, 'b': 8, 't': 9, 'n': 10, 'v': 11, 'f': 12, 'r': 13, '"': 34, "'": 39, '\\': 92, '?': 63, '0': 0}
+
+
+def c_literal_bytes(lit):
+    out, i = bytearray(), 0
+    while i < len(lit):
+        c = lit[i]
+        if c != '\\':
+            out += c.encode('latin-1'); i += 1; continue
+        n = lit[i + 1]
+        if n == 'x':
+            j = i + 2
+            while j < len(lit) and j < i + 4 and lit[j] in '0123456789abcdefABCDEF':
+                j += 1
+            out.append(int(lit[i + 2:j], 16)); i = j
+        elif n in C_ESC:
+            out.append(C_ESC[n]); i += 2
+        else:
+            raise ValueError(lit)
+    return bytes(out)
+
+
+def image_strings(text):
+    """String literals and the executable's data.
+
+    Text literals become HM_STR(address) when the bytes occur exactly once in the executable's data, and
+    HM_TEXT("...") otherwise; both go through hm_text() at run time, which returns a translation when one is
+    loaded (platform/win32/lang.c) and the original text otherwise. HM_STR also makes the game read the text
+    from the user's executable, like the original. Non-text byte tables point into the executable when unique.
+    """
+    if not IMAGE:
+        return text
+    def sub(m):
+        try:
+            raw = c_literal_bytes(m.group(1))
+        except (ValueError, UnicodeEncodeError):
+            return m.group(0)
+        b = raw + b'\0'
+        hits = []
+        for va, data in IMAGE:
+            k = data.find(b)
+            while k >= 0 and len(hits) < 2:
+                hits.append(va + k)
+                k = data.find(b, k + 1)
+        is_text = raw and all(c >= 0x20 for c in raw)
+        if len(hits) == 1:
+            stats['literals_to_image'] += 1
+            return ('HM_STR(0x%08xU)' if is_text else '((char *)0x%08xU)') % hits[0]
+        if is_text:
+            stats['literals_translatable'] += 1
+            return 'HM_TEXT(%s)' % m.group(0)
+        stats['literals_kept'] += 1
+        return m.group(0)
+    def text_at(va):
+        for sva, data in IMAGE:
+            if sva <= va < sva + len(data):
+                k = va - sva
+                if k == 0 or data[k - 1] != 0:
+                    return None                      # not the start of a string
+                end = data.find(b'\0', k, k + 256)
+                raw = data[k:end] if end > 0 else b''
+                return raw if len(raw) >= 2 and all(0x20 <= c < 0x7f or 0x80 <= c <= 0xa8 for c in raw) and any(65 <= (c | 32) <= 122 for c in raw) else None   # ASCII + CP437 accents
+        return None
+    def addr_arg(m):
+        va = int(m.group(2), 16)
+        if text_at(va) is None:
+            return m.group(0)
+        stats['text_address_args'] += 1
+        return '%s(void *)HM_STR(0x%08xU)%s' % (m.group(1), va, m.group(3))
+    lines = text.split('\n')
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith('#'):
+            continue
+        if '"' in line:
+            line = re.sub(r'"((?:[^"\\]|\\.)*)"', sub, line)
+        if '&DAT_' in line:
+            # a text passed by address: `f(..., &DAT_005d061c, ...)`
+            line = re.sub(r'([(,]\s*)&DAT_([0-9a-f]{8})(\s*[,)])', addr_arg, line)
+        lines[i] = line
+    return '\n'.join(lines)
+
+
+IMAGE = load_image(a.exe) if a.exe else None   # (va, bytes) of every data section
 
 TYPE_SIZE = {'byte': 1, 'char': 1, 'undefined': 1, 'undefined1': 1, 'bool': 1, 'ushort': 2, 'short': 2,
              'undefined2': 2, 'uint': 4, 'int': 4, 'undefined4': 4, 'ulong': 4, 'long': 4, 'undefined3': 3}
@@ -417,7 +519,7 @@ for e in sorted(game):
     out += defs
     out.append('\n' + body + '\n')
     with open(os.path.join(a.out, 'f_%08x.c' % e), 'w') as fh:
-        fh.write(sized_stores(''.join(out)))
+        fh.write(image_strings(sized_stores(''.join(out))))
     stats['generated'] += 1
 
 # ---------------------------------------------------------------- imports used anywhere in game code

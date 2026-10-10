@@ -11,3 +11,10 @@
 
 /* Fixes for bugs in the original game (tools/recomp/fixups.py, platform/win32/fixes.c). */
 void hm_fix_shuffle_last_slot(unsigned char *table, unsigned slot);
+
+/* Game texts (tools/recomp/gen.py turns string literals into these): the text at the executable address or
+ * the literal, or its translation when one is loaded from hm_lang.tsv (platform/win32/lang.c). */
+char *hm_text(const char *s);
+#define HM_STR(addr) (hm_text((const char *)(addr)))
+#define HM_TEXT(lit) (hm_text(lit))
+
