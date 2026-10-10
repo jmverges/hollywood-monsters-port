@@ -447,11 +447,32 @@ static void apply_warp(void)
     g_warp_request = 0;
     if (!g_win || !g_ren || g_quitting) return;
     int x = g_warp_x, y = g_warp_y;
-    int ww, wh; SDL_GetWindowSize(g_win, &ww, &wh);
     if (!g_tw || !g_th) return;
-    float sx = (float)ww / g_tw, sy = (float)wh / g_th, s = sx < sy ? sx : sy;
-    int ox = (int)((ww - g_tw * s) / 2), oy = (int)((wh - g_th * s) / 2);
-    SDL_WarpMouseInWindow(g_win, ox + (int)(x * s), oy + (int)(y * s));
+    /* The game warps to where it wants the pointer on every frame, usually where it already is. Moving the real
+     * pointer then can only add rounding error, so leave it alone. */
+    int wx, wy, lx, ly;
+    SDL_GetMouseState(&wx, &wy);
+    to_logical(wx, wy, &lx, &ly);
+    if (lx == x && ly == y) return;
+    /* Aim at the centre of the game pixel. With a non-integer scale (fullscreen), aiming at its corner and
+     * truncating on the way back lost a fraction of a pixel per frame: the pointer crept to the top left. */
+    int tx, ty;
+    SDL_RenderLogicalToWindow(g_ren, x + 0.5f, y + 0.5f, &tx, &ty);
+    /* SDL's two conversions round a fractional letterbox offset differently: pick the nearby window pixel
+     * that maps back to exactly this game pixel, so the pointer cannot drift. */
+    static const int step[] = { 0, 1, -1, 2, -2 };
+    int best_x = tx, best_y = ty;
+    for (int i = 0; i < 5; i++) {
+        int bx, by;
+        to_logical(tx + step[i], ty, &bx, &by);
+        if (bx == x) { best_x = tx + step[i]; break; }
+    }
+    for (int i = 0; i < 5; i++) {
+        int bx, by;
+        to_logical(best_x, ty + step[i], &bx, &by);
+        if (by == y) { best_y = ty + step[i]; break; }
+    }
+    SDL_WarpMouseInWindow(g_win, best_x, best_y);
 }
 
 /* SetCursorPos. The game calls it from its timer thread too; SDL video calls belong on the main thread, so

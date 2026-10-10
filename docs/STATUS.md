@@ -43,6 +43,12 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 
 ## Known issues / open work
 
+* Fixed on 2026-10-10, reported from the Legion Go in fullscreen (1463x914 X screen): the pointer crept to the
+  top left by itself. The game warps the pointer every frame; at a non-integer scale, the conversion to window
+  pixels and back lost a fraction of a pixel each time. Warps now target a window pixel that maps back to the
+  same game pixel (checked for every pixel at 1463x914, 914x1463, 1280x800, 1920x1080, 2560x1600), and are
+  skipped when the pointer is already there.
+
 * Fixed on 2026-10-10, reported from the Legion Go: hovering an inventory item named a scene object
   ("Usar caseta de perro" over the wallet) and the action line was pink instead of red. Both were `gen.py`
   losing bytes where Ghidra merges accesses of different sizes: the byte that selects the inventory name table
