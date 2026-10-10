@@ -1,5 +1,13 @@
 /* Runtime support for Ghidra decompiler output (hand-written + generated macros). */
 #pragma once
+/* All code is compiled by one compiler with one convention, so the original conventions are dropped
+ * (MinGW predefines some of these as attributes). */
+#undef __stdcall
+#undef __cdecl
+#undef __fastcall
+#undef __thiscall
+#undef __pascal
+#undef __unaligned
 #define __stdcall
 #define __cdecl
 #define __fastcall
