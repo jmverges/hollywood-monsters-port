@@ -99,6 +99,13 @@ void hm_lang_load(void)
 
 char *hm_text(const char *s)
 {
+    /* "Introduce una descripción" (save prompt): the game now reads typed characters */
+    if (s == (const char *)(0x005d06b8u + host_image_delta())) {
+        static unsigned last;
+        unsigned now = host_ticks_ms();
+        if (now - last > 1000) host_request_text_input();
+        last = now;
+    }
     for (int i = 0; i < g_n; i++) {
         const char *a = g_map[i].from, *b = s;
         while (*a && *a == *b) { a++; b++; }

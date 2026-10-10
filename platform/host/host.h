@@ -35,6 +35,7 @@ int  host_poll_event(struct host_event *ev);
 void host_get_mouse(int *x, int *y);
 void host_set_mouse(int x, int y);
 void host_show_cursor(int show);
+void host_request_text_input(void);       /* the game waits for typed text: show an on-screen keyboard if needed */
 /* Pointer image. The game's cursors are Windows resources; the win32 layer decodes them to ARGB (0 alpha =
  * transparent) and the host draws the selected one over the frame, at the position host_get_mouse reports.
  * The system pointer stays hidden over the window (Windows drew the game's cursor in its place). */

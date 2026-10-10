@@ -303,6 +303,45 @@ static void to_logical(int wx, int wy, int *lx, int *ly)
 
 static int pending_char = -1;
 
+/* Typed text waiting to be handed to the game one character at a time, in its code page (DOS 437). */
+static unsigned char g_textq[256];
+static int g_textq_n, g_textq_i;
+
+static int to_cp437(unsigned cp)
+{
+    if (cp < 0x80) return (int)cp;
+    static const unsigned short from[] = { 0xE1, 0xE9, 0xED, 0xF3, 0xFA, 0xF1, 0xD1, 0xFC, 0xDC, 0xBF, 0xA1, 0xE7, 0xC7,
+                                           0xC1, 0xC9, 0xCD, 0xD3, 0xDA, 0xE0, 0xE8, 0xEC, 0xF2, 0xF9, 0xE4, 0xEB, 0xEF, 0xF6 };
+    static const unsigned char to[] =    { 0xA0, 0x82, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x81, 0x9A, 0xA8, 0xAD, 0x87, 0x80,
+                                           'A',  0x90, 'I',  'O',  'U',  0x85, 0x8A, 0x8D, 0x95, 0x97, 0x84, 0x89, 0x8B, 0x94 };
+    for (unsigned i = 0; i < sizeof from / sizeof from[0]; i++) if (from[i] == cp) return to[i];
+    return -1;
+}
+
+static void queue_utf8(const char *text, int add_enter)
+{
+    const unsigned char *s = (const unsigned char *)text;
+    if (g_textq_i >= g_textq_n) g_textq_i = g_textq_n = 0;
+    while (*s && g_textq_n < (int)sizeof g_textq - 1) {
+        unsigned cp = *s++;
+        if (cp >= 0xC0 && cp < 0xE0 && *s) cp = ((cp & 0x1F) << 6) | (*s++ & 0x3F);
+        else if (cp >= 0xE0) { while (*s >= 0x80 && *s < 0xC0) s++; continue; }   /* outside Latin-1 */
+        int c = to_cp437(cp);
+        if (c > 0) g_textq[g_textq_n++] = (unsigned char)c;
+    }
+    if (add_enter && g_textq_n < (int)sizeof g_textq) g_textq[g_textq_n++] = 0x0D;
+}
+
+/* The game asks for typed text (the savegame description). Where there is no keyboard (PS Vita), open the
+ * system's on-screen keyboard; the text comes back as one SDL_TEXTINPUT and is typed in, followed by Enter. */
+void host_request_text_input(void)
+{
+    host_log("the game asks for typed text");
+#ifdef __vita__
+    if (!SDL_IsTextInputActive()) { host_log("opening the on-screen keyboard"); SDL_StartTextInput(); }
+#endif
+}
+
 /* ---- scripted input for automated testing (HM_SCRIPT=file)
  * Each line: <time_ms> <command> [args]; time is absolute since start, or "+N" relative to the previous line.
  * Commands: move X Y | click X Y | rclick X Y | down X Y | up X Y | rdown X Y | rup X Y | key VK | char C | shot NAME
@@ -567,6 +606,11 @@ int host_poll_event(struct host_event *ev)
     if (g_warp_request && host_is_main_thread()) apply_warp();
     if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pending_char >= 0) { ev->type = HOST_EV_CHAR; ev->ch = pending_char; pending_char = -1; return 1; }
+    if (g_textq_i < g_textq_n) {
+        int c = g_textq[g_textq_i++];
+        if (c == 0x0D) { ev->type = HOST_EV_KEYDOWN; ev->vk = 0x0D; pending_char = 0x0D; return 1; }   /* Enter: key + char */
+        ev->type = HOST_EV_CHAR; ev->ch = c; return 1;
+    }
     touch_hold();
     if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pad_move(ev)) return 1;
@@ -620,6 +664,9 @@ int host_poll_event(struct host_event *ev)
             return 1;
         case SDL_MOUSEWHEEL: ev->type = HOST_EV_WHEEL; ev->wheel = e.wheel.y > 0 ? 1 : -1; host_get_mouse(&ev->x, &ev->y); return 1;
         case SDL_KEYDOWN: case SDL_KEYUP: {
+#ifdef __vita__
+            break;                                   /* no keyboard; the on-screen keyboard's Enter is sent with its text */
+#endif
             if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN && (e.key.keysym.mod & KMOD_ALT)) {
                 Uint32 fs = SDL_GetWindowFlags(g_win) & SDL_WINDOW_FULLSCREEN_DESKTOP;
                 SDL_SetWindowFullscreen(g_win, fs ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
@@ -638,14 +685,15 @@ int host_poll_event(struct host_event *ev)
             if (e.type == SDL_KEYDOWN && (vk == 0x0D || vk == 0x1B || vk == 0x08 || vk == 0x09)) pending_char = vk;
             return 1;
         }
-        case SDL_TEXTINPUT: {
-            const unsigned char *s = (const unsigned char *)e.text.text;
-            int cp = s[0];
-            if (cp >= 0xC0 && cp < 0xE0 && s[1]) cp = ((cp & 0x1F) << 6) | (s[1] & 0x3F);
-            else if (cp >= 0x80) break;
-            if (cp > 0xFF) break;
-            ev->type = HOST_EV_CHAR; ev->ch = cp; return 1;
-        }
+        case SDL_TEXTINPUT:
+#ifdef __vita__
+            queue_utf8(e.text.text, 1);              /* the whole text from the on-screen keyboard, then Enter */
+            SDL_StopTextInput();
+#else
+            queue_utf8(e.text.text, 0);
+#endif
+            if (g_textq_i < g_textq_n) { ev->type = HOST_EV_CHAR; ev->ch = g_textq[g_textq_i++]; return 1; }
+            break;
         case SDL_WINDOWEVENT:
             if (e.window.event == SDL_WINDOWEVENT_ENTER || e.window.event == SDL_WINDOWEVENT_LEAVE) {
                 g_mouse_in = e.window.event == SDL_WINDOWEVENT_ENTER; g_cursor_dirty = 1;
