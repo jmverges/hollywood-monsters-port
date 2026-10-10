@@ -16,11 +16,15 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Save / load | Saving writes `SAVEGAME.000` with the typed description; a fresh start loads it from the menu |
 | Walking | Click-to-walk with screen scrolling; hotspot labels ("Ir a escalera", "Mirar escalera"); right click toggles the verb; walking up the stairs changes room to the terrace |
 | Windows | The MinGW build runs under Wine 9.0 headless: intro logo, menu, loading the savegame |
+| All chapters | Warping to the start of chapters 1–8 (room id 1000…8000) loads each one; 5-minute random-click runs in every chapter, and four 10-minute runs in chapter 1, finished without a crash |
+| Speech | Measured, not heard: in the intro dialogue the output has speech-like modulation (envelope variation 0.75–0.79 vs 0.22 for music, 21–26 % pauses vs 1 %) |
+| Against the original | The original `MONSTERS.EXE` runs under Wine/Xvfb with the same scripts (`run_original.py`); garden, terrace and menu screenshots match the port |
 | Audio | Music streams from `RESOURCE.M09`; sound effects play (measured output levels) |
 
 ## Not verified yet
 
-* Speech: the voice stream buffer is created and started; audible speech has not been confirmed by ear.
+* Speech by ear (only measured so far).
+* A black band at the right edge during the chapter 2 title pan ("EGIPTO"); not yet compared with the original.
 * Inventory, dialogue trees, puzzles, chapter changes, end game.
 * The Windows build on real Windows (only Wine so far).
 * Long sessions beyond ~7 minutes.

@@ -20,3 +20,18 @@ Useful environment variables: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw` t
 (44.1 kHz stereo S16), `HM_TRACE_FILES=1`, `HM_DEBUG=1`.
 Without gdb, crashes still print a backtrace (signal handler in `host_main.c`); function names are
 `FUN_<original address>`, matching `src/gen/f_<address>.c`.
+
+## Comparing with the original game
+
+`run_original.py <script> <shots-dir> <data-dir>` plays the same script on the **original** `MONSTERS.EXE`
+under Wine (32-bit prefix) on a 640x480 Xvfb display, driving input with xdotool and taking screenshots with
+xwd. Wine needs `renderer=gdi` (set automatically) and an ALSA device; a null device is configured for the
+process. Put the two screenshot sets side by side to check a behaviour against the original:
+
+```
+python3 tools/test/run_original.py work/cmp1.txt work/orig/shots /path/to/data-copy-1
+tools/test/run_script.sh            work/cmp1.txt work/port/shots /path/to/data-copy-2
+```
+
+Timing differs between runs (animations, timers), so compare states, not pixels.
+`poke` commands are ignored by the original runner.
