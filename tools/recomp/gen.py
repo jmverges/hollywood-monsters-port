@@ -340,6 +340,12 @@ for e in sorted(game):
         if mname and not tok.startswith(('register', 'unique', 'stack', 'const')) and addr and addr != mname.group(1):
             addr = mname.group(1)          # the address in the name is the accessed one (offset inside a symbol)
             stats['addr_from_name'] += 1
+        elif not mname and tok in symbols and addr and int(addr, 16) != int(symbols[tok][0], 16):
+            # A named symbol (g_ddsd) used through a field: the export records the field's address
+            # (g_ddsd.lpSurface = 0x691044), but the C token denotes the whole symbol, so the macro must sit at
+            # the symbol's start. Getting this wrong made Lock() write the descriptor 0x24 bytes too far.
+            addr = symbols[tok][0]
+            stats['addr_from_symbol'] += 1
         if not addr:
             m = re.search(r'([0-9a-f]{8})$', tok)
             addr = m.group(1) if m else ''

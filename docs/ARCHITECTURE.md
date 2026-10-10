@@ -133,6 +133,7 @@ changes behaviour where the original would hang or crash, and `HM_ORIGINAL_BUGS=
 | Parameter accessed wider than declared | `_param_2` on a `byte` parameter | parameter becomes a 4-byte slot, typed view macro |
 | 64-bit helper result passed as an argument | `CONCAT22(a,b)` | 32-bit `CONCATxy` for x+y ≤ 4, full prototypes |
 | Uninitialised heap read by the game | sprite data past the loaded block | `malloc` fills like the MSVC debug heap (0xCD, 0xFD guards, 0xDD on free) |
+| Named structure used through a field | `g_ddsd.lpSurface`: the export gives the field's address (0x691044) | the macro sits at the symbol's start (0x691020) |
 | Register with no C value | `FUN_0040fec0(extraout_ECX, extraout_EDX)` | initialised to 0 (see Register leftovers) |
 
 When a new problem shows up at run time, the usual loop is: reproduce with a script (`tools/test/`), catch

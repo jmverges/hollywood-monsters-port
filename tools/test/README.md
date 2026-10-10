@@ -55,8 +55,9 @@ Environment: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw` captures audio (44
 `HM_TRACE_FILES=1` traces file access, `HM_DEBUG=1` traces the Win32 layer.
 
 `scripts/` holds scripts that have been checked against the original. They start from the savegame below:
-`talk_junior.txt` (verb bar, a conversation), `verbs_first_scene.txt` (object actions) and `glass_punch.txt`
-(the terrace, picking up an item, the inventory, using an item on the scene). The inventory opens when the
+`talk_junior.txt` (verb bar, a conversation), `verbs_first_scene.txt` (object actions) `glass_punch.txt`
+(the terrace, picking up an item, the inventory, using an item on the scene) and `talk_joseph.txt` (the hall,
+a ten-line conversation). The inventory opens when the
 pointer reaches the bottom edge; its verb row is at y 313 and the items at y 367.
 
 ## Savegame and smoke test

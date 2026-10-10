@@ -1,0 +1,38 @@
+# Talk to Junior, climb to the terrace, enter the hall and talk to Joseph (ten spoken lines). Needs the make_savegame.sh save.
+# Before the g_ddsd fix, orange streaks appeared on the hall carpet here.
+6000 key 27
+9000 click 172 232
+12000 click 320 60
+18000 rdown 190 400
+18800 move 10 462
+19600 rup 10 462
+20300 click 190 400
+62000 click 130 300
+72000 click 215 195
+86000 move 260 190
+86400 rdown 260 190
+87200 move 25 462
+88000 rup 25 462
+88700 click 260 190
+91000 shot j91
+93000 shot j93
+95000 shot j95
+97000 shot j97
+99000 shot j99
+101000 shot j101
+103000 shot j103
+105000 shot j105
+107000 shot j107
+109000 shot j109
+111000 shot j111
+113000 shot j113
+115000 shot j115
+117000 shot j117
+119000 shot j119
+121000 shot j121
+123000 shot j123
+125000 shot j125
+127000 shot j127
+129000 shot j129
+131000 shot j131
+132000 quit
