@@ -25,13 +25,15 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Inventory puzzle vs original | Climbing to the terrace after talking to Junior, picking up the glass, opening the inventory and using the glass with the punch bowl (`scripts/glass_punch.txt`): the glass turns into a glass of punch in both, screens within 1.6 % |
 | Start-up hang | Found while testing: a bug of the original freezes about 1 start in 50 (see ARCHITECTURE.md, "Bugs of the original game"). Confirmed in the port with `HM_SEED=1007` and `HM_ORIGINAL_BUGS=1`; fixed by default |
 | Hall and Joseph vs original | Entering the hall and talking to Joseph (`scripts/talk_joseph.txt`): 21 screenshots within 5 % and the same ten spoken lines in the same order. This test found the `g_ddsd` bug below |
+| Chapter 7 cutscene vs original | Warping through chapter 7 as the room tour does, then 60 s of the cutscene that follows (café, Ron, Hannover's office, Bel Air, the street): 29 screenshots within 2.7 % |
 | Long session | 30 minutes of random clicks, verb gestures and occasional room warps in chapter 1: no crash, memory steady at about 112 MB (+0.5 MB over the run) |
 | Register leftovers | Since all ~3,000 are initialised to 0, the smoke test still passes in all 77 rooms |
 
 ## Not verified yet
 
 * Audio by ear (compared sample by sample with the original, not listened to).
-* Dialogue choices, longer puzzle chains, chapter changes by play (only by warp so far), end game.
+* Dialogue choice menus (one appeared in the room tour, in Hannover's office in chapter 7, but not on a
+  scripted replay, so no comparison yet), longer puzzle chains, chapter changes by play (only by warp so far), end game.
 * The start-up hang under the original executable (shown by simulating its random generator and reading its
   machine code, not by catching the original in the act).
 * Pointer warps in interactive play on Wayland, where SDL cannot move the system pointer. The game re-centres
