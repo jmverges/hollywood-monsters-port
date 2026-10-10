@@ -141,6 +141,7 @@ static long nt_SetNotificationPositions(IDirectSoundNotify *This, ulong n, DSBPO
     b->nnotify = (int)(n > MAX_NOTIFY ? MAX_NOTIFY : n);
     for (int i = 0; i < b->nnotify; i++) b->notify[i] = pos[i];
     host_audio_unlock();
+    HM_TRACE("DSB %p SetNotificationPositions n=%lu first=%lu last=%lu", (void *)b, n, n ? pos[0].dwOffset : 0, n ? pos[n - 1].dwOffset : 0);
     return DS_OK;
 }
 
@@ -266,6 +267,7 @@ static long buf_Play(IDirectSoundBuffer *This, ulong r1, ulong prio, ulong flags
     b->looping = (flags & DSBPLAY_LOOPING) != 0;
     b->playing = 1;
     host_audio_unlock();
+    HM_TRACE("DSB %p Play flags=%lu size=%u rate=%d notify=%d", (void *)b, flags, b->size, b->rate, b->nnotify);
     return DS_OK;
 }
 
@@ -277,6 +279,7 @@ static long buf_Stop(IDirectSoundBuffer *This)
     b->playing = 0;
     if (was) fire_stop(b);
     host_audio_unlock();
+    HM_TRACE("DSB %p Stop", (void *)b);
     return DS_OK;
 }
 

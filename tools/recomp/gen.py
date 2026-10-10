@@ -19,6 +19,8 @@ ap.add_argument('--rx', required=True)
 ap.add_argument('--out', required=True)
 ap.add_argument('--override', default=None, help='dir with hand-written replacements f_<addr>.c')
 ap.add_argument('--strict-void', action='store_true', help='keep void return types in caller prototypes (diagnostics)')
+ap.add_argument('--no-frame', action='store_true', help='do not reproduce the original stack frame layout')
+ap.add_argument('--fill-frame', action='store_true', help='fill reproduced stack frames with 0xCC like MSVC /RTC')
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
 
@@ -232,12 +234,58 @@ for e in sorted(game):
         continue
     protos.append((e, fname, hdr_m.group(1).strip()))
 
-    # stack0x references -> local scratch buffers
+    # ---- original stack frame layout: stack locals keep their original offsets (see docs/ARCHITECTURE.md)
+    open_idx = body.index(hdr_m.group(0)) + len(hdr_m.group(0))
+    m_blank = re.compile(r'\n[ \t]*\n').search(body, open_idx + 1)
+    decl_end = m_blank.start() if m_blank else -1
+    decl_block = body[open_idx:decl_end] if decl_end > 0 else ''
+    frame_vars = []
+    new_decl_lines = []
+    for line in decl_block.split('\n'):
+        dm = re.match(r'^\s+(.+?)\s*\b((?:local|[a-zA-Z]+Stack|in_stack)_([0-9a-f]+))\s*((?:\[\d+\]\s*)*);\s*$', line)
+        if dm and not a.no_frame:
+            typ, name, off, dims = dm.group(1).strip(), dm.group(2), int(dm.group(3), 16), dm.group(4).replace(' ', '')
+            if name.startswith('in_stack'):
+                off = (0x100000000 - off) if off > 0x80000000 else -off
+            frame_vars.append((typ, name, off, dims))
+            continue
+        new_decl_lines.append(line)
     stacks = sorted(set(stack_re.findall(body)))
-    if stacks:
-        stats['stack_refs'] += 1
-        decls = ''.join('  undefined1 %s[0x800]; /* RECOMP: decompiler stack reference */\n' % s for s in stacks)
-        body = body.replace(hdr_m.group(0), hdr_m.group(0) + '\n' + decls, 1)
+    frame_defs = ''
+    if frame_vars or stacks:
+        neg = [fv[2] for fv in frame_vars if fv[2] > 0]
+        for st in stacks:
+            v = int(st[7:], 16)
+            if v >= 0x80000000:
+                neg.append(0x100000000 - v)
+        fsize = (max(neg) if neg else 0) + 64
+        fsize = (fsize + 15) & ~15
+        frame_defs = '  unsigned char hm_frame[%d] __attribute__((aligned(16))); /* RECOMP: original stack frame */\n' % fsize
+        frame_defs += '  __builtin_memset(hm_frame, 0xcc, sizeof hm_frame);\n' if a.fill_frame else ''
+        undefs = []
+        for typ, name, off, dims in frame_vars:
+            if off <= 0:
+                frame_defs = ('  %s %s%s;\n' % (typ, name, dims)) + frame_defs
+                continue
+            if typ in ('undefined3', 'uint3', 'int3') and not dims:
+                frame_defs += '#define %s (HM_PART3(hm_frame + %d))\n' % (name, fsize - off)
+                undefs.append(name)
+                continue
+            tn = 'TF_' + name
+            frame_defs += '  typedef %s %s%s;\n' % (typ, tn, dims)
+            frame_defs += '#define %s (*(%s *)(hm_frame + %d))\n' % (name, tn, fsize - off)
+            undefs.append(name)
+        for st in stacks:
+            v = int(st[7:], 16)
+            if v >= 0x80000000:
+                frame_defs += '#define %s (*(undefined1 (*)[0x800])(hm_frame + %d))\n' % (st, fsize - (0x100000000 - v))
+                undefs.append(st)
+            else:
+                frame_defs += '  undefined1 %s[0x800]; /* RECOMP: caller-frame reference, not reproduced */\n' % st
+                stats['caller_frame_refs'] += 1
+        stats['framed_functions'] += 1
+        body = body[:open_idx] + '\n'.join(new_decl_lines) + '\n' + frame_defs + body[decl_end:]
+        body = body.rstrip() + '\n' + ''.join('#undef %s\n' % u for u in undefs)
 
     if e in override:
         stats['overridden'] += 1
