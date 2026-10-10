@@ -40,4 +40,4 @@ target_include_directories(hm_host PRIVATE ${SDL2_INCLUDE_DIRS})
 target_compile_options(hm_host PRIVATE -Wall ${SDL2_CFLAGS_OTHER})
 
 add_executable(hollywood-monsters $<TARGET_OBJECTS:hm_game> $<TARGET_OBJECTS:hm_win32> $<TARGET_OBJECTS:hm_host>)
-target_link_libraries(hollywood-monsters PRIVATE ${SDL2_LDFLAGS} -lpthread -lm)
+target_link_libraries(hollywood-monsters PRIVATE ${SDL2_LDFLAGS} -lpthread -lm -rdynamic)

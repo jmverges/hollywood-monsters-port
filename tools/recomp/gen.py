@@ -55,6 +55,8 @@ with open(os.path.join(a.rx, 'ilt.tsv')) as fh:
     for line in fh:
         k, v = line.split()
         ilt[int(k, 16)] = int(v, 16)
+if ilt:
+    ILT_LO, ILT_HI = min(ilt), max(ilt) + 5
 
 def is_game(e):
     return e is not None and GAME_LO <= e < GAME_HI and not (ILT_LO <= e < ILT_HI)

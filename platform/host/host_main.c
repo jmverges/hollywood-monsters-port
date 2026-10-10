@@ -9,6 +9,9 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <signal.h>
+#include <execinfo.h>
+#include <ucontext.h>
 
 extern void host_init_main_thread(void);
 extern int hm_game_start(const char *cmdline);   /* in platform/win32/hm_start.c */
@@ -64,8 +67,35 @@ static int find_exe(char *out, size_t n)
     return ok;
 }
 
+static void crash_handler(int sig, siginfo_t *si, void *uc)
+{
+    void *frames[48];
+    int n = backtrace(frames, 48);
+    unsigned eip = 0;
+#if defined(__i386__)
+    eip = (unsigned)((ucontext_t *)uc)->uc_mcontext.gregs[REG_EIP];
+#endif
+    fprintf(stderr, "\n*** signal %d (%s) at address %p, eip=%#x\n", sig, strsignal(sig), si->si_addr, eip);
+    backtrace_symbols_fd(frames, n, 2);
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void install_crash_handler(void)
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof sa);
+    sa.sa_sigaction = crash_handler;
+    sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGFPE, &sa, NULL);
+    sigaction(SIGILL, &sa, NULL);
+}
+
 int main(int argc, char **argv)
 {
+    install_crash_handler();
     const char *dir = argc > 1 ? argv[1] : getenv("HM_DATA");
     if (dir && chdir(dir) != 0) { host_log("cannot enter data directory %s", dir); return 1; }
     char exe[256];
