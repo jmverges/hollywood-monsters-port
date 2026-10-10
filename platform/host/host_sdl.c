@@ -294,7 +294,11 @@ static void run_script(void)
             if (f) { fwrite((void *)addr, 1, (size_t)s->b, f); fclose(f); host_log("HM_SCRIPT: dump %s", path); }
         } else if (!strcmp(s->cmd, "trap")) {             /* stop in the debugger at this moment */
             host_log("HM_SCRIPT: trap");
+#ifdef SIGTRAP
             raise(SIGTRAP);
+#else
+            __builtin_trap();                             /* Windows: no SIGTRAP; a debugger stops here too */
+#endif
         } else if (!strcmp(s->cmd, "shot")) {
             save_shot(s->name);
         } else if (!strcmp(s->cmd, "quit")) {

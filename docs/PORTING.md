@@ -10,8 +10,29 @@ Everything above `platform/host/host.h` is plain C with no OS dependencies. A ne
    reserves that range, or any loader trick that places a 3 MB block at that address.
 3. **An implementation of `host.h`**: window + 8bpp-with-palette presentation, input events translated to
    Windows virtual-key codes, threads/mutexes/events, an audio pull callback (stereo S16), and stdio-like
-   file access with case-insensitive names. `host_sdl.c` (~500 lines) is the reference; with SDL2 available
+   file access with case-insensitive names. `host_sdl.c` (~560 lines) is the reference; with SDL2 available
    on the target it may work unchanged.
+
+### Assumptions the generated code makes about the target
+
+These hold on x86 and on 32-bit ARM Linux; check them before starting on anything else.
+
+* **Little-endian.** Partial accesses (`HM_PART3`, `CONCATxy`, a `ushort` view of an `int` global) take the
+  low bytes first, as on x86.
+* **Unaligned 16/32-bit loads and stores** at arbitrary addresses: the per-access global macros read game data
+  wherever the original did. x86 and ARMv7 and later handle this in hardware; older ARM and MIPS do not.
+* **i386 structure layout.** `hm_types.h` has no packing pragmas and relies on the i386 System V rules. Only two
+  CRT structures (`_CRT_DOUBLE`, `_exception`) contain 8-byte members, where ARM's alignment differs; the
+  game's own data is accessed through address macros, not structures.
+* **`long double`** stands in for the x87 80-bit `float10`; a target where it is 64-bit loses precision only in
+  the few intermediate results that use it.
+* **Thread-local storage** (`__thread`) for the CRT `rand` state.
+* **1 ms timer granularity** for `Sleep`, event waits and the multimedia timer thread (`winmm.c`). SDL sets
+  this on Windows; a host without SDL must call `timeBeginPeriod(1)` or equivalent.
+* **Fixed mapping** of 0x400000–0x709000: `mmap` with `MAP_FIXED_NOREPLACE` (Linux 4.17+, `MAP_EXCL` on FreeBSD;
+  elsewhere the address is a hint and the result is checked), `VirtualProtect` over a reserved section on
+  Windows.
+* **Headless tests** use SDL's `offscreen` video driver, which needs SDL 2.0.22 or later.
 
 ## Targets that only run 64-bit code (Apple Silicon, recent Android, consoles)
 

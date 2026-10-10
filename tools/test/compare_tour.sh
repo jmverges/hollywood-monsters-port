@@ -10,6 +10,12 @@ DATA="$(realpath "$1")"
 OUT="$(realpath -m "${2:-$REPO/../work-compare}")"
 BASEPFX="${WINEPREFIX_BASE:-$HOME/.wine-hm}"
 mkdir -p "$OUT"
+ls "$DATA" | grep -qi '^savegame\.000$' || { echo "no SAVEGAME.000 in $DATA (run make_savegame.sh)"; exit 2; }
+[ -f "$HERE/hmpoke.exe" ] || i686-w64-mingw32-gcc -O2 -o "$HERE/hmpoke.exe" "$HERE/hmpoke.c" || exit 2
+if [ ! -d "$BASEPFX" ]; then
+  echo "creating 32-bit Wine prefix $BASEPFX"
+  WINEARCH=win32 WINEPREFIX="$BASEPFX" wineboot -i > /dev/null 2>&1; WINEPREFIX="$BASEPFX" wineserver -w
+fi
 ROOMS=$(grep -oE 'DAT_006ca1be == (0x[0-9a-f]+|[0-9]+)' "$REPO/src/gen/f_0040cd20.c" | awk '{print $3}' | sort -u | tr '\n' ' ')
 for ch in 1 2 3 4 5 6 7 8; do
   d="$OUT/ch$ch"; rm -rf "$d"; mkdir -p "$d"

@@ -52,6 +52,12 @@ static int map_image(const char *exe)
     }
     (void)hdrsize;     /* 0x400000-0x401000 holds this program's own PE headers: leave them alone */
 #else
+#if !defined(MAP_FIXED_NOREPLACE) && defined(MAP_EXCL)
+#define MAP_FIXED_NOREPLACE (MAP_FIXED | MAP_EXCL)      /* FreeBSD */
+#elif !defined(MAP_FIXED_NOREPLACE)
+#define MAP_FIXED_NOREPLACE 0                            /* address is only a hint; checked below */
+#endif
+    /* Linux < 4.17 ignores MAP_FIXED_NOREPLACE and treats the address as a hint: also checked below. */
     void *m = mmap((void *)(unsigned long)IMAGE_BASE, imgsize, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
     if (m == MAP_FAILED || m != (void *)(unsigned long)IMAGE_BASE) {

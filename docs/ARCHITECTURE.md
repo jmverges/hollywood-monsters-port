@@ -12,7 +12,7 @@ The port therefore keeps the **game code** as decompiled C and replaces only the
 
 ```
  +-------------------------------------------------------------+
- | src/gen/f_XXXXXXXX.c   3,870 game functions (generated)     |
+ | src/gen/f_XXXXXXXX.c   3,869 game functions (generated)     |
  | src/override/*.c       hand-written replacements            |
  +-------------------------------------------------------------+
  | platform/win32/        USER32/KERNEL32/WINMM subset,         |
@@ -50,7 +50,20 @@ committed signatures program-wide, every game function is declared with its **fu
 argument is converted to its parameter type. (An earlier version declared them without parameter lists; a
 64-bit `CONCAT22(...)` argument then took two stack slots and shifted the following argument — this is how the
 mine cart in chapter 5 left a trail.) For callers, a `void` function returns `undefined4`: the original code
-sometimes reads whatever the callee left in EAX.
+sometimes reads whatever the callee left in EAX. Declaring a function `void` in its own file and
+`undefined4` for its callers is a mismatch the i386 cdecl ABI tolerates; it would not survive link-time
+optimisation, so do not enable `-flto` without regenerating with `gen.py --strict-void`.
+
+### Register leftovers
+
+The decompiler names values the C code cannot express: `extraout_ECX`/`extraout_EDX` (a register after a
+call, often passed on as an argument), `extraout_var` (the upper bytes of EAX after a function that returns a
+`char`), `in_EAX` (EAX on entry) and `unaff_ESI` etc. (callee-saved registers). In the original they hold
+whatever the register held; in C they are uninitialised locals, which the compiler may treat as any value.
+`gen.py` initialises them to 0 (about 3,000 of them), so the port is deterministic. The ones checked so far
+are dead: the callee reads only the low 16 bits, or masks the result (`FUN_0040fec0` passes the upper half of
+its EDX argument to `FUN_00513da0`, which only uses `(b - a + 1) & 0xffff`). `gen.py --no-zero-regs` leaves them
+uninitialised for comparison.
 
 ### Stack frames
 
@@ -61,7 +74,7 @@ locals into macros. Raw `stack0x…` references map into the same array.
 
 ### Platform emulation
 
-`platform/win32` implements only what the game calls (55 imports; see `src/gen/imports.tsv`):
+`platform/win32` implements only what the game calls (54 imports; see `src/gen/imports.tsv`):
 
 * **USER32**: one window, a message queue fed by host input (mouse, wheel, keys, chars, focus),
   `DispatchMessageA` → the game's `WndProc` (`FUN_0040e870`), cursor functions.
@@ -109,6 +122,7 @@ The COM objects are plain C structs whose first member is the vtable pointer; th
 | Parameter accessed wider than declared | `_param_2` on a `byte` parameter | parameter becomes a 4-byte slot, typed view macro |
 | 64-bit helper result passed as an argument | `CONCAT22(a,b)` | 32-bit `CONCATxy` for x+y ≤ 4, full prototypes |
 | Uninitialised heap read by the game | sprite data past the loaded block | `malloc` fills like the MSVC debug heap (0xCD, 0xFD guards, 0xDD on free) |
+| Register with no C value | `FUN_0040fec0(extraout_ECX, extraout_EDX)` | initialised to 0 (see Register leftovers) |
 
 When a new problem shows up at run time, the usual loop is: reproduce with a script (`tools/test/`), catch
 it in gdb (the binary has debug info and maps 1:1 to `src/gen/f_<address>.c`), compare with the original

@@ -12,3 +12,5 @@ __pycache__/
 *.pyc
 /src/gen/
 tools/test/hmpoke.exe
+/build-*/
+tools/test/hmpeek.exe

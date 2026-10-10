@@ -21,6 +21,7 @@ ap.add_argument('--strict-void', action='store_true', help='keep void return typ
 ap.add_argument('--no-frame', action='store_true', help='do not reproduce the original stack frame layout')
 ap.add_argument('--unprototyped', action='store_true', help='declare game functions without parameter lists (old mode)')
 ap.add_argument('--fill-frame', action='store_true', help='fill reproduced stack frames with 0xCC like MSVC /RTC')
+ap.add_argument('--no-zero-regs', action='store_true', help='leave register leftovers (extraout_/in_/unaff_) uninitialised')
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
 
@@ -269,6 +270,13 @@ for e in sorted(game):
                 off = (0x100000000 - off) if off > 0x80000000 else -off
             frame_vars.append((typ, name, off, dims))
             continue
+        # Register leftovers (ECX/EDX after a call, EAX on entry, callee-saved regs) have no C value.
+        # The original read whatever the register held; give them a defined value so the port is
+        # deterministic and the compiler cannot exploit an uninitialised read (docs/ARCHITECTURE.md).
+        rm = re.match(r'^(\s+.+?\b(?:extraout|in|unaff)_[A-Za-z0-9]+(?:_[0-9]+)?)\s*;\s*$', line)
+        if rm and not a.no_zero_regs:
+            line = rm.group(1) + ' = 0;'
+            stats['zeroed_regs'] += 1
         new_decl_lines.append(line)
     stacks = sorted(set(stack_re.findall(body)))
     frame_defs = ''
@@ -306,6 +314,8 @@ for e in sorted(game):
         stats['framed_functions'] += 1
         body = body[:open_idx] + '\n'.join(new_decl_lines) + '\n' + frame_defs + body[decl_end:]
         body = body.rstrip() + '\n' + ''.join('#undef %s\n' % u for u in undefs)
+    elif decl_block and new_decl_lines != decl_block.split('\n'):
+        body = body[:open_idx] + '\n'.join(new_decl_lines) + body[decl_end:]
 
     if e in override:
         stats['overridden'] += 1

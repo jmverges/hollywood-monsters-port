@@ -51,7 +51,16 @@ if(WIN32)
   set(SDL2_CFLAGS_OTHER "")
 else()
   find_package(PkgConfig REQUIRED)
-  set(ENV{PKG_CONFIG_LIBDIR} "/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig")
+  # The game is 32-bit, so pkg-config must find the 32-bit SDL2. Debian/Ubuntu multiarch keeps it in
+  # /usr/lib/i386-linux-gnu; other systems can pass -DHM_PKG_CONFIG_LIBDIR=... or set PKG_CONFIG_LIBDIR.
+  set(HM_PKG_CONFIG_LIBDIR "" CACHE STRING "pkg-config search path for the 32-bit SDL2")
+  if(HM_PKG_CONFIG_LIBDIR)
+    set(ENV{PKG_CONFIG_LIBDIR} "${HM_PKG_CONFIG_LIBDIR}")
+  elseif(NOT DEFINED ENV{PKG_CONFIG_LIBDIR} AND EXISTS "/usr/lib/i386-linux-gnu/pkgconfig")
+    set(ENV{PKG_CONFIG_LIBDIR} "/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig")
+  elseif(NOT DEFINED ENV{PKG_CONFIG_LIBDIR} AND EXISTS "/usr/lib32/pkgconfig")
+    set(ENV{PKG_CONFIG_LIBDIR} "/usr/lib32/pkgconfig:/usr/share/pkgconfig")   # Arch lib32-sdl2; Fedora: -DHM_PKG_CONFIG_LIBDIR=/usr/lib/pkgconfig
+  endif()
   pkg_check_modules(SDL2 REQUIRED sdl2)
 endif()
 add_library(hm_host OBJECT ${HOST_SOURCES})

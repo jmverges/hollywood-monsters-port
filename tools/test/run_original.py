@@ -7,6 +7,8 @@ usage: run_original.py <script.txt> <shots-dir> <data-dir-with-MONSTERS.EXE> [di
 The game runs fullscreen 640x480 inside a 640x480 Xvfb screen, so script coordinates are screen coordinates.
 Audio: if the snd-dummy kernel module is loaded (sudo modprobe snd-dummy; user in group "audio"), Wine plays
 into that silent real-time card, so dialogues keep their pace; otherwise ALSA's null device is used.
+HM_ALSA_CARD=Loopback plays into the snd-aloop card instead, so the original's audio can be recorded with
+arecord -D plughw:Loopback,1,0 (tools/test/README.md, "Comparing audio").
 """
 import os, subprocess, sys, time
 
@@ -20,13 +22,15 @@ env = dict(os.environ, DISPLAY=disp, WINEDEBUG='-all', WINEARCH='win32',
 # Audio: prefer the snd-dummy card (real-time clock, silent) so speech-driven dialogues keep their real pace;
 # fall back to ALSA's null device, which consumes audio instantly. Never use a real card.
 asound = os.path.join(work, 'asound_hm.conf')
-dummy = 'Dummy' in open('/proc/asound/cards').read() if os.path.exists('/proc/asound/cards') else False
-dev = '{ type hw card Dummy }' if dummy else '{ type null }'
-ctl = '{ type hw card Dummy }' if dummy else '{ type hw card 0 }'
-with open('/usr/share/alsa/alsa.conf') as f, open(asound, 'w') as o:
-    o.write(f.read() + '\npcm.!default %s\nctl.!default %s\n' % (dev, ctl))
+card = os.environ.get('HM_ALSA_CARD', 'Dummy')          # e.g. Loopback, to record the original's audio
+dummy = card in open('/proc/asound/cards').read() if os.path.exists('/proc/asound/cards') else False
+dev = '{ type hw card %s }' % card if dummy else '{ type null }'
+ctl = '{ type hw card %s }' % card if dummy else '{ type hw card 0 }'
+base_conf = '/usr/share/alsa/alsa.conf'
+with open(asound, 'w') as o:
+    o.write((open(base_conf).read() if os.path.exists(base_conf) else '') + '\npcm.!default %s\nctl.!default %s\n' % (dev, ctl))
 env['ALSA_CONFIG_PATH'] = asound
-print('audio device:', 'snd-dummy' if dummy else 'null (dialogues will run fast)')
+print('audio device:', ('ALSA card ' + card) if dummy else 'null (dialogues will run fast)')
 
 xvfb = subprocess.Popen(['Xvfb', disp, '-screen', '0', '640x480x24'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(2)
@@ -45,6 +49,15 @@ except KeyError:
     pass
 game = subprocess.Popen(cmd, cwd=data, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 t0 = time.time()
+
+def helper(name):
+    """Path to a small Win32 helper (hmpoke/hmpeek), built with MinGW on first use."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    exe_path = os.path.join(here, name + '.exe')
+    if not os.path.exists(exe_path):
+        subprocess.run(['i686-w64-mingw32-gcc', '-O2', '-o', exe_path, os.path.join(here, name + '.c')], check=True)
+    return exe_path
+
 
 def x(*a):
     subprocess.run(['xdotool', *a], env=env, capture_output=True)
@@ -82,11 +95,11 @@ for t, cmd, args in events:
         subprocess.run(['convert', 'xwd:-', out], input=xwd.stdout)
         print('shot', out)
     elif cmd.startswith('poke'):
-        poker = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hmpoke.exe')
+        poker = helper('hmpoke')
         r = subprocess.run(['wine', poker, exe, args[0], cmd[4:], args[1]], env=env, capture_output=True, text=True)
         print(r.stdout.strip() or r.stderr.strip())
     elif cmd in ('dump', 'dumpp'):
-        peeker = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hmpeek.exe')
+        peeker = helper('hmpeek')
         out = os.path.join(shots, 'dump_%08x_%d.bin' % (int(args[0], 0), t))
         winpath = 'Z:' + out.replace('/', '\\')
         where = ('*' if cmd == 'dumpp' else '') + args[0]

@@ -7,6 +7,11 @@ sudo dpkg --add-architecture i386 && sudo apt update
 sudo apt install openjdk-21-jdk-headless cmake ninja-build gcc-multilib libsdl2-dev:i386 python3 gdb imagemagick
 ```
 
+Other distributions need the same pieces: a JDK 21, CMake, Ninja, a GCC that can build `-m32`, and the
+**32-bit** SDL2 development package (Fedora `SDL2-devel.i686`, Arch `lib32-sdl2`). CMake looks for the 32-bit
+`sdl2.pc` in `/usr/lib/i386-linux-gnu/pkgconfig` or `/usr/lib32/pkgconfig`; elsewhere pass
+`-DHM_PKG_CONFIG_LIBDIR=/path/to/32-bit/pkgconfig` (Fedora: `/usr/lib/pkgconfig`).
+
 Ghidra 12.1.x unpacked somewhere (default path used by the scripts: `~/.local/opt/ghidra_12.1.4_PUBLIC`).
 
 The port is a **32-bit (i386) build**: the recompiled code still addresses the original 32-bit memory layout.
@@ -24,7 +29,7 @@ Make one writable directory containing `MONSTERS.EXE` and every `RESOURCE.*` fil
 ## Generate, build, run
 
 ```
-tools/recomp/pipeline.sh /path/to/gamedata/MONSTERS.EXE     # ~5 minutes; creates ../work-recomp and src/gen
+tools/recomp/pipeline.sh /path/to/gamedata/MONSTERS.EXE     # 3-5 minutes; creates ../work-recomp and src/gen
 cmake -S . -B build -G Ninja && ninja -C build
 build/hollywood-monsters /path/to/gamedata
 ```
@@ -36,11 +41,16 @@ Re-run `cmake` after regenerating (the source list is a glob).
 
 | Variable | Effect |
 |---|---|
+| `HM_DATA=dir` | data directory when none is given on the command line |
 | `HM_SCALE=n` | window scale factor (default 2) |
 | `HM_FULLSCREEN=1` | desktop fullscreen |
 | `HM_DEBUG=1` | trace Win32/DirectX calls |
 | `HM_TRACE_FILES=1` | trace file opens |
 | `HM_NO_AUDIO=1` | disable audio |
+| `HM_VSYNC=1` | present with vsync (default: no vsync, presentation limited to one frame per 14 ms) |
+| `HM_NO_IDLE_SLEEP=1` | never sleep in `PeekMessage` (default: 1 ms sleep after 32 empty polls, ~17 % CPU instead of 100 %) |
+| `HM_HIDE_CURSOR=1` | never show the system cursor |
+| `HM_NO_WARP=1` | ignore the game's requests to move the mouse pointer |
 | `HM_SCRIPT=file`, `HM_SHOT_DIR=dir` | scripted input and screenshots (see `tools/test/`) |
 | `HM_DUMP_FRAMES=dir`, `HM_DUMP_EVERY=n` | dump every n-th presented frame as PPM |
 

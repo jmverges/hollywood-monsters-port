@@ -1,56 +1,101 @@
 # Headless testing
 
-`run_script.sh <script> <shots-dir> [data-dir]` runs the port under gdb with offscreen video and dummy audio,
-replays scripted input, saves screenshots as PNG, and prints a backtrace if the game crashes.
+All tools take a **data directory**: a copy of the game folder with `MONSTERS.EXE` and its data files.
+Tests write savegames and settings into it, so use a copy, never your only install. When omitted, scripts
+default to `<repo>/../gamedata-fx`. Output directories default to siblings of the checkout
+(`../work-smoke`, `../work-compare`); pass an explicit path to keep them elsewhere.
 
-Script format (one event per line, `#` comments). Times are milliseconds since start, or `+N` relative to
-the previous line. Coordinates are in game pixels (640x480).
+## Running the port with scripted input
+
+`run_script.sh <script> <shots-dir> [data-dir]` runs `build/hollywood-monsters` with offscreen video and dummy
+audio, replays scripted input, and saves screenshots as PNG. A crash prints a backtrace from the signal handler
+in `host_main.c`; function names are `FUN_<original address>`, matching `src/gen/f_<address>.c`. Set `HM_GDB=1`
+to run under gdb instead (slow, only for short scripts).
+
+Script format: one event per line, `#` comments. Times are milliseconds since start, or `+N` relative to the
+previous line. Coordinates are game pixels (640x480). The same format drives the original (below).
+
+| Command | Arguments | Effect |
+|---|---|---|
+| `move` | x y | move the mouse |
+| `click`, `rclick` | x y | left or right click (move, down, up) |
+| `down`, `up`, `rdown`, `rup` | x y | press or release a button (hold the right button for the verb bar) |
+| `key` | vk | Windows virtual-key code (27 Escape, 13 Enter, 32 Space) |
+| `char` | c | type a character |
+| `shot` | name | save the last submitted frame as `<shots-dir>/<name>.png` |
+| `poke8`, `poke16`, `poke32` | addr value | write game memory (debug warps, e.g. room id `0x6ca1be`) |
+| `dump`, `dumpp` | addr len | write `len` bytes at `addr` (`dumpp`: at the pointer stored at `addr`) to a file |
+| `trap` | | stop in the debugger (port only, with `HM_GDB=1`) |
+| `quit` | | exit |
 
 ```
-4000  shot   intro_logo        # save the last presented frame as <shots-dir>/intro_logo.png
-6000  key    27                # Windows virtual-key code (27 = Escape, 13 = Enter, 32 = Space)
-+1500 click  320 400           # left click (move + down + up)
-+1500 rclick 320 400           # right click
-+500  move   100 200
-+500  char   a
+4000  shot   intro_logo
+6000  key    27
++1500 click  172 232           # menu: Cargar
++1500 click  320 60            # first savegame slot
++500  rdown  320 400           # open the verb bar ...
++300  rup    196 462           # ... and pick "Mirar"
 60000 quit
 ```
 
-Useful environment variables: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw` to capture audio
-(44.1 kHz stereo S16), `HM_TRACE_FILES=1`, `HM_DEBUG=1`.
-Without gdb, crashes still print a backtrace (signal handler in `host_main.c`); function names are
-`FUN_<original address>`, matching `src/gen/f_<address>.c`.
-
-## Comparing with the original game
-
-`run_original.py <script> <shots-dir> <data-dir>` plays the same script on the **original** `MONSTERS.EXE`
-under Wine (32-bit prefix) on a 640x480 Xvfb display, driving input with xdotool and taking screenshots with
-xwd. Wine needs `renderer=gdi` (set automatically) and an ALSA device; a null device is configured for the
-process. Put the two screenshot sets side by side to check a behaviour against the original:
-
-```
-python3 tools/test/run_original.py work/cmp1.txt work/orig/shots /path/to/data-copy-1
-tools/test/run_script.sh            work/cmp1.txt work/port/shots /path/to/data-copy-2
-```
-
-Timing differs between runs (animations, timers), so compare states, not pixels.
-`poke` commands are applied with `tools/test/hmpoke.exe` (build it with
-`i686-w64-mingw32-gcc -O2 -o tools/test/hmpoke.exe tools/test/hmpoke.c`), which writes into the
-original's memory through `WriteProcessMemory` under Wine.
+Environment: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw` captures audio (44.1 kHz stereo S16),
+`HM_TRACE_FILES=1` traces file access, `HM_DEBUG=1` traces the Win32 layer.
 
 ## Savegame and smoke test
 
 * `make_savegame.sh <data-dir>` plays the intro (~7 min) and saves "autotest" in slot 0. Most scripts start
-  by loading it (`Esc`, `Cargar`, first slot).
-* `smoke.sh <data-dir>` warps through every room of chapters 1–8 in parallel (room ids are read from the
-  generated `WinMain`) with random clicks, and fails if any run crashes. Use it after changing the pipeline.
+  by loading it (Escape, Cargar, first slot).
+* `smoke.sh <data-dir> [out-dir]` warps through every room of chapters 1–8 in parallel (room ids are read from
+  the generated `WinMain`) with random clicks, and fails if any run crashes. Run it after changing the
+  pipeline, the generator or the platform layer.
 
-Caveat: with the null audio device, the original's speech streams finish almost instantly under Wine, so
-speech-driven dialogues run much faster than in the port (which plays them in real time). Compare scenes
-without dialogue, or wait until the port's dialogue has finished. `compare_shots.py orig/ port/ out.png`
-lists per-image differences and builds a sheet of the worst pairs.
+## Comparing with the original game
 
-`compare_tour.sh <data-dir>` does the whole room-by-room comparison: it warps through every room in the
-original (Wine, one prefix copy per chapter, copied from `WINEPREFIX_BASE`) and in the port, with no clicks,
-and prints per-room pixel differences plus a sheet of the worst pairs. Load `snd-dummy`
-(`sudo modprobe snd-dummy`, user in group `audio`) so the original's dialogues keep their real pace.
+The original `MONSTERS.EXE` runs under Wine as a reference. Setup on Debian/Ubuntu:
+
+```
+sudo dpkg --add-architecture i386 && sudo apt update
+sudo apt install wine wine32:i386 xvfb xdotool x11-apps imagemagick gcc-mingw-w64-i686 python3-numpy
+sudo modprobe snd-dummy                 # silent real-time sound card, keeps dialogue pace
+sudo usermod -aG audio "$USER"          # access to the card (scripts use sg until you log in again)
+```
+
+The Wine prefix (`WINEPREFIX`, default `~/.wine-hm`) must be 32-bit. `compare_tour.sh` creates it if missing;
+by hand: `WINEARCH=win32 WINEPREFIX=~/.wine-hm wineboot -i`. Instances running at the same time need separate
+prefixes and display numbers; a shared prefix gives black screenshots.
+
+`run_original.py <script> <shots-dir> <data-dir> [display]` plays a script on the original on a 640x480 Xvfb
+display: input through xdotool, screenshots through xwd. It sets Wine's `renderer=gdi` and a 640x480 virtual
+desktop in the prefix, and points ALSA at the snd-dummy card (or at the null device when that card is absent,
+which makes speech-driven dialogues finish instantly). `poke` and `dump` go through `hmpoke.exe` and
+`hmpeek.exe` (`WriteProcessMemory`/`ReadProcessMemory`), built with MinGW on first use.
+
+```
+python3 tools/test/run_original.py work/cmp1.txt work/orig/shots /path/to/data-copy-1
+tools/test/run_script.sh            work/cmp1.txt work/port/shots /path/to/data-copy-2
+python3 tools/test/compare_shots.py work/orig/shots work/port/shots work/cmp.png
+```
+
+Timing differs between runs (animations, timers, Wine start-up), so compare states, not exact frames.
+`compare_shots.py` lists per-image differences and builds a sheet of the worst pairs.
+
+`compare_tour.sh <data-dir> [out-dir]` does the room-by-room comparison: it warps through every room in the
+original (one prefix copy per chapter, copied from `WINEPREFIX_BASE`) and in the port, with no clicks, and
+prints per-room pixel differences plus a sheet of the worst pairs.
+
+## Comparing audio
+
+Load the ALSA loopback card, play the original into it, and record the other end:
+
+```
+sudo modprobe snd-aloop
+arecord -D plughw:Loopback,1,0 -f S16_LE -r 44100 -c 2 -d 84 orig.wav &
+HM_ALSA_CARD=Loopback python3 tools/test/run_original.py script.txt orig-shots data-copy-1
+SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=$PWD/port.raw tools/test/run_script.sh script.txt port-shots data-copy-2
+python3 tools/test/compare_audio.py orig.wav port.raw
+```
+
+`compare_audio.py` finds each second of the port's audio in the original's recording and prints the
+correlation and the offset between the two timelines. Music and speech clips should match with correlation
+near 1.0 at a constant offset (the offset is Wine's start-up time). Clips the game picks at random, such as the
+newsboy's shouts in the intro, start at different moments in every run, so their offset jumps.
