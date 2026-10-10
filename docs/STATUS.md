@@ -22,12 +22,16 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Audio vs original | The original's output recorded through the ALSA loopback card under Wine and compared with the port's (`compare_audio.py`), first 80 s of the intro: every second of music matches the original's samples (correlation 0.97–1.00) at a constant offset, and every speech clip the port plays is found in the original (0.97–0.98). The newsboy's shouts are picked at random, so their order differs between any two runs, of either version |
 | Verb bar and conversation vs original | The same script on both: opening the verb bar, picking each of the 7 verbs, and talking to Junior in the first scene. Screens match within 1.1 % of pixels for 40 s of conversation. The third and fourth spoken lines are picked from three recorded lines, depending on timing: two runs of the original played two different pairs, and the port plays a third pair, or the original's first pair when the click comes 0.9 s later. Every line either version plays is found in the other's recordings (correlation 0.98–1.00). This comparison found the cursor bug below |
 | Verbs vs original | Look at, open, pick up and use on the doghouse, look at and pick up on Junior (`tools/test/scripts/verbs_first_scene.txt`): screens within 1.3 %, and the same four spoken answers in both, at a constant offset; the other two actions are silent in both |
+| Inventory puzzle vs original | Climbing to the terrace after talking to Junior, picking up the glass, opening the inventory and using the glass with the punch bowl (`scripts/glass_punch.txt`): the glass turns into a glass of punch in both, screens within 1.6 % |
+| Start-up hang | Found while testing: a bug of the original freezes about 1 start in 50 (see ARCHITECTURE.md, "Bugs of the original game"). Confirmed in the port with `HM_SEED=1007` and `HM_ORIGINAL_BUGS=1`; fixed by default |
 | Register leftovers | Since all ~3,000 are initialised to 0, the smoke test still passes in all 77 rooms |
 
 ## Not verified yet
 
 * Audio by ear (compared sample by sample with the original, not listened to).
-* Inventory, dialogue choices, puzzles, chapter changes, end game.
+* Dialogue choices, longer puzzle chains, chapter changes by play (only by warp so far), end game.
+* The start-up hang under the original executable (shown by simulating its random generator and reading its
+  machine code, not by catching the original in the act).
 * Pointer warps in interactive play on Wayland, where SDL cannot move the system pointer. The game re-centres
   and clamps its pointer with `SetCursorPos` every frame; the host reports the warped position until the next
   real motion, which is the Windows behaviour, but this was only tested with scripted input.

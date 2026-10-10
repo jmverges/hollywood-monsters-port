@@ -41,7 +41,17 @@ long crt__ftell(FILE *f) { return host_ftell(f); }
 
 /* rand: same LCG as MSVC, per-thread state like the original CRT */
 static __thread unsigned holdrand = 1;
-undefined4 crt__srand(unsigned seed) { holdrand = seed; return 0; }
+undefined4 crt__srand(unsigned seed)
+{
+    const char *fixed = hm_getenv("HM_SEED");          /* tests: replace the game's srand(time) seed */
+    if (fixed) {
+        seed = 0;
+        for (const char *c = fixed; *c >= '0' && *c <= '9'; c++) seed = seed * 10 + (unsigned)(*c - '0');
+    }
+    HM_TRACE("srand(%u)", seed);
+    holdrand = seed;
+    return 0;
+}
 int crt__rand(void) { holdrand = holdrand * 214013u + 2531011u; return (int)((holdrand >> 16) & 0x7fff); }
 
 /* time */

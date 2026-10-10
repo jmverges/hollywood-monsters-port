@@ -49,6 +49,8 @@ Re-run `cmake` after regenerating (the source list is a glob).
 | `HM_NO_AUDIO=1` | disable audio |
 | `HM_VSYNC=1` | present with vsync (default: no vsync, presentation limited to one frame per 14 ms) |
 | `HM_NO_IDLE_SLEEP=1` | never sleep in `PeekMessage` (default: 1 ms sleep after 32 empty polls, ~17 % CPU instead of 100 %) |
+| `HM_SEED=n` | replace the game's `srand(time)` seed, for reproducible runs |
+| `HM_ORIGINAL_BUGS=1` | disable the fixes for bugs of the original game (`tools/recomp/fixups.py`) |
 | `HM_HIDE_CURSOR=1` | never show the system cursor |
 | `HM_NO_WARP=1` | ignore the game's requests to move the mouse pointer |
 | `HM_SCRIPT=file`, `HM_SHOT_DIR=dir` | scripted input and screenshots (see `tools/test/`) |

@@ -1,0 +1,32 @@
+# Talk to Junior, climb to the terrace, pick up the glass, open the inventory (pointer at the bottom edge) and
+# use the glass with the punch bowl: the glass in the inventory turns red. Needs the make_savegame.sh save.
+6000 key 27
+9000 click 172 232
+12000 click 320 60
+18000 rdown 190 400
+18800 move 10 462
+19600 rup 10 462
+20300 click 190 400
+62000 click 130 300
+72000 move 485 270
+72400 rdown 485 270
+73200 move 35 462
+74000 rup 35 462
+74700 click 485 270
+86000 move 320 479
+86300 move 320 479
+87000 shot u0
+87500 click 300 313
+88000 shot u1
+88800 click 353 367
+89500 shot u2
+90000 move 380 262
+90300 move 380 262
+91000 shot u3
+91500 click 380 262
+95000 shot u4
+100000 shot u5
+104000 move 320 479
+104300 move 320 479
+105500 shot u6
+106000 quit

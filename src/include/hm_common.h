@@ -8,3 +8,6 @@
 #else
 #include "hm_funcs.h"
 #endif
+
+/* Fixes for bugs in the original game (tools/recomp/fixups.py, platform/win32/fixes.c). */
+void hm_fix_shuffle_last_slot(unsigned char *table, unsigned slot);

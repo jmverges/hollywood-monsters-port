@@ -106,6 +106,17 @@ The COM objects are plain C structs whose first member is the vtable pointer; th
 8. **Generate** (`gen.py`): globals → address macros, thunks → targets, partial accesses (`x._1_3_`) →
    pointer arithmetic, stack frames, prototypes, imports list.
 
+## Bugs of the original game
+
+Some bugs are in the original program, not in the recompilation; the port reproduces them faithfully.
+`tools/recomp/fixups.py` lists the ones worth fixing: each replaces an exact snippet in one generated function
+with a call into `platform/win32/fixes.c`, and generation fails if the snippet disappears. The fixed code only
+changes behaviour where the original would hang or crash, and `HM_ORIGINAL_BUGS=1` turns the fixes off.
+
+| Bug | Effect in the original | Fix |
+|---|---|---|
+| Start-up shuffle in `FUN_00512c00` (48 values, slot i never gets i) can be left with only 48 for slot 48 | freezes before the first frame for about 1.9 % of `srand(time)` seeds (seed 1007 reproduces it with `HM_SEED`) | move 48 into a random earlier slot first |
+
 ## Known decompiler pitfalls (and what handles them)
 
 | Pitfall | Example | Handled by |

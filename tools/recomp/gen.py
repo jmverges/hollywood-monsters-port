@@ -13,6 +13,9 @@ import argparse, os, re, sys, collections
 GAME_LO, GAME_HI = 0x401000, 0x536f60      # game code; CRT/library code starts at GAME_HI
 ILT_LO, ILT_HI = 0x401005, 0x405bb9        # incremental-link jump thunks
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fixups import FIXUPS  # noqa: E402  (fixes for bugs in the original game)
+
 ap = argparse.ArgumentParser()
 ap.add_argument('--rx', required=True)
 ap.add_argument('--out', required=True)
@@ -316,6 +319,13 @@ for e in sorted(game):
         body = body.rstrip() + '\n' + ''.join('#undef %s\n' % u for u in undefs)
     elif decl_block and new_decl_lines != decl_block.split('\n'):
         body = body[:open_idx] + '\n'.join(new_decl_lines) + body[decl_end:]
+
+    for fx in FIXUPS:
+        if fx['addr'] == e:
+            if fx['old'] not in body:
+                sys.exit('fixup for %08x: snippet not found in the generated code (%s)' % (e, fx['why'][:60]))
+            body = body.replace(fx['old'], fx['new'], 1)
+            stats['fixups'] += 1
 
     if e in override:
         stats['overridden'] += 1
