@@ -49,3 +49,8 @@ Caveat: with the null audio device, the original's speech streams finish almost 
 speech-driven dialogues run much faster than in the port (which plays them in real time). Compare scenes
 without dialogue, or wait until the port's dialogue has finished. `compare_shots.py orig/ port/ out.png`
 lists per-image differences and builds a sheet of the worst pairs.
+
+`compare_tour.sh <data-dir>` does the whole room-by-room comparison: it warps through every room in the
+original (Wine, one prefix copy per chapter, copied from `WINEPREFIX_BASE`) and in the port, with no clicks,
+and prints per-room pixel differences plus a sheet of the worst pairs. Load `snd-dummy`
+(`sudo modprobe snd-dummy`, user in group `audio`) so the original's dialogues keep their real pace.
