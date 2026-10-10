@@ -50,8 +50,8 @@ BOOL GetDiskFreeSpaceA(LPCSTR lpRootPathName, LPDWORD lpSectorsPerCluster, LPDWO
     (void)lpRootPathName;
     if (lpSectorsPerCluster) *lpSectorsPerCluster = 8;
     if (lpBytesPerSector) *lpBytesPerSector = 512;
-    if (lpNumberOfFreeClusters) *lpNumberOfFreeClusters = 0x100000;
-    if (lpTotalNumberOfClusters) *lpTotalNumberOfClusters = 0x200000;
+    if (lpNumberOfFreeClusters) *lpNumberOfFreeClusters = 0x40000;      /* 1 GB: the game multiplies these in 32 bits */
+    if (lpTotalNumberOfClusters) *lpTotalNumberOfClusters = 0x80000;
     return 1;
 }
 

@@ -8,10 +8,16 @@
 #include <strings.h>
 #include <dirent.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+/* The Windows executable is linked at 0x400000 with an empty section reserving 0x401000-0x709000
+ * (see platform/host/win32_reserve.c), so the game's image range is ours by construction. */
+#else
 #include <sys/mman.h>
 #include <signal.h>
 #include <execinfo.h>
 #include <ucontext.h>
+#endif
 
 extern void host_init_main_thread(void);
 extern int hm_game_start(const char *cmdline);   /* in platform/win32/hm_start.c */
@@ -37,6 +43,15 @@ static int map_image(const char *exe)
     const unsigned char *opt = d + pe + 24;
     unsigned base = rd32(opt + 28), imgsize = rd32(opt + 56), hdrsize = rd32(opt + 60);
     if (base != IMAGE_BASE) { host_log("unexpected image base %#x", base); return 0; }
+#ifdef _WIN32
+    void *m = (void *)(unsigned long)IMAGE_BASE;
+    DWORD old;
+    if (!VirtualProtect((char *)m + 0x1000, imgsize - 0x1000, PAGE_READWRITE, &old)) {
+        host_log("cannot unprotect the reserved image range (%lu)", GetLastError());
+        return 0;
+    }
+    (void)hdrsize;     /* 0x400000-0x401000 holds this program's own PE headers: leave them alone */
+#else
     void *m = mmap((void *)(unsigned long)IMAGE_BASE, imgsize, PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
     if (m == MAP_FAILED || m != (void *)(unsigned long)IMAGE_BASE) {
@@ -44,6 +59,7 @@ static int map_image(const char *exe)
         return 0;
     }
     memcpy(m, d, hdrsize);
+#endif
     const unsigned char *sh = opt + optsz;
     for (unsigned i = 0; i < nsec; i++, sh += 40) {
         unsigned vsize = rd32(sh + 8), va = rd32(sh + 12), rsize = rd32(sh + 16), rptr = rd32(sh + 20);
@@ -67,6 +83,15 @@ static int find_exe(char *out, size_t n)
     return ok;
 }
 
+#ifdef _WIN32
+static LONG WINAPI crash_filter(EXCEPTION_POINTERS *ep)
+{
+    fprintf(stderr, "\n*** exception %#lx at eip=%#lx (address %p)\n", ep->ExceptionRecord->ExceptionCode,
+            (unsigned long)ep->ContextRecord->Eip, ep->ExceptionRecord->ExceptionAddress);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+static void install_crash_handler(void) { SetUnhandledExceptionFilter(crash_filter); }
+#else
 static void crash_handler(int sig, siginfo_t *si, void *uc)
 {
     void *frames[48];
@@ -92,6 +117,7 @@ static void install_crash_handler(void)
     sigaction(SIGFPE, &sa, NULL);
     sigaction(SIGILL, &sa, NULL);
 }
+#endif
 
 int main(int argc, char **argv)
 {

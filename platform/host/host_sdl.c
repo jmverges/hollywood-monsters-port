@@ -519,7 +519,11 @@ void host_localtime(long long t, int *out9)
 {
     time_t tt = (time_t)t;
     struct tm tm;
+#ifdef _WIN32
+    localtime_s(&tm, &tt);
+#else
     localtime_r(&tt, &tm);
+#endif
     out9[0] = tm.tm_sec; out9[1] = tm.tm_min; out9[2] = tm.tm_hour; out9[3] = tm.tm_mday; out9[4] = tm.tm_mon;
     out9[5] = tm.tm_year; out9[6] = tm.tm_wday; out9[7] = tm.tm_yday; out9[8] = tm.tm_isdst;
 }
