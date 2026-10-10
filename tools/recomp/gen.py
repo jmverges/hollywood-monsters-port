@@ -89,6 +89,9 @@ for e, d in funcs.items():
     c, orig = cname_for_entry(e)
     if c:
         name_map[d['name']] = c
+for k in list(name_map):              # Ghidra prints "FID_conflict:x" as "FID_conflict_x"
+    if ':' in k:
+        name_map.setdefault(k.replace(':', '_'), name_map[k])
 for nm, ds in byname.items():          # externals (no numeric entry)
     for d in ds:
         if d['external']:
@@ -96,7 +99,7 @@ for nm, ds in byname.items():          # externals (no numeric entry)
 
 # ---------------------------------------------------------------- per-function generation
 tok_re = re.compile(r'FID_conflict:[A-Za-z0-9_]+|[A-Za-z_][A-Za-z0-9_]*')
-lab_re = re.compile(r'&LAB_([0-9a-f]{8})')
+lab_re = re.compile(r'&(?:LAB|DAT|UNK)_([0-9a-f]{8})\b')
 stack_re = re.compile(r'\bstack0x[0-9a-f]+\b')
 
 def type_decl(tmpl, name, size):
@@ -161,6 +164,8 @@ for e in sorted(game):
 
     def lab_sub(m):
         t = int(m.group(1), 16)
+        if not m.group(0).startswith('&LAB_') and not (t in ilt or t in game):
+            return m.group(0)
         r = resolve(t)
         if isinstance(r, int) and r in game:
             return '(' + ident(game[r]['name']) + ')'
@@ -170,7 +175,8 @@ for e in sorted(game):
                 used_imports[c] += 1
                 imports.setdefault(c, ('crt' if orig else 'ext', funcs[r]['name'], funcs[r]['sig']))
                 return '(' + c + ')'
-        stats['unresolved_lab'] += 1
+        if m.group(0).startswith('&LAB_'):
+            stats['unresolved_lab'] += 1
         return m.group(0)
     body = lab_re.sub(lab_sub, body)
 

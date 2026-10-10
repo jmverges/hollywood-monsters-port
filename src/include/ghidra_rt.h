@@ -161,3 +161,8 @@ typedef long long hm_s64;
 #define HM_PART3(p) ((unsigned int)((const unsigned char *)(p))[0] | ((unsigned int)((const unsigned char *)(p))[1] << 8) | ((unsigned int)((const unsigned char *)(p))[2] << 16))
 #define HM_SET3(p, v) do { unsigned int hm__v = (unsigned int)(v); unsigned char *hm__p = (unsigned char *)(p); \
     hm__p[0] = (unsigned char)hm__v; hm__p[1] = (unsigned char)(hm__v >> 8); hm__p[2] = (unsigned char)(hm__v >> 16); } while (0)
+/* Ghidra prints inlined string stores as builtin_strncpy(dst, "literal", n) */
+#define builtin_strncpy(d, s, n) __builtin_strncpy((char *)(d), (const char *)(s), (n))
+#define builtin_memcpy(d, s, n) __builtin_memcpy((void *)(d), (const void *)(s), (n))
+/* NAN(x): x87 unordered-compare flag, i.e. isnan */
+#define NAN(x) __builtin_isnan(x)
