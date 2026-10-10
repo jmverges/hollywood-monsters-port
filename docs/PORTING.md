@@ -54,6 +54,17 @@ truncating a pointer to 32 bits is lossless, and make every *memory-resident* po
   with explicit conversion at each use. Pointer-typed *registers/locals* (`puVar5`) may stay native.
 * The emulated COM objects (vtables) must also be laid out with 32-bit slots.
 
+Size of the job, counted with regular expressions over the generated code (2026-10-10, approximate):
+
+| What | Count | Route A needs |
+|---|---|---|
+| Globals accessed with a pointer type | 343 of 5,214 globals, 2,216 accesses in 440 functions | a 32-bit slot and a conversion at each access |
+| Globals accessed as `long`/`ulong` | 66 | `int32_t`/`uint32_t` |
+| Structure types in `hm_types.h` | 120, with 119 pointer and 260 `long` members | 32-bit members |
+| Reproduced stack-frame variables of pointer type | 46 (2 of `long` type) | 32-bit slots |
+| Address arithmetic on integers, `*(T *)(x + n)` | 2,201 | nothing, if everything lives below 4 GB |
+| Casts from integer locals to pointers | 392 | nothing, if everything lives below 4 GB |
+
 The hard part is the last two points: Ghidra's types decide which members are pointers, and a wrong guess
 silently truncates or widens a field. The per-access types exported by `ExportRecomp.java` are the right
 starting point, because they already reflect the size of every memory access.
