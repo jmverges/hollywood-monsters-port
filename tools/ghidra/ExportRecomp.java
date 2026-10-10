@@ -61,6 +61,11 @@ public class ExportRecomp extends GhidraScript {
                         if (hs != null && hs.getStorage() != null && hs.getStorage().getMinAddress() != null)
                             addr = hs.getStorage().getMinAddress().toString();
                     } catch (Exception e) { }
+                    String repAddr = "";
+                    Varnode rep = hv.getRepresentative();
+                    if (rep != null && rep.getAddress() != null && rep.getAddress().isMemoryAddress())
+                        repAddr = rep.getAddress().toString();
+                    if (!repAddr.isEmpty()) addr = repAddr;   // the accessed address (may be inside a larger symbol)
                     if (addr.isEmpty() && hv.getRepresentative() != null && hv.getRepresentative().getAddress() != null)
                         addr = hv.getRepresentative().getAddress().toString();
                     DataType dt = null; int size = hv.getSize();

@@ -18,6 +18,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('--rx', required=True)
 ap.add_argument('--out', required=True)
 ap.add_argument('--override', default=None, help='dir with hand-written replacements f_<addr>.c')
+ap.add_argument('--strict-void', action='store_true', help='keep void return types in caller prototypes (diagnostics)')
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
 
@@ -146,7 +147,7 @@ for e in sorted(game):
             v[0] = safe
             stats['sanitized_names'] += 1
     # stack-parameter partial writes: _param_N -> 32-bit view of param_N
-    body = re.sub(r'\b_(param_\d+)\b', r'(*(undefined4 *)&\1)', body)
+    body = re.sub(r'(?<![\w.>])_((?:param|local|[a-zA-Z]*Stack|in_stack|stack)_?[0-9a-fA-F]+)\b', r'(*(undefined4 *)&\1)', body)
     gvars = {v[0] for v in vars_}
     for t in set(tok_re.findall(body)):
         m = re.match(r'^(?:DAT|UNK|PTR_DAT)_([0-9a-f]{8})$', t)
@@ -247,6 +248,10 @@ for e in sorted(game):
     defs, undefs = [], []
     for v in vars_:
         tok, addr, tmpl, size = v[0], v[1], v[2], v[3]
+        mname = re.search(r'([0-9a-f]{8})$', tok)
+        if mname and not tok.startswith(('register', 'unique', 'stack', 'const')) and addr and addr != mname.group(1):
+            addr = mname.group(1)          # the address in the name is the accessed one (offset inside a symbol)
+            stats['addr_from_name'] += 1
         if not addr:
             m = re.search(r'([0-9a-f]{8})$', tok)
             addr = m.group(1) if m else ''
@@ -313,7 +318,7 @@ with open(os.path.join(a.out, 'hm_funcs.h'), 'w') as fh:
         if re.search(r'\b(float|double|float10)\b', params):
             decl = proto
         else:
-            if ret == 'void':
+            if ret == 'void' and not a.strict_void:
                 ret = 'undefined4'
             decl = '%s %s()' % (ret, fname)
         fh.write('#ifndef HM_SELF_%s\n%s;\n#endif\n' % (fname, decl))
@@ -366,6 +371,8 @@ def fix_types(src):
     s = re.sub(r'enum (\w+) \{\s*\};', '', s)
     out, seen = [], set()
     for line in s.split('\n'):
+        if re.match(r'^\s*\w+\s*$', line):          # stray builtin names (e.g. "float10")
+            continue
         m = re.match(r'^typedef (.*);$', line)
         if m and '{' not in line and '(' not in line:
             names = re.findall(r'[\s*,](\w+)\s*(?:\[\d*\])?\s*(?=,|$)', m.group(1))
