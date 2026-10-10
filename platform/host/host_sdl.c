@@ -218,6 +218,10 @@ static struct script_ev *g_script;
 static int g_script_n, g_script_i, g_script_loaded;
 static unsigned g_script_t0;
 static int g_mx = 320, g_my = 240;
+/* SetCursorPos semantics: after a warp, GetCursorPos reports the new position until the pointer really moves.
+ * SDL cannot warp on some systems (Wayland) and may report the old position until the next event elsewhere. */
+static int g_warp_pending, g_warp_x, g_warp_y;
+
 static struct host_event g_inject[8];
 static int g_inject_n;
 
@@ -319,7 +323,7 @@ int host_poll_event(struct host_event *ev)
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
         case SDL_QUIT: ev->type = HOST_EV_QUIT; return 1;
-        case SDL_MOUSEMOTION: ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
+        case SDL_MOUSEMOTION: g_warp_pending = 0; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
         case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
             ev->type = e.type == SDL_MOUSEBUTTONDOWN ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
             ev->x = e.button.x; ev->y = e.button.y;
@@ -368,6 +372,7 @@ int host_poll_event(struct host_event *ev)
 void host_get_mouse(int *x, int *y)
 {
     if (g_script_n) { *x = g_mx; *y = g_my; return; }
+    if (g_warp_pending) { *x = g_warp_x; *y = g_warp_y; return; }
     int wx = 0, wy = 0;
     SDL_GetMouseState(&wx, &wy);
     if (g_ren) to_logical(wx, wy, x, y); else { *x = wx; *y = wy; }
@@ -375,7 +380,10 @@ void host_get_mouse(int *x, int *y)
 
 void host_set_mouse(int x, int y)
 {
-    if (!g_win || !g_ren || getenv("HM_NO_WARP")) return;
+    if (getenv("HM_NO_WARP")) return;
+    if (g_script_n) { g_mx = x; g_my = y; }   /* scripted pointer: a warp moves it, as SetCursorPos does on Windows */
+    g_warp_pending = 1; g_warp_x = x; g_warp_y = y;
+    if (!g_win || !g_ren) return;
     int ww, wh; SDL_GetWindowSize(g_win, &ww, &wh);
     if (!g_tw || !g_th) return;
     float sx = (float)ww / g_tw, sy = (float)wh / g_th, s = sx < sy ? sx : sy;

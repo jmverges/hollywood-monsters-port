@@ -180,6 +180,7 @@ int ShowCursor(BOOL bShow)
 
 BOOL SetCursorPos(int X, int Y)
 {
+    HM_TRACE("SetCursorPos(%d, %d)", X, Y);
     g_mouse_x = X; g_mouse_y = Y;
     host_set_mouse(X, Y);
     return 1;

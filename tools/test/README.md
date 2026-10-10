@@ -31,12 +31,25 @@ previous line. Coordinates are game pixels (640x480). The same format drives the
 ```
 4000  shot   intro_logo
 6000  key    27
-+1500 click  172 232           # menu: Cargar
-+1500 click  320 60            # first savegame slot
-+500  rdown  320 400           # open the verb bar ...
-+300  rup    196 462           # ... and pick "Mirar"
++3000 click  172 232           # menu: Cargar
++3000 click  320 60            # first savegame slot
++6000 rdown  190 400           # hold the right button over Junior: the verb bar opens ...
++800  move   25 462            # ... pick "Hablar" ...
++800  rup    25 462            # ... and release on the bar
++700  click  190 400           # left click on Junior: Sue walks over and talks
 60000 quit
 ```
+
+The game draws its own pointer and moves the real one with `SetCursorPos` every frame, clamping it to where
+it is allowed to be (the port's scripted pointer follows those warps, as Windows does). While the verb bar is
+open the pointer is held in a narrow band, so the verb depends on the x coordinate of the move, not on where the
+verb is drawn:
+
+| Verb | Hablar | Coger | Mirar | Usar | Abrir | Cerrar | Dar |
+|---|---|---|---|---|---|---|---|
+| x on `move`/`rup` (y 462) | 25 | 35 | 45 | 55 | 65 | 75 | 85 |
+
+Releasing above the bar cancels. The selected verb applies to the next left click.
 
 Environment: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw` captures audio (44.1 kHz stereo S16),
 `HM_TRACE_FILES=1` traces file access, `HM_DEBUG=1` traces the Win32 layer.
