@@ -331,8 +331,20 @@ static int g_inject_n;
 
 /* Touch screen as mouse (PS Vita, Legion Go): a tap is a left click; dragging aims and the click comes on lifting
  * the finger; holding still for half a second is the right button (the verb bar), then sliding moves the
- * pointer slowly, like a mouse, and lifting releases it. */
-static struct { int active, right, moved; long long id; Uint32 t0; float x0, y0, lx, ly; } g_touch;
+ * pointer slowly, like a mouse, and lifting releases it. A second finger is Escape (menu, skip the intro). */
+static struct { int active, right, moved, cancel; long long id; Uint32 t0; float x0, y0, lx, ly; } g_touch;
+
+/* A key press as the keyboard produces it: key down, the character (the game reads Escape and Enter as WM_CHAR),
+ * key up. */
+static void inject_key(int vk, int down)
+{
+    struct host_event e;
+    memset(&e, 0, sizeof e);
+    if (g_inject_n < 8) { e.type = down ? HOST_EV_KEYDOWN : HOST_EV_KEYUP; e.vk = vk; g_inject[g_inject_n++] = e; }
+    if (down && (vk == 0x1B || vk == 0x0D || vk == 0x20) && g_inject_n < 8) {
+        e.type = HOST_EV_CHAR; e.vk = 0; e.ch = vk; g_inject[g_inject_n++] = e;
+    }
+}
 
 static void inject_pointer(int type, int button)
 {
@@ -354,8 +366,15 @@ static void touch_event(const SDL_Event *e)
     to_logical((int)(e->tfinger.x * ww), (int)(e->tfinger.y * wh), &lx, &ly);
     float gx = (float)lx, gy = (float)ly;
     if (e->type == SDL_FINGERDOWN) {
-        if (g_touch.active) return;                                  /* one finger at a time */
-        g_touch.active = 1; g_touch.right = 0; g_touch.moved = 0; g_touch.id = (long long)e->tfinger.fingerId;
+        if (g_touch.active) {                                        /* a second finger: Escape (menu, skip) */
+            if (!g_touch.cancel) {
+                if (g_touch.right) inject_pointer(HOST_EV_MOUSEUP, 3);
+                inject_key(27, 1); inject_key(27, 0);
+                g_touch.cancel = 1;
+            }
+            return;
+        }
+        g_touch.active = 1; g_touch.right = 0; g_touch.moved = 0; g_touch.cancel = 0; g_touch.id = (long long)e->tfinger.fingerId;
         g_touch.t0 = SDL_GetTicks(); g_touch.x0 = g_touch.lx = gx; g_touch.y0 = g_touch.ly = gy;
         g_pad_mode = 1; g_px = gx; g_py = gy; g_warp_pending = 0; g_cursor_dirty = 1; g_mouse_in = 1;
         if (g_script_n) { g_mx = (int)g_px; g_my = (int)g_py; }
@@ -363,6 +382,10 @@ static void touch_event(const SDL_Event *e)
         return;
     }
     if (!g_touch.active || (long long)e->tfinger.fingerId != g_touch.id) return;
+    if (g_touch.cancel) {                                            /* two-finger tap: no click */
+        if (e->type == SDL_FINGERUP) g_touch.active = 0;
+        return;
+    }
     if (e->type == SDL_FINGERMOTION) {
         if (g_touch.right) {
             g_px += (gx - g_touch.lx) * 0.15f; g_py += (gy - g_touch.ly) * 0.15f;
@@ -387,7 +410,7 @@ static void touch_event(const SDL_Event *e)
 
 static void touch_hold(void)
 {
-    if (g_touch.active && !g_touch.right && !g_touch.moved && SDL_GetTicks() - g_touch.t0 >= 500) {
+    if (g_touch.active && !g_touch.cancel && !g_touch.right && !g_touch.moved && SDL_GetTicks() - g_touch.t0 >= 500) {
         g_touch.right = 1;
         inject_pointer(HOST_EV_MOUSEDOWN, 3);
     }
@@ -440,13 +463,16 @@ static void run_script(void)
             int btn = right ? 3 : 1;
             if (strcmp(base, "move") && strcmp(base, "up")) { e.type = HOST_EV_MOUSEDOWN; e.button = btn; g_inject[g_inject_n++] = e; }
             if (!strcmp(base, "click") || !strcmp(base, "rclick") || !strcmp(base, "up")) { e.type = HOST_EV_MOUSEUP; e.button = btn; g_inject[g_inject_n++] = e; }
-        } else if (!strcmp(s->cmd, "tdown") || !strcmp(s->cmd, "tmove") || !strcmp(s->cmd, "tup")) {
+        } else if (!strcmp(s->cmd, "tdown") || !strcmp(s->cmd, "tmove") || !strcmp(s->cmd, "tup") ||
+                   !strcmp(s->cmd, "t2down") || !strcmp(s->cmd, "t2up")) {
             /* touch screen (tdown/tmove/tup X Y): pushed as SDL finger events, like the Vita's front panel */
             if (g_win && g_ren) {
                 SDL_Event te;
                 memset(&te, 0, sizeof te);
-                te.type = s->cmd[1] == 'd' ? SDL_FINGERDOWN : s->cmd[1] == 'm' ? SDL_FINGERMOTION : SDL_FINGERUP;
-                te.tfinger.touchId = 1; te.tfinger.fingerId = 1;
+                int second = s->cmd[1] == '2';
+                char kind = s->cmd[second ? 2 : 1];
+                te.type = kind == 'd' ? SDL_FINGERDOWN : kind == 'm' ? SDL_FINGERMOTION : SDL_FINGERUP;
+                te.tfinger.touchId = 1; te.tfinger.fingerId = second ? 2 : 1;
                 int ww, wh, wx, wy;
                 SDL_GetWindowSize(g_win, &ww, &wh);
                 SDL_RenderLogicalToWindow(g_ren, s->a + 0.5f, s->b + 0.5f, &wx, &wy);
@@ -538,15 +564,23 @@ int host_poll_event(struct host_event *ev)
     if (pad_move(ev)) return 1;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
+        case SDL_JOYBUTTONDOWN: {
+            static int jlogged;
+            if (jlogged++ < 20) host_log("joystick button %d", e.jbutton.button);
+            break;
+        }
         case SDL_CONTROLLERDEVICEADDED:
             if (!g_pad) g_pad = SDL_GameControllerOpen(e.cdevice.which);
             break;
         case SDL_CONTROLLERBUTTONDOWN: case SDL_CONTROLLERBUTTONUP: {
             int down = e.type == SDL_CONTROLLERBUTTONDOWN;
             int b = e.cbutton.button;
-            if (getenv("HM_DEBUG")) host_log("controller button %d %s", b, down ? "down" : "up");
+            static int logged;
+            if (getenv("HM_DEBUG") || logged < 40) { logged++; host_log("controller button %d %s", b, down ? "down" : "up"); }
             if (b == SDL_CONTROLLER_BUTTON_START || b == SDL_CONTROLLER_BUTTON_BACK) {
-                ev->type = down ? HOST_EV_KEYDOWN : HOST_EV_KEYUP; ev->vk = 27; return 1;
+                inject_key(27, down);
+                *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n);
+                return 1;
             }
             if (!g_pad_mode) { int x, y; host_get_mouse(&x, &y); g_px = (float)x; g_py = (float)y; g_pad_mode = 1; }
             if (b == SDL_CONTROLLER_BUTTON_Y && down) {    /* inventory: the game opens it at the bottom edge */
