@@ -365,6 +365,12 @@ static void touch_event(const SDL_Event *e)
     SDL_GetWindowSize(g_win, &ww, &wh);
     to_logical((int)(e->tfinger.x * ww), (int)(e->tfinger.y * wh), &lx, &ly);
     float gx = (float)lx, gy = (float)ly;
+    static int tlogged;
+    if (tlogged < 60) {
+        tlogged++;
+        host_log("touch %s finger %lld at %.3f,%.3f -> game %d,%d", e->type == SDL_FINGERDOWN ? "down" : e->type == SDL_FINGERUP ? "up" : "move",
+                 (long long)e->tfinger.fingerId, e->tfinger.x, e->tfinger.y, lx, ly);
+    }
     if (e->type == SDL_FINGERDOWN) {
         if (g_touch.active) {                                        /* a second finger: Escape (menu, skip) */
             if (!g_touch.cancel) {
@@ -536,6 +542,8 @@ static int pad_move(struct host_event *ev)
     if (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_DPAD_UP)) ay = -0.5f;
     if (SDL_GameControllerGetButton(g_pad, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) ay = 0.5f;
     if (!ax && !ay) return 0;
+    static int plogged;
+    if (plogged < 30) { plogged++; host_log("stick moves the pointer: %.2f, %.2f", ax, ay); }
     if (!g_pad_mode) { int x, y; host_get_mouse(&x, &y); g_px = (float)x; g_py = (float)y; g_pad_mode = 1; }
     int ox = (int)g_px, oy = (int)g_py;
     g_px += ax * (ax < 0 ? -ax : ax) * 500 * dt + ax * 100 * dt;
