@@ -96,8 +96,16 @@ void hm_pump_host_events(void)
 BOOL PeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)
 {
     (void)hWnd; (void)wMsgFilterMin; (void)wMsgFilterMax;
+    static int empties = -1;
     hm_pump_host_events();
-    if (g_qhead == g_qtail) return 0;
+    if (g_qhead == g_qtail) {
+        /* The game busy-waits on PeekMessage (100% of a core, as on Windows). After many empty polls in a
+         * row, yield for 1 ms; game timing comes from the timer thread, so this only saves CPU. */
+        if (empties < 0) empties = hm_getenv("HM_NO_IDLE_SLEEP") ? -2 : 0;
+        if (empties >= 0 && ++empties >= 32) { empties = 0; host_sleep_ms(1); }
+        return 0;
+    }
+    if (empties > 0) empties = 0;
     *lpMsg = g_q[g_qhead];
     if (wRemoveMsg & 1) g_qhead = (g_qhead + 1) % QSIZE;
     return 1;
