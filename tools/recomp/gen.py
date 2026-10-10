@@ -553,7 +553,9 @@ for e in sorted(game):
         if re.search(r'\(\*' + re.escape(tok) + r'\)\s*\(', body) and not re.search(r'\(\*|\*\s*\(|code', tmpl):
             tmpl = 'code *@'
             stats['callable_globals'] += 1
-        defs.append('typedef %s;\n#define %s (*(%s *)HM_ADDR(0x%sU))\n' % (type_decl(tmpl, tn, size), tok, tn, addr))
+        in_image = IMAGE_LO <= int(addr, 16) < IMAGE_HI          # not the small numbers Ghidra names DAT_0000006c
+        defs.append(('typedef %s;\n#define %s (*(%s *)HM_ADDR(0x%sU))\n' if in_image else
+                     'typedef %s;\n#define %s (*(%s *)0x%sU)\n') % (type_decl(tmpl, tn, size), tok, tn, addr))
         undefs.append('#undef %s\n' % tok)
     for fn in sorted(set(re.findall(r'\b(_func_\d+)\b', body))):
         out.append('#ifndef HM_HAVE%s\n#define HM_HAVE%s\ntypedef int %s();\n#endif\n' % (fn, fn, fn))
