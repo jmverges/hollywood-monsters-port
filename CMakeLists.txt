@@ -22,9 +22,15 @@ if(NOT GAME_SOURCES)
 endif()
 
 # Generated game code: decompiler output, warnings are expected and not actionable here.
-add_library(hm_game OBJECT ${GAME_SOURCES} ${OVERRIDE_SOURCES})
+add_library(hm_game OBJECT ${GAME_SOURCES})
 target_include_directories(hm_game PRIVATE src/include src/gen)
 target_compile_options(hm_game PRIVATE -w)
+
+# Hand-written overrides: full prototypes, warnings on.
+add_library(hm_override OBJECT ${OVERRIDE_SOURCES})
+target_include_directories(hm_override PRIVATE src/include src/gen)
+target_compile_definitions(hm_override PRIVATE HM_OVERRIDE)
+target_compile_options(hm_override PRIVATE -Wall -Wno-unused-parameter -Werror=implicit-function-declaration -Werror=incompatible-pointer-types)
 
 # Emulated Win32/DirectX layer, built against the game's types.
 add_library(hm_win32 OBJECT ${WIN32_SOURCES})
@@ -39,5 +45,5 @@ add_library(hm_host OBJECT ${HOST_SOURCES})
 target_include_directories(hm_host PRIVATE ${SDL2_INCLUDE_DIRS})
 target_compile_options(hm_host PRIVATE -Wall ${SDL2_CFLAGS_OTHER})
 
-add_executable(hollywood-monsters $<TARGET_OBJECTS:hm_game> $<TARGET_OBJECTS:hm_win32> $<TARGET_OBJECTS:hm_host>)
+add_executable(hollywood-monsters $<TARGET_OBJECTS:hm_game> $<TARGET_OBJECTS:hm_override> $<TARGET_OBJECTS:hm_win32> $<TARGET_OBJECTS:hm_host>)
 target_link_libraries(hollywood-monsters PRIVATE ${SDL2_LDFLAGS} -lpthread -lm -rdynamic)

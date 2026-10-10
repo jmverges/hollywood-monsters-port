@@ -230,11 +230,11 @@ for e in sorted(game):
     fname = ident(d['name'])
     func_c_names[e] = fname
     # prototype = definition header
-    hdr_m = re.search(r'^([^\n{;]*\b' + re.escape(fname) + r'\s*\([^{;]*\))\s*\n\{', body, re.M)
+    hdr_m = re.search(r'^((?:[^\n{;/]+\n)?[^\n{;]*\b' + re.escape(fname) + r'\s*\([^{;]*\))\s*\n\{', body, re.M)
     if not hdr_m:
         stats['no_header'] += 1
         continue
-    protos.append((e, fname, hdr_m.group(1).strip()))
+    protos.append((e, fname, ' '.join(hdr_m.group(1).split())))
 
     # ---- original stack frame layout: stack locals keep their original offsets (see docs/ARCHITECTURE.md)
     open_idx = body.index(hdr_m.group(0)) + len(hdr_m.group(0))
@@ -360,11 +360,16 @@ with open(os.path.join(a.out, 'hm_imports.h'), 'w') as fh:
 with open(os.path.join(a.out, 'imports.tsv'), 'w') as fh:
     fh.write('c_name\toriginal\tkind\tuses\tsignature\n' + '\n'.join(sorted(imp_rows)) + '\n')
 
+with open(os.path.join(a.out, 'hm_funcs_full.h'), 'w') as fh:
+    fh.write('/* Generated: full prototypes of all game functions, used to type-check hand-written overrides. */\n#pragma once\n')
+    for e, fname, proto in protos:
+        fh.write('#ifndef HM_SELF_%s\n%s;\n#endif\n' % (fname, proto))
 with open(os.path.join(a.out, 'hm_funcs.h'), 'w') as fh:
     fh.write('/* Generated: prototypes of all game functions (copied from their definitions). */\n#pragma once\n')
     for e, fname, proto in protos:
         m = re.match(r'^(.*?)\b' + re.escape(fname) + r'\s*\((.*)\)$', proto, re.S)
         ret, params = m.group(1).strip(), m.group(2)
+        ret = re.sub(r'\b__(cdecl|stdcall|fastcall|thiscall)\b', '', ret).strip()
         if re.search(r'\b(float|double|float10)\b', params):
             decl = proto
         else:

@@ -1,7 +1,7 @@
 /* Hand-written replacement for FUN_00514a70.
  * The original inlines strcpy/strcat into stack buffers that Ghidra could not place.
  * Builds a text line at 0x6ca140 from three string tables, optionally copies it to 0x6d2220,
- * then calls FUN_00514930. */
+ * then shows it with FUN_00514930 using text colour entry param_1 (RGB triplets at 0x696d40). */
 #define HM_SELF_FUN_00514a70
 #include "hm_common.h"
 
@@ -26,5 +26,6 @@ void FUN_00514a70(char param_1)
 
     if (param_1 != '\0')
         __builtin_memcpy((void *)0x6d2220, (void *)0x6ca140, 0x7d);
-    FUN_00514930();
+    unsigned c = (unsigned char)param_1 * 3u;
+    FUN_00514930(*MEM8(0x696d40 + c), *MEM8(0x696d41 + c), *MEM8(0x696d42 + c), (char *)0x6ca140);
 }
