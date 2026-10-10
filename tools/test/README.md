@@ -34,4 +34,6 @@ tools/test/run_script.sh            work/cmp1.txt work/port/shots /path/to/data-
 ```
 
 Timing differs between runs (animations, timers), so compare states, not pixels.
-`poke` commands are ignored by the original runner.
+`poke` commands are applied with `tools/test/hmpoke.exe` (build it with
+`i686-w64-mingw32-gcc -O2 -o tools/test/hmpoke.exe tools/test/hmpoke.c`), which writes into the
+original's memory through `WriteProcessMemory` under Wine.

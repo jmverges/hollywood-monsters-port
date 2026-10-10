@@ -66,6 +66,10 @@ for t, cmd, args in events:
         xwd = subprocess.run(['xwd', '-root', '-silent'], env=env, capture_output=True)
         subprocess.run(['convert', 'xwd:-', out], input=xwd.stdout)
         print('shot', out)
+    elif cmd.startswith('poke'):
+        poker = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hmpoke.exe')
+        r = subprocess.run(['wine', poker, exe, args[0], cmd[4:], args[1]], env=env, capture_output=True, text=True)
+        print(r.stdout.strip() or r.stderr.strip())
     elif cmd == 'quit':
         break
 subprocess.run(['wineserver', '-k'], env=env)

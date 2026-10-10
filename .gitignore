@@ -11,3 +11,4 @@ RESOURCE.*
 __pycache__/
 *.pyc
 /src/gen/
+tools/test/hmpoke.exe
