@@ -289,6 +289,17 @@ int host_poll_event(struct host_event *ev)
             return 1;
         case SDL_MOUSEWHEEL: ev->type = HOST_EV_WHEEL; ev->wheel = e.wheel.y > 0 ? 1 : -1; host_get_mouse(&ev->x, &ev->y); return 1;
         case SDL_KEYDOWN: case SDL_KEYUP: {
+            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN && (e.key.keysym.mod & KMOD_ALT)) {
+                Uint32 fs = SDL_GetWindowFlags(g_win) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+                SDL_SetWindowFullscreen(g_win, fs ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+                break;
+            }
+            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_F12) {
+                char name[64];
+                snprintf(name, sizeof name, "screenshot_%u", SDL_GetTicks());
+                save_shot(name);
+                break;
+            }
             int vk = vk_from_sdl(e.key.keysym.sym);
             if (!vk) break;
             ev->type = e.type == SDL_KEYDOWN ? HOST_EV_KEYDOWN : HOST_EV_KEYUP;

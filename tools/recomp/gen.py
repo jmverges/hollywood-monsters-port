@@ -153,14 +153,14 @@ for e in sorted(game):
     # stack-parameter partial writes: _param_N -> 32-bit view of param_N
     body = re.sub(r'(?<![\w.>])_((?:param|local|[a-zA-Z]*Stack|in_stack|stack)_?[0-9a-fA-F]+)\b', r'(*(undefined4 *)&\1)', body)
     gvars = {v[0] for v in vars_}
-    for t in set(tok_re.findall(body)):
+    for t in sorted(set(tok_re.findall(body))):
         m = re.match(r'^(?:DAT|UNK|PTR_DAT)_([0-9a-f]{8})$', t)
         if m and t not in gvars and t not in symbols:
             vars_.append([t, m.group(1), 'undefined @', '1'])
             gvars.add(t)
             stats['fallback_globals'] += 1
             continue
-    for t in set(tok_re.findall(body)):
+    for t in sorted(set(tok_re.findall(body))):
         if t not in gvars and t in symbols and t not in name_map:
             addr, tmpl, size = symbols[t]
             vars_.append([t, addr, tmpl, size])
@@ -196,15 +196,9 @@ for e in sorted(game):
     body = tok_re.sub(tok_sub, body)
 
     # record imports used by this function
-    for t in set(tok_re.findall(body)):
+    for t in sorted(set(tok_re.findall(body))):
         if t.startswith('crt_'):
             used_imports[t] += 1
-    for t in set(tok_re.findall(open(src).read())):
-        if t in byname and t not in gvars:
-            for dd in byname[t]:
-                c, orig = (ident(t), t) if dd['external'] else cname_for_entry(dd['entry']) if dd['entry'] is not None else (None, None)
-                if c and not (dd['entry'] is not None and is_game(resolve(dd['entry'])) if not isinstance(resolve(dd['entry']) if dd['entry'] is not None else 0, str) else False):
-                    pass
 
     # partial accesses: X._off_size_  (also on array elements and struct fields)
     def part_sub(m):
