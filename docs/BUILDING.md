@@ -51,7 +51,8 @@ Re-run `cmake` after regenerating (the source list is a glob).
 | `HM_NO_IDLE_SLEEP=1` | never sleep in `PeekMessage` (default: 1 ms sleep after 32 empty polls, ~17 % CPU instead of 100 %) |
 | `HM_SEED=n` | replace the game's `srand(time)` seed, for reproducible runs |
 | `HM_ORIGINAL_BUGS=1` | disable the fixes for bugs of the original game (`tools/recomp/fixups.py`) |
-| `HM_HIDE_CURSOR=1` | never show the system cursor |
+| `HM_HIDE_CURSOR=1` | never draw the game's cursor |
+| `HM_FOCUS_PAUSE=1` | tell the game when the window loses focus, as Windows does (it then stops its sounds) |
 | `HM_NO_WARP=1` | ignore the game's requests to move the mouse pointer |
 | `HM_SCRIPT=file`, `HM_SHOT_DIR=dir` | scripted input and screenshots (see `tools/test/`) |
 | `HM_DUMP_FRAMES=dir`, `HM_DUMP_EVERY=n` | dump every n-th presented frame as PPM |

@@ -35,6 +35,14 @@ int  host_poll_event(struct host_event *ev);
 void host_get_mouse(int *x, int *y);
 void host_set_mouse(int x, int y);
 void host_show_cursor(int show);
+/* Pointer image. The game's cursors are Windows resources; the win32 layer decodes them to ARGB (0 alpha =
+ * transparent) and the host draws the selected one over the frame, at the position host_get_mouse reports.
+ * The system pointer stays hidden over the window (Windows drew the game's cursor in its place). */
+void *host_cursor_create(const unsigned *argb, int w, int h, int hot_x, int hot_y);
+void  host_cursor_set(void *cursor);     /* NULL: no cursor */
+
+/* ---- the original executable as mapped in memory */
+unsigned host_image_resource_rva(void);   /* RVA of the resource directory, 0 if none */
 
 /* ---- threads and synchronisation */
 typedef unsigned (*host_thread_fn)(void *arg);

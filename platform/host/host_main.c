@@ -27,6 +27,9 @@ extern int hm_game_start(const char *cmdline);   /* in platform/win32/hm_start.c
 static unsigned rd32(const unsigned char *p) { return p[0] | p[1] << 8 | p[2] << 16 | (unsigned)p[3] << 24; }
 static unsigned rd16(const unsigned char *p) { return p[0] | p[1] << 8; }
 
+static unsigned g_rsrc_rva;
+unsigned host_image_resource_rva(void) { return g_rsrc_rva; }
+
 static int map_image(const char *exe)
 {
     FILE *f = fopen(exe, "rb");
@@ -42,6 +45,7 @@ static int map_image(const char *exe)
     unsigned nsec = rd16(d + pe + 6), optsz = rd16(d + pe + 20);
     const unsigned char *opt = d + pe + 24;
     unsigned base = rd32(opt + 28), imgsize = rd32(opt + 56), hdrsize = rd32(opt + 60);
+    g_rsrc_rva = rd32(opt + 96 + 2 * 8);            /* data directory 2: resources */
     if (base != IMAGE_BASE) { host_log("unexpected image base %#x", base); return 0; }
 #ifdef _WIN32
     void *m = (void *)(unsigned long)IMAGE_BASE;

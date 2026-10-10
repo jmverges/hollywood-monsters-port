@@ -43,6 +43,12 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 
 ## Known issues / open work
 
+* Fixed on 2026-10-10, found by playing on a Legion Go (Bazzite, KDE Wayland): the pointer was invisible. The
+  game uses Windows cursors from its resources and shows them again only on `WM_SETCURSOR`, which the port
+  never sent. The cursors are now decoded from `MONSTERS.EXE` and drawn by the host over the frame. Clicking
+  outside the window made the game behave as if minimised (the spoken line stopped, the palette was restored on
+  return); focus changes now reach the game only with `HM_FOCUS_PAUSE=1`.
+
 * Fixed on 2026-10-10: the game calls `SetCursorPos` from its timer thread, and the SDL host warped the pointer
   from that thread. On a real desktop (KDE Wayland via XWayland, Legion Go with Bazzite) this crashed during
   shutdown. Warps from other threads are now applied by the main thread. Headless runs never showed it.

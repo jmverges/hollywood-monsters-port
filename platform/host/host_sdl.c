@@ -65,6 +65,7 @@ int host_window_open(const char *title, int width, int height)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     SDL_RenderSetLogicalSize(g_ren, width, height);
     SDL_StartTextInput();
+    SDL_ShowCursor(SDL_DISABLE);                     /* the game's cursor is drawn by draw_cursor() */
     return 1;
 }
 
@@ -139,16 +140,68 @@ static void save_shot(const char *name)
     pthread_mutex_unlock(&g_frame_mx);
 }
 
+/* ------------------------------------------------------------------ software cursor */
+struct host_cursor { int w, h, hx, hy; Uint32 *px; SDL_Texture *tex; };
+static struct host_cursor *volatile g_cur;
+static volatile int g_cur_visible = 1, g_cursor_dirty, g_mouse_in = 1;
+
+void *host_cursor_create(const unsigned *argb, int w, int h, int hot_x, int hot_y)
+{
+    struct host_cursor *c = calloc(1, sizeof *c);
+    if (!c) return 0;
+    c->px = malloc((size_t)w * h * 4);
+    if (!c->px) { free(c); return 0; }
+    memcpy(c->px, argb, (size_t)w * h * 4);
+    c->w = w; c->h = h; c->hx = hot_x; c->hy = hot_y;
+    return c;
+}
+
+void host_cursor_set(void *cursor)
+{
+    if (g_cur != cursor) { g_cur = cursor; g_cursor_dirty = 1; }
+}
+
+void host_show_cursor(int show)
+{
+    show = show && !getenv("HM_HIDE_CURSOR");
+    if (g_cur_visible != show) { g_cur_visible = show; g_cursor_dirty = 1; }
+}
+
+static void draw_cursor(void)
+{
+    struct host_cursor *c = g_cur;
+    if (!c || !g_cur_visible || !g_mouse_in) return;
+    if (!c->tex) {
+        c->tex = SDL_CreateTexture(g_ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, c->w, c->h);
+        if (!c->tex) return;
+        SDL_UpdateTexture(c->tex, NULL, c->px, c->w * 4);
+        SDL_SetTextureBlendMode(c->tex, SDL_BLENDMODE_BLEND);
+    }
+    int x, y;
+    host_get_mouse(&x, &y);
+    SDL_Rect r = { x - c->hx, y - c->hy, c->w, c->h };   /* logical coordinates: scaled with the frame */
+    SDL_RenderCopy(g_ren, c->tex, NULL, &r);
+}
+
 void host_render_pending(void)
 {
     static Uint32 last_present;
     if (!g_ren) return;
-    if (!g_frame_dirty) return;
+    if (!g_frame_dirty && !g_cursor_dirty) return;
     Uint32 now = SDL_GetTicks();
     if (now - last_present < 14) return;            /* ~70 Hz cap; the dirty frame is shown on a later call */
     last_present = now;
+    g_cursor_dirty = 0;
     pthread_mutex_lock(&g_frame_mx);
-    if (!g_frame_dirty) { pthread_mutex_unlock(&g_frame_mx); return; }
+    if (!g_frame_dirty) {                           /* only the cursor moved: present the last frame again */
+        pthread_mutex_unlock(&g_frame_mx);
+        if (!g_tex) return;
+        SDL_RenderClear(g_ren);
+        SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
+        draw_cursor();
+        SDL_RenderPresent(g_ren);
+        return;
+    }
     if (!g_tex || g_tw != g_fw || g_th != g_fh) {
         if (g_tex) SDL_DestroyTexture(g_tex);
         g_tex = SDL_CreateTexture(g_ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, g_fw, g_fh);
@@ -177,6 +230,7 @@ void host_render_pending(void)
     pthread_mutex_unlock(&g_frame_mx);
     SDL_RenderClear(g_ren);
     SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
+    draw_cursor();
     SDL_RenderPresent(g_ren);
 }
 
@@ -329,7 +383,7 @@ int host_poll_event(struct host_event *ev)
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
         case SDL_QUIT: host_log("SDL_QUIT (window closed or SIGINT/SIGTERM)"); ev->type = HOST_EV_QUIT; return 1;
-        case SDL_MOUSEMOTION: g_warp_pending = 0; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
+        case SDL_MOUSEMOTION: g_warp_pending = 0; g_cursor_dirty = 1; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
         case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
             ev->type = e.type == SDL_MOUSEBUTTONDOWN ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
             ev->x = e.button.x; ev->y = e.button.y;
@@ -365,6 +419,9 @@ int host_poll_event(struct host_event *ev)
             ev->type = HOST_EV_CHAR; ev->ch = cp; return 1;
         }
         case SDL_WINDOWEVENT:
+            if (e.window.event == SDL_WINDOWEVENT_ENTER || e.window.event == SDL_WINDOWEVENT_LEAVE) {
+                g_mouse_in = e.window.event == SDL_WINDOWEVENT_ENTER; g_cursor_dirty = 1;
+            }
             if (e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED || e.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
                 ev->type = HOST_EV_FOCUS; ev->focus = e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED; return 1;
             }
@@ -403,12 +460,11 @@ void host_set_mouse(int x, int y)
 {
     if (getenv("HM_NO_WARP") || g_quitting) return;
     if (g_script_n) { g_mx = x; g_my = y; }   /* scripted pointer: a warp moves it, as SetCursorPos does on Windows */
-    g_warp_x = x; g_warp_y = y; g_warp_pending = 1;
+    g_warp_x = x; g_warp_y = y; g_warp_pending = 1; g_cursor_dirty = 1;
     if (host_is_main_thread()) apply_warp();
     else g_warp_request = 1;
 }
 
-void host_show_cursor(int show) { SDL_ShowCursor(show ? SDL_ENABLE : SDL_DISABLE); }
 
 /* ------------------------------------------------------------------ threads + events */
 struct thread_start { host_thread_fn fn; void *arg; };
