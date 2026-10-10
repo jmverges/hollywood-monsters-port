@@ -14,7 +14,7 @@
  * (see platform/host/win32_reserve.c), so the game's image range is ours by construction. */
 #elif defined(__vita__)
 /* PS Vita (VitaSDK): relocatable build only; data in ux0:data/hollywood-monsters by default. */
-int _newlib_heap_size_user = 256 * 1024 * 1024;     /* newlib heap for the game's buffers (default is small) */
+int _newlib_heap_size_user = 128 * 1024 * 1024;     /* newlib heap; 256 MB is more than a real Vita grants an app */
 #else
 #include <sys/mman.h>
 #include <signal.h>
