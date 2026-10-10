@@ -19,7 +19,7 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | All chapters | Warping to the start of chapters 1–8 (room id 1000…8000) loads each one; 5-minute random-click runs in every chapter, and four 10-minute runs in chapter 1, finished without a crash |
 | Speech | Measured, not heard: in the intro dialogue the output has speech-like modulation (envelope variation 0.75–0.79 vs 0.22 for music, 21–26 % pauses vs 1 %) |
 | Against the original | The original `MONSTERS.EXE` runs under Wine/Xvfb with the same scripts (`run_original.py`, including `poke` warps); garden, terrace, menu and the chapter 2 title pan match the port (the black band at the right of that pan is in the original too) |
-| Room tour vs original | Warping through all 77 rooms with no clicks, both versions with a real-time (silent) sound card, screenshot 8 s after each warp: 61 rooms match within 1 % of pixels, 13 within 15 % (animation phase), 3 differ. Those 3 are transition timing: the port reaches the next room 1–2 s earlier, then both show the same room. This comparison found and fixed the mine cart trail (chapter 5) |
+| Room tour vs original | Warping through all 77 rooms with no clicks, both versions with a real-time (silent) sound card, screenshot 8 s after each warp: 61 rooms match within 1 % of pixels, 14 within 15 % (animation phase), 3 differ. Those 3 are transition timing: the port reaches the next room 1–2 s earlier, then both show the same room. This comparison found and fixed the mine cart trail (chapter 5) |
 | Audio | Music streams from `RESOURCE.M09`; sound effects play (measured output levels) |
 
 ## Not verified yet
