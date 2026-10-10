@@ -13,10 +13,29 @@ static MSG g_q[QSIZE];
 static int g_qhead, g_qtail;
 static int g_mouse_x, g_mouse_y, g_buttons;
 
+static int queue_count(void) { return (g_qtail - g_qhead + QSIZE) % QSIZE; }
+
 void hm_post_message(unsigned msg, unsigned wparam, int lparam)
 {
+    /* Like Windows, consecutive WM_MOUSEMOVE messages collapse into the latest one. */
+    if (msg == WM_MOUSEMOVE && g_qtail != g_qhead) {
+        MSG *last = &g_q[(g_qtail - 1 + QSIZE) % QSIZE];
+        if (last->message == WM_MOUSEMOVE) {
+            last->wParam = wparam; last->lParam = lparam; last->time = host_ticks_ms();
+            last->pt.x = g_mouse_x; last->pt.y = g_mouse_y;
+            return;
+        }
+    }
     int next = (g_qtail + 1) % QSIZE;
-    if (next == g_qhead) return;                 /* queue full: drop */
+    if (next == g_qhead) {
+        /* full: make room by dropping the oldest mouse move, never a click or a key */
+        int i = g_qhead, found = -1;
+        while (i != g_qtail) { if (g_q[i].message == WM_MOUSEMOVE) { found = i; break; } i = (i + 1) % QSIZE; }
+        if (found < 0) { HM_TRACE("message queue full, dropping %#x", msg); return; }
+        for (int j = found; j != g_qhead; j = (j - 1 + QSIZE) % QSIZE) g_q[j] = g_q[(j - 1 + QSIZE) % QSIZE];
+        g_qhead = (g_qhead + 1) % QSIZE;
+        next = (g_qtail + 1) % QSIZE;
+    }
     MSG *m = &g_q[g_qtail];
     m->hwnd = HM_HWND;
     m->message = msg;
@@ -33,7 +52,8 @@ static int mk_lparam(int x, int y) { return (int)(((unsigned)(y & 0xffff) << 16)
 void hm_pump_host_events(void)
 {
     struct host_event ev;
-    while (host_poll_event(&ev)) {
+    /* leave events in the host queue while ours is nearly full */
+    while (queue_count() < QSIZE - 8 && host_poll_event(&ev)) {
         switch (ev.type) {
         case HOST_EV_QUIT:
             hm_post_message(WM_DESTROY, 0, 0);

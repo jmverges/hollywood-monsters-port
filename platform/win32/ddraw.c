@@ -150,8 +150,14 @@ static ulong surf_Release(IDirectDrawSurface7 *This)
     struct dd_surface *s = SURF(This);
     int r = --s->refs;
     if (r > 0) return r;
-    if (s->owner) return 0;                       /* back buffers live as long as their primary */
-    if (s->back) { host_free(s->back->pixels); host_free(s->back); }
+    if (s->owner) {                               /* back buffer released after its primary: free it now */
+        if (s->owner == (struct dd_surface *)1) { host_free(s->pixels); host_free(s); }
+        return 0;
+    }
+    if (s->back) {
+        if (s->back->refs > 0) s->back->owner = (struct dd_surface *)1;   /* still referenced by the game */
+        else { host_free(s->back->pixels); host_free(s->back); }
+    }
     if (s == g_primary) g_primary = 0;
     host_free(s->pixels);
     host_free(s);
@@ -228,7 +234,9 @@ static void clip_copy(struct dd_surface *dst, int dx, int dy, struct dd_surface 
     if (sy + h > src->h) h = src->h - sy;
     if (w <= 0 || h <= 0) return;
     unsigned char key = (unsigned char)src->ck;
-    for (int y = 0; y < h; y++) {
+    int bottom_up = (dst == src && dy > sy);       /* overlapping self-copy moving down: copy rows bottom-up */
+    for (int i = 0; i < h; i++) {
+        int y = bottom_up ? h - 1 - i : i;
         unsigned char *d = dst->pixels + (dy + y) * dst->pitch + dx;
         const unsigned char *sp = src->pixels + (sy + y) * src->pitch + sx;
         if (!use_ck || !src->has_ck) {

@@ -103,6 +103,7 @@ The COM objects are plain C structs whose first member is the vtable pointer; th
 | Integer counter sharing a slot with a `double` | `FUN_0051e9a0` | hand-written override |
 | Inlined `strcpy` into an unplaced buffer | `FUN_00514a70` | hand-written override |
 | SDK version probe | `FUN_0040a770` (GetDXVersion) | hand-written override |
+| Parameter accessed wider than declared | `_param_2` on a `byte` parameter | parameter becomes a 4-byte slot, typed view macro |
 
 When a new problem shows up at run time, the usual loop is: reproduce with a script (`tools/test/`), catch
 it in gdb (the binary has debug info and maps 1:1 to `src/gen/f_<address>.c`), compare with the original

@@ -56,7 +56,9 @@ int host_window_open(const char *title, int width, int height)
     if (getenv("HM_FULLSCREEN")) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     g_win = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width * g_scale, height * g_scale, flags);
     if (!g_win) { host_log("SDL_CreateWindow: %s", SDL_GetError()); return 0; }
-    g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    /* No vsync by default: the game pumps messages one at a time and blits to the primary several times per
+     * frame, so blocking on vblank there would slow its main loop. Presentation is rate-limited instead. */
+    g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_ACCELERATED | (getenv("HM_VSYNC") ? SDL_RENDERER_PRESENTVSYNC : 0));
     if (!g_ren) g_ren = SDL_CreateRenderer(g_win, -1, 0);
     if (!g_ren) { host_log("SDL_CreateRenderer: %s", SDL_GetError()); return 0; }
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
@@ -135,7 +137,12 @@ static void save_shot(const char *name)
 
 void host_render_pending(void)
 {
+    static Uint32 last_present;
     if (!g_ren) return;
+    if (!g_frame_dirty) return;
+    Uint32 now = SDL_GetTicks();
+    if (now - last_present < 14) return;            /* ~70 Hz cap; the dirty frame is shown on a later call */
+    last_present = now;
     pthread_mutex_lock(&g_frame_mx);
     if (!g_frame_dirty) { pthread_mutex_unlock(&g_frame_mx); return; }
     if (!g_tex || g_tw != g_fw || g_th != g_fh) {

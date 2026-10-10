@@ -150,8 +150,32 @@ for e in sorted(game):
             body = body.replace(v[0], safe)
             v[0] = safe
             stats['sanitized_names'] += 1
-    # stack-parameter partial writes: _param_N -> 32-bit view of param_N
-    body = re.sub(r'(?<![\w.>])_((?:param|local|[a-zA-Z]*Stack|in_stack|stack)_?[0-9a-fA-F]+)\b', r'(*(undefined4 *)&\1)', body)
+    # Wider-than-declared parameter accesses (_param_N). Each stack argument is a 4-byte slot in the original,
+    # so the parameter becomes an undefined4 slot and its declared narrow type is a view of that slot.
+    wide_params = sorted(set(re.findall(r'(?<![\w.>])_(param_\d+)\b', body)))
+    if wide_params:
+        hdr0 = re.search(r'^[^\n{;]*\b' + re.escape(ident(d['name'])) + r'\s*\(([^{;]*)\)\s*\n\{', body, re.M)
+        if hdr0:
+            plist = hdr0.group(1)
+            views = []
+            for pn in wide_params:
+                pm = re.search(r'([^,()]*?)\s*\b' + pn + r'\b', plist)
+                if not pm:
+                    continue
+                ptype = pm.group(1).strip()
+                plist = plist[:pm.start()] + 'undefined4 hm_slot_' + pn[6:] + plist[pm.end():]
+                views.append('#define %s (*(%s *)&hm_slot_%s)\n' % (pn, ptype, pn[6:]))
+                body = re.sub(r'(?<![\w.>])_' + pn + r'\b', 'hm_slot_' + pn[6:], body)
+            new_hdr = hdr0.group(0).replace(hdr0.group(1), plist, 1)
+            body = body.replace(hdr0.group(0), new_hdr, 1)
+            pos = body.index(new_hdr) + len(new_hdr)
+            mb = re.compile(r'\n[ \t]*\n').search(body, pos + 1)      # end of the declaration block
+            at = mb.end() if mb else pos + 1
+            body = body[:at] + ''.join(views) + body[at:]
+            body = body.rstrip() + '\n' + ''.join('#undef %s\n' % pn for pn in wide_params)
+            stats['widened_param_slots'] += 1
+    # other wider-than-declared accesses (locals live in hm_frame at their original offsets)
+    body = re.sub(r'(?<![\w.>])_((?:local|[a-zA-Z]*Stack|in_stack|stack)_?[0-9a-fA-F]+)\b', r'(*(undefined4 *)&\1)', body)
     gvars = {v[0] for v in vars_}
     for t in sorted(set(tok_re.findall(body))):
         m = re.match(r'^(?:DAT|UNK|PTR_DAT)_([0-9a-f]{8})$', t)
