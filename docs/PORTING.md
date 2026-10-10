@@ -65,7 +65,7 @@ Size of the job, counted with regular expressions over the generated code (2026-
 | Address arithmetic on integers, `*(T *)(x + n)` | 2,201 | nothing, if everything lives below 4 GB |
 | Casts from integer locals to pointers | 392 | nothing, if everything lives below 4 GB |
 
-The hard part is the last two points: Ghidra's types decide which members are pointers, and a wrong guess
+The hard part is the 32-bit memory types in `gen.py` and the COM vtables: Ghidra's types decide which members are pointers, and a wrong guess
 silently truncates or widens a field. The per-access types exported by `ExportRecomp.java` are the right
 starting point, because they already reflect the size of every memory access.
 
