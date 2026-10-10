@@ -176,3 +176,8 @@ typedef long long hm_s64;
 #define builtin_memcpy(d, s, n) __builtin_memcpy((void *)(d), (const void *)(s), (n))
 /* NAN(x): x87 unordered-compare flag, i.e. isnan */
 #define NAN(x) __builtin_isnan(x)
+
+/* Store exactly n bytes of v at lvalue lv (little-endian), for stores narrower or wider than lv's type. */
+#define HM_STORE(lv, n, v) do { unsigned long long hm_st_ = (unsigned long long)(v); \
+    __builtin_memcpy((void *)&(lv), &hm_st_, (n)); } while (0)
+

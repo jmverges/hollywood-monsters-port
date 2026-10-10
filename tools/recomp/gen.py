@@ -126,6 +126,58 @@ if a.override and os.path.isdir(a.override):
         if m:
             override.add(int(m.group(1), 16))
 
+
+TYPE_SIZE = {'byte': 1, 'char': 1, 'undefined': 1, 'undefined1': 1, 'bool': 1, 'ushort': 2, 'short': 2,
+             'undefined2': 2, 'uint': 4, 'int': 4, 'undefined4': 4, 'ulong': 4, 'long': 4, 'undefined3': 3}
+
+
+def sized_stores(text):
+    """Stores whose size differs from the global's declared type.
+
+    Ghidra merges byte, word and dword accesses to one address into one variable and prints each store with
+    the size of its value, e.g. `_DAT_006ca0d8 = CONCAT12(1, x);` for three byte stores (0x6ca0d8..da), but the
+    export gives the variable a single type. Writing such a value through a 2-byte type drops bytes; through a
+    4-byte type it overwrites the neighbour. Store exactly the CONCAT's bytes, as the original does, and widen
+    the declaration to 4 bytes for the reads (the original reads the merged variable with one dword load).
+    `X = (uint)X;` after such stores is a decompiler artefact (no instruction writes the extra byte): drop it.
+    """
+    types = {m.group(2): m.group(1).strip() for m in re.finditer(r'typedef ([\w ]+?) T_(\w+);', text)}
+    # `(undefined2)DAT_x` on a global declared 1 byte wide: Ghidra's piece of a wider variable, i.e. a 2-byte
+    # read at that address (FUN_0049d810 reads 0x668cc0..cc1 this way). A C cast would read 1 byte and
+    # zero-extend it. Read N bytes instead.
+    def wide_read(m):
+        n, tok = int(m.group(1)), m.group(2)
+        ds = TYPE_SIZE.get(types.get(tok))
+        if ds is None or n <= ds:
+            return m.group(0)
+        stats['wide_reads'] += 1
+        return '(*(undefined%d *)&%s)' % (n, tok)
+    text = re.sub(r'\(undefined(\d)\)(_?DAT_[0-9a-f]{8})\b(?!\s*\[)', wide_read, text)
+    store_re = re.compile(r'^(\s*)(_?DAT_[0-9a-f]{8}) = (CONCAT(\d)(\d)\(.*\));[ \t]*$', re.M)
+    # pass 1: globals with a store of another size than declared get a 4-byte declaration (reads use it)
+    final = {}
+    for m in store_re.finditer(text):
+        tok, n = m.group(2), int(m.group(4)) + int(m.group(5))
+        ds = TYPE_SIZE.get(types.get(tok))
+        if ds is not None and ds != n:
+            final[tok] = 4
+    # pass 2: every CONCAT store to those globals writes exactly its own size
+    def store(m):
+        indent, tok, expr, n = m.group(1), m.group(2), m.group(3), int(m.group(4)) + int(m.group(5))
+        if tok not in final or n == final[tok]:
+            return m.group(0)
+        stats['sized_stores'] += 1
+        return '%sHM_STORE(%s, %d, %s); /* RECOMP: %d-byte store */' % (indent, tok, n, expr, n)
+    text = store_re.sub(store, text)
+    for tok in sorted(final):
+        text, k = re.subn(r'^(\s*)%s = \((?:uint|int|undefined4)\)%s;[ \t]*$' % (tok, tok),
+                          r'\1/* RECOMP: widening artefact removed: %s = (uint)%s; */' % (tok, tok), text, flags=re.M)
+        stats['dropped_self_widening'] += k
+        if types[tok] not in ('uint', 'int', 'undefined4', 'ulong', 'long'):
+            text = text.replace('typedef %s T_%s;' % (types[tok], tok),
+                                'typedef uint T_%s; /* RECOMP: widened from %s, see sized stores */' % (tok, types[tok]), 1)
+    return text
+
 protos = []
 stats = collections.Counter()
 applied_fixups = set()
@@ -365,7 +417,7 @@ for e in sorted(game):
     out += defs
     out.append('\n' + body + '\n')
     with open(os.path.join(a.out, 'f_%08x.c' % e), 'w') as fh:
-        fh.write(''.join(out))
+        fh.write(sized_stores(''.join(out)))
     stats['generated'] += 1
 
 # ---------------------------------------------------------------- imports used anywhere in game code

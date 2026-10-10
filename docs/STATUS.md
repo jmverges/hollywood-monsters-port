@@ -18,7 +18,7 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Windows | The MinGW build runs under Wine 9.0 headless: intro logo, menu, loading the savegame |
 | All chapters | Warping to the start of chapters 1–8 (room id 1000…8000) loads each one; 5-minute random-click runs in every chapter, and four 10-minute runs in chapter 1, finished without a crash |
 | Against the original | The original `MONSTERS.EXE` runs under Wine/Xvfb with the same scripts (`run_original.py`, including `poke` warps); garden, terrace, menu and the chapter 2 title pan match the port (the black band at the right of that pan is in the original too) |
-| Room tour vs original | Warping through all 77 rooms with no clicks, both versions with a real-time (silent) sound card, screenshot 8 s after each warp. Latest run (2026-10-10, after the `g_ddsd` fix): 64 rooms within 1 % of pixels, 9 within 15 % (animation phase), 3 differ by transition timing (the two screenshots show different moments of the same sequence), and 1 was lost because another test used the same X display. Earlier runs found the mine cart trail (chapter 5) |
+| Room tour vs original | Warping through all 77 rooms with no clicks, both versions with a real-time (silent) sound card, screenshot 8 s after each warp. Latest run (2026-10-10, after the sized-store and wide-read fixes): 62 rooms within 1 % of pixels, 13 within 15 % (animation phase: blinking, poses; at most 4.7 %), 2 differ by transition timing (the two screenshots show different moments of the same sequence). Earlier runs found the mine cart trail (chapter 5) |
 | Audio vs original | The original's output recorded through the ALSA loopback card under Wine and compared with the port's (`compare_audio.py`), first 80 s of the intro: every second of music matches the original's samples (correlation 0.97–1.00) at a constant offset, and every speech clip the port plays is found in the original (0.97–0.98). The newsboy's shouts are picked at random, so their order differs between any two runs, of either version |
 | Verb bar and conversation vs original | The same script on both: opening the verb bar, picking each of the 7 verbs, and talking to Junior in the first scene. Screens match within 1.1 % of pixels for 40 s of conversation. The third and fourth spoken lines are picked from three recorded lines, depending on timing: two runs of the original played two different pairs, and the port plays a third pair, or the original's first pair when the click comes 0.9 s later. Every line either version plays is found in the other's recordings (correlation 0.98–1.00). This comparison found the cursor bug below |
 | Verbs vs original | Look at, open, pick up and use on the doghouse, look at and pick up on Junior (`tools/test/scripts/verbs_first_scene.txt`): screens within 1.3 %, and the same four spoken answers in both, at a constant offset; the other two actions are silent in both |
@@ -42,6 +42,12 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 * The Windows build on real Windows (only Wine so far).
 
 ## Known issues / open work
+
+* Fixed on 2026-10-10, reported from the Legion Go: hovering an inventory item named a scene object
+  ("Usar caseta de perro" over the wallet) and the action line was pink instead of red. Both were `gen.py`
+  losing bytes where Ghidra merges accesses of different sizes: the byte that selects the inventory name table
+  was never written, and the green component of the text colour was read as one byte. The same rule fixed 104
+  room-animation statements that zeroed the byte at 0x668cc1.
 
 * Fixed on 2026-10-10, found by playing on a Legion Go (Bazzite, KDE Wayland): the pointer was invisible. The
   game uses Windows cursors from its resources and shows them again only on `WM_SETCURSOR`, which the port

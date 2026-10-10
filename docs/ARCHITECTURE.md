@@ -134,6 +134,8 @@ changes behaviour where the original would hang or crash, and `HM_ORIGINAL_BUGS=
 | 64-bit helper result passed as an argument | `CONCAT22(a,b)` | 32-bit `CONCATxy` for x+y ≤ 4, full prototypes |
 | Uninitialised heap read by the game | sprite data past the loaded block | `malloc` fills like the MSVC debug heap (0xCD, 0xFD guards, 0xDD on free) |
 | Named structure used through a field | `g_ddsd.lpSurface`: the export gives the field's address (0x691044) | the macro sits at the symbol's start (0x691020) |
+| Store of another size to a merged variable | `_DAT_006ca0d8 = CONCAT12(1, x)` through a 2-byte type | `HM_STORE` of exactly the CONCAT's bytes; declaration widened to 4 bytes for reads; `X = (uint)X` artefacts dropped |
+| Piece of a wider variable read through a narrow type | `(undefined2)DAT_0068f956` on a 1-byte declaration | read N bytes at the address: `(*(undefined2 *)&DAT_0068f956)` (106 reads, mostly the 0x668cc0 animation byte pattern) |
 | Register with no C value | `FUN_0040fec0(extraout_ECX, extraout_EDX)` | initialised to 0 (see Register leftovers) |
 
 When a new problem shows up at run time, the usual loop is: reproduce with a script (`tools/test/`), catch
