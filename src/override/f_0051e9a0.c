@@ -5,10 +5,10 @@
 #define HM_SELF_FUN_0051e9a0
 #include "hm_common.h"
 
-#define U8(a)  (*(unsigned char *)(a))
-#define U16(a) (*(unsigned short *)(a))
-#define U32(a) (*(unsigned int *)(a))
-#define F64(a) (*(double *)(a))
+#define U8(a)  (*(unsigned char *)HM_ADDR(a))
+#define U16(a) (*(unsigned short *)HM_ADDR(a))
+#define U32(a) (*(unsigned int *)HM_ADDR(a))
+#define F64(a) (*(double *)HM_ADDR(a))
 
 #define ACTIVE      U8(0x6325d3)
 #define BLK_X       U16(0x62bc5e)
@@ -21,9 +21,9 @@
 #define ROW         U8(0x62bc5d)
 #define STEP        F64(0x5d0840)          /* 640 / 184 */
 #define REMAP_ON    U8(0x6cc2f0)
-#define REMAP       ((unsigned char *)0x632c20)
-#define PAL         ((unsigned char *)0x6328e0)
-#define THUMB       ((unsigned char *)0x62c2a0)
+#define REMAP       ((unsigned char *)HM_ADDR(0x632c20))
+#define PAL         ((unsigned char *)HM_ADDR(0x6328e0))
+#define THUMB       ((unsigned char *)HM_ADDR(0x62c2a0))
 
 static int iabs(int v) { return v < 0 ? -v : v; }
 

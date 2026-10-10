@@ -43,6 +43,7 @@ void  host_cursor_set(void *cursor);     /* NULL: no cursor */
 
 /* ---- the original executable as mapped in memory */
 unsigned host_image_resource_rva(void);   /* RVA of the resource directory, 0 if none */
+unsigned host_image_delta(void);          /* where the image lives minus 0x400000 (0 unless HM_RELOCATABLE) */
 
 /* ---- threads and synchronisation */
 typedef unsigned (*host_thread_fn)(void *arg);

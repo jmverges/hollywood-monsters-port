@@ -15,7 +15,19 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
+# HM_RELOCATABLE: load the game image anywhere instead of at its original base 0x400000 (needed where a fixed
+# mapping is impossible, e.g. the PS Vita). Every image address goes through HM_ADDR and the image's pointers
+# are adjusted at load time from src/gen/hm_relocs.c. On Linux the original range is left inaccessible, so a
+# missed pointer crashes with its address (set HM_NO_GUARD=1 to disable).
+option(HM_RELOCATABLE "Load the game image at any address" OFF)
+if(HM_RELOCATABLE)
+  add_compile_definitions(HM_RELOCATABLE)
+endif()
+
 file(GLOB GAME_SOURCES ${CMAKE_SOURCE_DIR}/src/gen/f_*.c)
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/gen/hm_relocs.c)
+  list(APPEND GAME_SOURCES ${CMAKE_SOURCE_DIR}/src/gen/hm_relocs.c)
+endif()
 file(GLOB OVERRIDE_SOURCES ${CMAKE_SOURCE_DIR}/src/override/*.c)
 file(GLOB WIN32_SOURCES ${CMAKE_SOURCE_DIR}/platform/win32/*.c)
 set(HOST_SOURCES ${CMAKE_SOURCE_DIR}/platform/host/host_sdl.c ${CMAKE_SOURCE_DIR}/platform/host/host_main.c)

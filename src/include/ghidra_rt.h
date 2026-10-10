@@ -181,3 +181,13 @@ typedef long long hm_s64;
 #define HM_STORE(lv, n, v) do { unsigned long long hm_st_ = (unsigned long long)(v); \
     __builtin_memcpy((void *)&(lv), &hm_st_, (n)); } while (0)
 
+/* Addresses inside the original image (0x401000-0x709000). The normal build maps the image at its original
+ * base, so this is the identity; with HM_RELOCATABLE the image lives elsewhere and hm_image_delta is the
+ * difference (platform/host/host_main.c). */
+#ifdef HM_RELOCATABLE
+extern unsigned hm_image_delta;
+#define HM_ADDR(a) ((unsigned)(a) + hm_image_delta)
+#else
+#define HM_ADDR(a) (a)
+#endif
+

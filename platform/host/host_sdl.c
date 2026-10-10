@@ -271,6 +271,12 @@ static int pending_char = -1;
  *           | poke8|poke16|poke32 ADDR VALUE (write game memory, e.g. the room id at 0x6ca1be)
  *           | trap (SIGTRAP: stop in gdb at this moment) | dump ADDR LEN (raw memory to the shot dir) | quit */
 struct script_ev { unsigned t; char cmd[16]; int a, b; char name[64]; };
+
+/* Scripts use the original addresses (e.g. the room id at 0x6ca1be); the image may live elsewhere. */
+static unsigned long image_addr(unsigned long a)
+{
+    return a >= 0x400000 && a < 0x709000 ? a + host_image_delta() : a;
+}
 static struct script_ev *g_script;
 static int g_script_n, g_script_i, g_script_loaded;
 static unsigned g_script_t0;
@@ -338,7 +344,7 @@ static void run_script(void)
         } else if (!strcmp(s->cmd, "char")) {
             e.type = HOST_EV_CHAR; e.ch = (unsigned char)s->name[0]; g_inject[g_inject_n++] = e;
         } else if (!strncmp(s->cmd, "poke", 4)) {          /* poke8|poke16|poke32 ADDR VALUE (debug warps) */
-            unsigned long addr = strtoul(s->name, NULL, 0);
+            unsigned long addr = image_addr(strtoul(s->name, NULL, 0));
             unsigned long val = (unsigned long)s->b;
             int bits = atoi(s->cmd + 4);
             if (bits == 8) *(volatile unsigned char *)addr = (unsigned char)val;
@@ -348,8 +354,8 @@ static void run_script(void)
         } else if (!strcmp(s->cmd, "dump") || !strcmp(s->cmd, "dumpp")) {
             /* dump ADDR LEN, or dumpp PTRADDR LEN (memory the 32-bit pointer at PTRADDR points to)
              * -> <shot dir>/dump_<ADDR>_<t>.bin */
-            unsigned long addr = strtoul(s->name, NULL, 0);
-            if (s->cmd[4] == 'p') addr = *(unsigned int *)addr;
+            unsigned long addr = image_addr(strtoul(s->name, NULL, 0));
+            if (s->cmd[4] == 'p') addr = image_addr(*(unsigned int *)addr);
             const char *dir = getenv("HM_SHOT_DIR");
             char path[512];
             snprintf(path, sizeof path, "%s/dump_%08lx_%u.bin", dir ? dir : ".", strtoul(s->name, NULL, 0), s->t);

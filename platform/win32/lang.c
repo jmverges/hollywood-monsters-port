@@ -42,7 +42,7 @@ static char *dup(const char *s)
 
 static void patch_in_place(unsigned addr, const char *text, int len)
 {
-    char *dst = (char *)addr;
+    char *dst = (char *)(addr + host_image_delta());
     int cap = 0;
     while (dst[cap]) cap++;                          /* the original text ... */
     while (cap < 256 && dst[cap] == 0) cap++;        /* ... plus the zero padding up to the next datum */

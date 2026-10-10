@@ -30,6 +30,17 @@ static unsigned rd16(const unsigned char *p) { return p[0] | p[1] << 8; }
 static unsigned g_rsrc_rva;
 unsigned host_image_resource_rva(void) { return g_rsrc_rva; }
 
+/* Where the image lives relative to its original base 0x400000. 0 in the normal build; with HM_RELOCATABLE the
+ * image is loaded wherever memory is available (systems that cannot map a fixed address, e.g. the PS Vita) and
+ * the generated code adds this to every image address (HM_ADDR in ghidra_rt.h). */
+unsigned hm_image_delta;
+unsigned host_image_delta(void) { return hm_image_delta; }
+
+#ifdef HM_RELOCATABLE
+extern const unsigned hm_relocs[];       /* src/gen/hm_relocs.c: words in the image that hold image addresses */
+extern const unsigned hm_nrelocs;
+#endif
+
 static int map_image(const char *exe)
 {
     FILE *f = fopen(exe, "rb");
@@ -55,6 +66,18 @@ static int map_image(const char *exe)
         return 0;
     }
     (void)hdrsize;     /* 0x400000-0x401000 holds this program's own PE headers: leave them alone */
+#elif defined(HM_RELOCATABLE)
+    unsigned char *m = calloc(1, imgsize + 0x1000);
+    if (!m) { host_log("cannot allocate the image (%#x bytes)", imgsize); return 0; }
+    m = (unsigned char *)(((unsigned long)m + 0xfff) & ~0xfffUL);
+    hm_image_delta = (unsigned)(unsigned long)m - IMAGE_BASE;
+    memcpy(m, d, hdrsize);
+#if !defined(_WIN32) && defined(MAP_FIXED_NOREPLACE)
+    /* Test aid: nothing may use the original range any more. A pointer that escaped relocation faults here and
+     * the crash handler prints the address. */
+    if (!getenv("HM_NO_GUARD"))
+        mmap((void *)(unsigned long)IMAGE_BASE, imgsize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+#endif
 #else
 #if !defined(MAP_FIXED_NOREPLACE) && defined(MAP_EXCL)
 #define MAP_FIXED_NOREPLACE (MAP_FIXED | MAP_EXCL)      /* FreeBSD */
@@ -76,6 +99,14 @@ static int map_image(const char *exe)
         unsigned n = rsize < vsize ? rsize : vsize;
         if (rptr && n) memcpy((char *)m + va, d + rptr, n);
     }
+#ifdef HM_RELOCATABLE
+    unsigned moved = 0;
+    for (unsigned i = 0; i < hm_nrelocs; i++) {
+        unsigned *w = (unsigned *)((unsigned char *)m + (hm_relocs[i] - IMAGE_BASE));
+        if (*w >= IMAGE_BASE + 0x1000 && *w < IMAGE_BASE + imgsize) { *w += hm_image_delta; moved++; }
+    }
+    host_log("image at %p (delta %#x), %u of %u relocations applied", (void *)m, hm_image_delta, moved, hm_nrelocs);
+#endif
     free(d);
     return 1;
 }

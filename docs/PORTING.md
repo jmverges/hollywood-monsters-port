@@ -5,9 +5,14 @@ Everything above `platform/host/host.h` is plain C with no OS dependencies. A ne
 1. **A 32-bit build** (for now). The game code and its data use 32-bit pointers at fixed addresses.
    Any x86 or ARM target with a 32-bit userland works (32-bit Linux, Windows, ARM Linux with an armhf
    toolchain, old consoles/handhelds with 32-bit CPUs). The CPU architecture does not matter: the code is C.
-2. **The ability to reserve 0x400000–0x709000** in the process address space and fill it from
-   `MONSTERS.EXE` (`host_main.c`, `map_image`). On systems without `mmap(MAP_FIXED)` use a linker script that
-   reserves that range, or any loader trick that places a 3 MB block at that address.
+2. **Memory for the game image** (3 MB, filled from `MONSTERS.EXE` by `host_main.c`, `map_image`). The normal
+   build maps it at its original base 0x400000. Where that is impossible (the PS Vita, most consoles), build
+   with `-DHM_RELOCATABLE=ON`: the image is loaded anywhere, every image address in the generated code goes
+   through `HM_ADDR`, and the 814 words of the image that hold image addresses (`src/gen/hm_relocs.c`, from
+   Ghidra's references, `tools/ghidra/ExportDataRelocs.java`) are adjusted at load. Constants that only look
+   like addresses are listed in `tools/recomp/not_addresses.tsv`, pointers Ghidra missed would go in
+   `tools/recomp/extra_relocs.tsv`. On Linux the relocatable build leaves 0x400000–0x709000 inaccessible, so a
+   pointer that escaped relocation crashes with its address; it passes the smoke test and the room tour.
 3. **An implementation of `host.h`**: window + 8bpp-with-palette presentation, input events translated to
    Windows virtual-key codes, threads/mutexes/events, an audio pull callback (stereo S16), and stdio-like
    file access with case-insensitive names. `host_sdl.c` (~560 lines) is the reference; with SDL2 available

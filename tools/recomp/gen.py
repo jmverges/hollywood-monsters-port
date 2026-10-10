@@ -192,7 +192,7 @@ def image_strings(text):
         is_text = raw and all(c >= 0x20 for c in raw)
         if len(hits) == 1:
             stats['literals_to_image'] += 1
-            return ('HM_STR(0x%08xU)' if is_text else '((char *)0x%08xU)') % hits[0]
+            return ('HM_STR(0x%08xU)' if is_text else '((char *)HM_ADDR(0x%08xU))') % hits[0]
         if is_text:
             stats['literals_translatable'] += 1
             return 'HM_TEXT(%s)' % m.group(0)
@@ -225,6 +225,47 @@ def image_strings(text):
             line = re.sub(r'([(,]\s*)&DAT_([0-9a-f]{8})(\s*[,)])', addr_arg, line)
         lines[i] = line
     return '\n'.join(lines)
+
+
+IMAGE_LO, IMAGE_HI = 0x00401000, 0x00709000      # sections of the original image (headers excluded)
+
+
+NOT_ADDRESSES = set()
+_na = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'not_addresses.tsv')
+if os.path.exists(_na):
+    for _l in open(_na):
+        if _l.strip() and not _l.startswith('#'):
+            _f, _v = _l.split('\t')[:2]
+            NOT_ADDRESSES.add((int(_f, 16), int(_v, 16)))
+
+
+def image_constants(text, entry=None):
+    """Integer constants that are addresses inside the image become HM_ADDR(...): the identity in the normal
+    build, base-adjusted when the image is loaded elsewhere (cmake -DHM_RELOCATABLE=ON, docs/PORTING.md).
+    Comments and preprocessor lines are left alone; constants already inside HM_ADDR/HM_STR are skipped."""
+    def fix_code(code):
+        def sub(m):
+            v = int(m.group(1), 16) if m.group(1).lower().startswith('0x') else int(m.group(1))
+            if not (IMAGE_LO <= v < IMAGE_HI) or (entry, v) in NOT_ADDRESSES:
+                return m.group(0)
+            before = code[:m.start()].rstrip()
+            if before.endswith('HM_ADDR(') or before.endswith('HM_STR('):
+                return m.group(0)
+            stats['image_constants'] += 1
+            return 'HM_ADDR(%s)' % m.group(0)
+        return re.sub(r'(?<![\w.\'])(0[xX][0-9a-fA-F]+|[1-9][0-9]{6})[uU]?(?![\w.])', sub, code)
+    for f, v in NOT_ADDRESSES:                      # Ghidra made a symbol of it: write the number instead
+        if f == entry:
+            text = re.sub(r'&DAT_%08x\b' % v, '((void *)0x%08xU)' % v, text)
+    out = []
+    for line in text.split('\n'):
+        s = line.lstrip()
+        if s.startswith('#') or s.startswith('typedef') or s.startswith('/*') and s.endswith('*/'):
+            out.append(line)
+            continue
+        parts = re.split(r'(/\*.*?\*/|"(?:[^"\\]|\\.)*")', line)   # keep comments and string literals as they are
+        out.append(''.join(p if (p.startswith('/*') or p.startswith('"')) else fix_code(p) for p in parts))
+    return '\n'.join(out)
 
 
 IMAGE = load_image(a.exe) if a.exe else None   # (va, bytes) of every data section
@@ -512,14 +553,14 @@ for e in sorted(game):
         if re.search(r'\(\*' + re.escape(tok) + r'\)\s*\(', body) and not re.search(r'\(\*|\*\s*\(|code', tmpl):
             tmpl = 'code *@'
             stats['callable_globals'] += 1
-        defs.append('typedef %s;\n#define %s (*(%s *)0x%sU)\n' % (type_decl(tmpl, tn, size), tok, tn, addr))
+        defs.append('typedef %s;\n#define %s (*(%s *)HM_ADDR(0x%sU))\n' % (type_decl(tmpl, tn, size), tok, tn, addr))
         undefs.append('#undef %s\n' % tok)
     for fn in sorted(set(re.findall(r'\b(_func_\d+)\b', body))):
         out.append('#ifndef HM_HAVE%s\n#define HM_HAVE%s\ntypedef int %s();\n#endif\n' % (fn, fn, fn))
     out += defs
     out.append('\n' + body + '\n')
     with open(os.path.join(a.out, 'f_%08x.c' % e), 'w') as fh:
-        fh.write(image_strings(sized_stores(''.join(out))))
+        fh.write(image_constants(image_strings(sized_stores(''.join(out))), e))
     stats['generated'] += 1
 
 # ---------------------------------------------------------------- imports used anywhere in game code
@@ -616,4 +657,27 @@ missing_fixups = [fx for fx in FIXUPS if fx['addr'] not in applied_fixups]
 if missing_fixups:
     sys.exit('fixups not applied (function missing from the export?): ' +
              ', '.join('%08x' % fx['addr'] for fx in missing_fixups))
+# Words in the image's data that hold image addresses (Ghidra references, ExportDataRelocs.java). Only used by
+# the relocatable build (HM_RELOCATABLE), which loads the image somewhere other than 0x400000.
+relocs = set()
+rpath = os.path.join(a.rx, 'datarelocs.tsv')
+if os.path.exists(rpath):
+    for line in open(rpath):
+        p = line.rstrip('\n').split('\t')
+        if len(p) >= 3 and p[2] != 'Headers':
+            src, dst = int(p[0], 16), int(p[1], 16)
+            if IMAGE_LO <= src < IMAGE_HI and IMAGE_LO <= dst < IMAGE_HI:
+                relocs.add(src)
+extra = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'extra_relocs.tsv')
+if os.path.exists(extra):                         # pointers Ghidra did not reference, found by testing
+    for line in open(extra):
+        if line.strip() and not line.startswith('#'):
+            relocs.add(int(line.split('\t')[0], 16))
+with open(os.path.join(a.out, 'hm_relocs.c'), 'w') as fh:
+    fh.write('/* Generated: image words holding image addresses, adjusted when the image is relocated. */\n')
+    fh.write('const unsigned hm_nrelocs = %d;\nconst unsigned hm_relocs[] = {\n' % len(relocs))
+    for i, r in enumerate(sorted(relocs)):
+        fh.write('0x%08xu,%s' % (r, '\n' if i % 8 == 7 else ' '))
+    fh.write('0 };\n')
+stats['relocations'] = len(relocs)
 print('imports needed:', len(import_decls))

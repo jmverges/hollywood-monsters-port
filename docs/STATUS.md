@@ -27,6 +27,7 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Hall and Joseph vs original | Entering the hall and talking to Joseph (`scripts/talk_joseph.txt`): 21 screenshots within 5 % and the same ten spoken lines in the same order. This test found the `g_ddsd` bug below |
 | Chapter 7 cutscene vs original | Warping through chapter 7 as the room tour does, then 60 s of the cutscene that follows (café, Ron, Hannover's office, Bel Air, the street): 29 screenshots within 2.7 % |
 | English | With the fan translation installed by `tools/lang/english_patch.py`: options menu, load/save, verb bar, action line ("Look at purse"), object names and dialogue subtitles in English; voices stay Spanish. The Spanish build is unchanged (inventory screens identical to the original, smoke test) |
+| Relocatable build | `-DHM_RELOCATABLE=ON` with the image at a high address and the original range inaccessible: smoke test passes, room tour 65/11/1 (as the normal build), no access to the original range |
 | Long session | 30 minutes of random clicks, verb gestures and occasional room warps in chapter 1: no crash, memory steady at about 112 MB (+0.5 MB over the run) |
 | Register leftovers | Since all ~3,000 are initialised to 0, the smoke test still passes in all 77 rooms |
 
@@ -43,6 +44,10 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 * The Windows build on real Windows (only Wine so far).
 
 ## Known issues / open work
+
+* Fixed on 2026-10-10: some cursor types make the game read the word after its 6-entry cursor table and pass it
+  to `SetCursor`. Windows rejects such a handle; the port tried to draw it and crashed (found by the smoke test
+  of the relocatable build, chapter 2). Only handles created by `LoadCursorA` are accepted now.
 
 * Fixed on 2026-10-10, reported from the Legion Go in fullscreen (1463x914 X screen): the pointer crept to the
   top left by itself. The game warps the pointer every frame; at a non-integer scale, the conversion to window

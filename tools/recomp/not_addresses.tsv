@@ -1,0 +1,5 @@
+# Constants inside the image's address range that are NOT addresses (they must not be adjusted when the image is
+# relocated). function entry <TAB> constant <TAB> why
+00512110	0x43aaee	size of a RESOURCE.M0x music file (table of sizes in the music loader)
+00512110	0x5498e0	size of a RESOURCE.M0x music file
+00512110	0x6b99ee	size of a RESOURCE.M0x music file (Ghidra shows it as &DAT_006b99ee)

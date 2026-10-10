@@ -182,7 +182,7 @@ static RECT g_clip = { 0, 0, 640, 480 };
  * The game's cursors are RT_GROUP_CURSOR/RT_CURSOR resources of MONSTERS.EXE (32x32 monochrome, AND + XOR
  * masks). They are decoded to ARGB and drawn by the host. System cursors (hInstance 0) stay small fake
  * handles that SetCursor ignores. */
-#define HM_IMAGE ((const unsigned char *)0x00400000u)
+#define HM_IMAGE ((const unsigned char *)(0x00400000u + host_image_delta()))
 
 static unsigned rd16u(const unsigned char *p) { return (unsigned)p[0] | ((unsigned)p[1] << 8); }
 static unsigned rd32u(const unsigned char *p) { return rd16u(p) | (rd16u(p + 2) << 16); }
@@ -251,15 +251,23 @@ static void *decode_cursor(unsigned group_id)
     return c;
 }
 
+static struct { unsigned id; void *c; } g_cursors[16];
+static int g_ncursors;
+
+static int is_cursor(HCURSOR h)
+{
+    for (int i = 0; i < g_ncursors; i++) if ((HCURSOR)g_cursors[i].c == h) return 1;
+    return 0;
+}
+
 HCURSOR LoadCursorA(HINSTANCE hInstance, LPCSTR lpCursorName)
 {
     unsigned id = (unsigned)lpCursorName;
     if (hInstance && id < 0x10000u) {
-        static struct { unsigned id; void *c; } cache[16];
-        static int n;
-        for (int i = 0; i < n; i++) if (cache[i].id == id) return (HCURSOR)cache[i].c;
+        int n = g_ncursors;
+        for (int i = 0; i < n; i++) if (g_cursors[i].id == id) return (HCURSOR)g_cursors[i].c;
         void *c = decode_cursor(id);
-        if (c && n < 16) { cache[n].id = id; cache[n].c = c; n++; }
+        if (c && n < 16) { g_cursors[n].id = id; g_cursors[n].c = c; g_ncursors = n + 1; }
         if (c) return (HCURSOR)c;
     }
     return (HCURSOR)(0x2000u + (id & 0xffff));
@@ -270,7 +278,9 @@ HCURSOR SetCursor(HCURSOR hCursor)
 {
     static HCURSOR current;
     HCURSOR prev = current;
-    if ((unsigned)hCursor >= 0x10000u || !hCursor) {   /* fake system-cursor handles keep the current image */
+    /* Windows rejects invalid handles and keeps the current cursor. The game sometimes passes one: its cursor
+     * table has 6 entries and some cursor types index the word after it. System-cursor handles are fake too. */
+    if (!hCursor || is_cursor(hCursor)) {
         if (hCursor != current) HM_TRACE("SetCursor(%p)", (void *)hCursor);
         current = hCursor;
         host_cursor_set((void *)hCursor);
