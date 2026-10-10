@@ -54,6 +54,10 @@ Releasing above the bar cancels. The selected verb applies to the next left clic
 Environment: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=out.raw` captures audio (44.1 kHz stereo S16),
 `HM_TRACE_FILES=1` traces file access, `HM_DEBUG=1` traces the Win32 layer.
 
+`scripts/` holds scripts that have been checked against the original: `talk_junior.txt` and
+`verbs_first_scene.txt` start from the savegame below and exercise the verb bar, a conversation and object
+actions in the first scene.
+
 ## Savegame and smoke test
 
 * `make_savegame.sh <data-dir>` plays the intro (~7 min) and saves "autotest" in slot 0. Most scripts start

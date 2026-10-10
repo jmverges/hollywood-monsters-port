@@ -1,0 +1,29 @@
+# First scene (needs the make_savegame.sh save): talk to Junior. Compare screens and speech with the original.
+6000 key 27
+9000 click 172 232
+12000 click 320 60
+18000 rdown 190 400
+18800 move 10 462
+19600 rup 10 462
+20300 click 190 400
+21000 shot t21
+23000 shot t23
+25000 shot t25
+27000 shot t27
+29000 shot t29
+31000 shot t31
+33000 shot t33
+35000 shot t35
+37000 shot t37
+39000 shot t39
+41000 shot t41
+43000 shot t43
+45000 shot t45
+47000 shot t47
+49000 shot t49
+51000 shot t51
+53000 shot t53
+55000 shot t55
+57000 shot t57
+59000 shot t59
+60000 quit

@@ -1,0 +1,96 @@
+# First scene (needs the make_savegame.sh save): look at, open, pick up and use the doghouse; look at and pick up
+# Junior. Four of the six actions answer with speech, in both versions.
+6000 key 27
+9000 click 172 232
+12000 click 320 60
+18000 move 440 390
+18400 rdown 440 390
+19200 move 45 462
+20000 rup 45 462
+20700 click 440 390
+21000 shot s00_MirarCaseta_030
+22500 shot s00_MirarCaseta_045
+24000 shot s00_MirarCaseta_060
+25500 shot s00_MirarCaseta_075
+27000 shot s00_MirarCaseta_090
+28500 shot s00_MirarCaseta_105
+30000 shot s00_MirarCaseta_120
+31500 shot s00_MirarCaseta_135
+33000 shot s00_MirarCaseta_150
+34500 shot s00_MirarCaseta_165
+36000 move 440 390
+36400 rdown 440 390
+37200 move 65 462
+38000 rup 65 462
+38700 click 440 390
+39000 shot s01_AbrirCaseta_030
+40500 shot s01_AbrirCaseta_045
+42000 shot s01_AbrirCaseta_060
+43500 shot s01_AbrirCaseta_075
+45000 shot s01_AbrirCaseta_090
+46500 shot s01_AbrirCaseta_105
+48000 shot s01_AbrirCaseta_120
+49500 shot s01_AbrirCaseta_135
+51000 shot s01_AbrirCaseta_150
+52500 shot s01_AbrirCaseta_165
+54000 move 440 390
+54400 rdown 440 390
+55200 move 35 462
+56000 rup 35 462
+56700 click 440 390
+57000 shot s02_CogerCaseta_030
+58500 shot s02_CogerCaseta_045
+60000 shot s02_CogerCaseta_060
+61500 shot s02_CogerCaseta_075
+63000 shot s02_CogerCaseta_090
+64500 shot s02_CogerCaseta_105
+66000 shot s02_CogerCaseta_120
+67500 shot s02_CogerCaseta_135
+69000 shot s02_CogerCaseta_150
+70500 shot s02_CogerCaseta_165
+72000 move 440 390
+72400 rdown 440 390
+73200 move 55 462
+74000 rup 55 462
+74700 click 440 390
+75000 shot s03_UsarCaseta_030
+76500 shot s03_UsarCaseta_045
+78000 shot s03_UsarCaseta_060
+79500 shot s03_UsarCaseta_075
+81000 shot s03_UsarCaseta_090
+82500 shot s03_UsarCaseta_105
+84000 shot s03_UsarCaseta_120
+85500 shot s03_UsarCaseta_135
+87000 shot s03_UsarCaseta_150
+88500 shot s03_UsarCaseta_165
+90000 move 190 400
+90400 rdown 190 400
+91200 move 45 462
+92000 rup 45 462
+92700 click 190 400
+93000 shot s04_MirarJunior_030
+94500 shot s04_MirarJunior_045
+96000 shot s04_MirarJunior_060
+97500 shot s04_MirarJunior_075
+99000 shot s04_MirarJunior_090
+100500 shot s04_MirarJunior_105
+102000 shot s04_MirarJunior_120
+103500 shot s04_MirarJunior_135
+105000 shot s04_MirarJunior_150
+106500 shot s04_MirarJunior_165
+108000 move 190 400
+108400 rdown 190 400
+109200 move 35 462
+110000 rup 35 462
+110700 click 190 400
+111000 shot s05_CogerJunior_030
+112500 shot s05_CogerJunior_045
+114000 shot s05_CogerJunior_060
+115500 shot s05_CogerJunior_075
+117000 shot s05_CogerJunior_090
+118500 shot s05_CogerJunior_105
+120000 shot s05_CogerJunior_120
+121500 shot s05_CogerJunior_135
+123000 shot s05_CogerJunior_150
+124500 shot s05_CogerJunior_165
+126000 quit
