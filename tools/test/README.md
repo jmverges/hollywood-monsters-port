@@ -44,3 +44,8 @@ original's memory through `WriteProcessMemory` under Wine.
   by loading it (`Esc`, `Cargar`, first slot).
 * `smoke.sh <data-dir>` warps through every room of chapters 1–8 in parallel (room ids are read from the
   generated `WinMain`) with random clicks, and fails if any run crashes. Use it after changing the pipeline.
+
+Caveat: with the null audio device, the original's speech streams finish almost instantly under Wine, so
+speech-driven dialogues run much faster than in the port (which plays them in real time). Compare scenes
+without dialogue, or wait until the port's dialogue has finished. `compare_shots.py orig/ port/ out.png`
+lists per-image differences and builds a sheet of the worst pairs.
