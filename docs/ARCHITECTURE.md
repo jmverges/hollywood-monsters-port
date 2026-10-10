@@ -42,12 +42,15 @@ same memory (very common in this game) keep exactly the original semantics. Cons
 * pointers stored in game data stay valid, because data lives where the original code expects it;
 * no game data is linked into the binary; it comes from the user's `MONSTERS.EXE` at run time.
 
-### Calling conventions
+### Calling conventions and prototypes
 
 Everything is compiled by one compiler, so the original conventions do not matter: `__stdcall`,
-`__fastcall` etc. are defined away and every function is cdecl. Game functions are declared without
-parameter lists (except those with floating-point parameters), so a caller passing one argument too many —
-common, since Ghidra infers parameters per function — is harmless.
+`__fastcall` etc. are defined away and every function is cdecl. After Ghidra's Decompiler Parameter ID has
+committed signatures program-wide, every game function is declared with its **full prototype**, so each
+argument is converted to its parameter type. (An earlier version declared them without parameter lists; a
+64-bit `CONCAT22(...)` argument then took two stack slots and shifted the following argument — this is how the
+mine cart in chapter 5 left a trail.) For callers, a `void` function returns `undefined4`: the original code
+sometimes reads whatever the callee left in EAX.
 
 ### Stack frames
 
@@ -104,6 +107,8 @@ The COM objects are plain C structs whose first member is the vtable pointer; th
 | Inlined `strcpy` into an unplaced buffer | `FUN_00514a70` | hand-written override |
 | SDK version probe | `FUN_0040a770` (GetDXVersion) | hand-written override |
 | Parameter accessed wider than declared | `_param_2` on a `byte` parameter | parameter becomes a 4-byte slot, typed view macro |
+| 64-bit helper result passed as an argument | `CONCAT22(a,b)` | 32-bit `CONCATxy` for x+y ≤ 4, full prototypes |
+| Uninitialised heap read by the game | sprite data past the loaded block | `malloc` fills like the MSVC debug heap (0xCD, 0xFD guards, 0xDD on free) |
 
 When a new problem shows up at run time, the usual loop is: reproduce with a script (`tools/test/`), catch
 it in gdb (the binary has debug info and maps 1:1 to `src/gen/f_<address>.c`), compare with the original

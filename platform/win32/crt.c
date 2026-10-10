@@ -2,8 +2,31 @@
 #include "hm_platform.h"
 
 /* memory */
-void *crt__malloc(size_t n) { return host_malloc(n ? n : 1); }
-undefined4 crt__free(void *p) { host_free(p); return 0; }
+/* The game is linked against the debug CRT: _malloc fills new blocks with 0xCD, surrounds them with 4-byte
+ * 0xFD guards, and _free fills released blocks with 0xDD. The game reads uninitialised memory in places (for
+ * example past the loaded sprite data in the chapter 5 mine), and what it draws depends on those values, so
+ * the port reproduces the same fill patterns. */
+#define HM_GUARD 4
+void *crt__malloc(size_t n)
+{
+    unsigned char *p = host_malloc((unsigned)(n + 2 * HM_GUARD + sizeof(size_t)));
+    if (!p) return 0;
+    *(size_t *)p = n;
+    p += sizeof(size_t);
+    __builtin_memset(p, 0xFD, HM_GUARD);
+    __builtin_memset(p + HM_GUARD, 0xCD, n);
+    __builtin_memset(p + HM_GUARD + n, 0xFD, HM_GUARD);
+    return p + HM_GUARD;
+}
+undefined4 crt__free(void *q)
+{
+    if (!q) return 0;
+    unsigned char *p = (unsigned char *)q - HM_GUARD - sizeof(size_t);
+    size_t n = *(size_t *)p;
+    __builtin_memset(p, 0xDD, n + 2 * HM_GUARD + sizeof(size_t));
+    host_free(p);
+    return 0;
+}
 void *crt__memcpy(void *d, const void *s, size_t n) { return __builtin_memcpy(d, s, n); }
 void *crt__memmove(void *d, const void *s, size_t n) { return __builtin_memmove(d, s, n); }
 void *crt__memset(void *d, int c, size_t n) { return __builtin_memset(d, c, n); }

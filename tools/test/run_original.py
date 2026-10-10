@@ -5,7 +5,8 @@
 usage: run_original.py <script.txt> <shots-dir> <data-dir-with-MONSTERS.EXE> [display-number]
 
 The game runs fullscreen 640x480 inside a 640x480 Xvfb screen, so script coordinates are screen coordinates.
-Wine needs a working ALSA "default" device; a null device is configured for this process only.
+Audio: if the snd-dummy kernel module is loaded (sudo modprobe snd-dummy; user in group "audio"), Wine plays
+into that silent real-time card, so dialogues keep their pace; otherwise ALSA's null device is used.
 """
 import os, subprocess, sys, time
 
@@ -16,10 +17,16 @@ shots = os.path.abspath(shots)
 work = os.path.abspath(os.path.join(shots, '..'))
 env = dict(os.environ, DISPLAY=disp, WINEDEBUG='-all', WINEARCH='win32',
            WINEPREFIX=os.environ.get('WINEPREFIX', os.path.expanduser('~/.wine-hm')))
-asound = os.path.join(work, 'asound_null.conf')
+# Audio: prefer the snd-dummy card (real-time clock, silent) so speech-driven dialogues keep their real pace;
+# fall back to ALSA's null device, which consumes audio instantly. Never use a real card.
+asound = os.path.join(work, 'asound_hm.conf')
+dummy = 'Dummy' in open('/proc/asound/cards').read() if os.path.exists('/proc/asound/cards') else False
+dev = '{ type hw card Dummy }' if dummy else '{ type null }'
+ctl = '{ type hw card Dummy }' if dummy else '{ type hw card 0 }'
 with open('/usr/share/alsa/alsa.conf') as f, open(asound, 'w') as o:
-    o.write(f.read() + '\npcm.!default { type null }\nctl.!default { type hw card 0 }\n')
+    o.write(f.read() + '\npcm.!default %s\nctl.!default %s\n' % (dev, ctl))
 env['ALSA_CONFIG_PATH'] = asound
+print('audio device:', 'snd-dummy' if dummy else 'null (dialogues will run fast)')
 
 xvfb = subprocess.Popen(['Xvfb', disp, '-screen', '0', '640x480x24'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(2)
@@ -28,7 +35,15 @@ for k, v in (('HKCU\\Software\\Wine\\Direct3D', ('renderer', 'gdi')),
              ('HKCU\\Software\\Wine\\Explorer\\Desktops', ('Default', '640x480'))):
     subprocess.run(['wine', 'reg', 'add', k, '/v', v[0], '/d', v[1], '/f'], env=env, capture_output=True)
 exe = next(n for n in os.listdir(data) if n.lower() == 'monsters.exe')
-game = subprocess.Popen(['wine', exe], cwd=data, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+cmd = ['wine', exe]
+import grp, shlex
+try:
+    audio_gid = grp.getgrnam('audio').gr_gid
+    if dummy and audio_gid not in os.getgroups():
+        cmd = ['sg', 'audio', '-c', shlex.join(cmd)]     # group added but not active in this session yet
+except KeyError:
+    pass
+game = subprocess.Popen(cmd, cwd=data, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 t0 = time.time()
 
 def x(*a):
@@ -69,6 +84,13 @@ for t, cmd, args in events:
     elif cmd.startswith('poke'):
         poker = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hmpoke.exe')
         r = subprocess.run(['wine', poker, exe, args[0], cmd[4:], args[1]], env=env, capture_output=True, text=True)
+        print(r.stdout.strip() or r.stderr.strip())
+    elif cmd in ('dump', 'dumpp'):
+        peeker = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hmpeek.exe')
+        out = os.path.join(shots, 'dump_%08x_%d.bin' % (int(args[0], 0), t))
+        winpath = 'Z:' + out.replace('/', '\\')
+        where = ('*' if cmd == 'dumpp' else '') + args[0]
+        r = subprocess.run(['wine', peeker, exe, where, args[1], winpath], env=env, capture_output=True, text=True)
         print(r.stdout.strip() or r.stderr.strip())
     elif cmd == 'quit':
         break

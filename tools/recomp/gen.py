@@ -19,6 +19,7 @@ ap.add_argument('--out', required=True)
 ap.add_argument('--override', default=None, help='dir with hand-written replacements f_<addr>.c')
 ap.add_argument('--strict-void', action='store_true', help='keep void return types in caller prototypes (diagnostics)')
 ap.add_argument('--no-frame', action='store_true', help='do not reproduce the original stack frame layout')
+ap.add_argument('--unprototyped', action='store_true', help='declare game functions without parameter lists (old mode)')
 ap.add_argument('--fill-frame', action='store_true', help='fill reproduced stack frames with 0xCC like MSVC /RTC')
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
@@ -387,12 +388,18 @@ with open(os.path.join(a.out, 'hm_funcs.h'), 'w') as fh:
         m = re.match(r'^(.*?)\b' + re.escape(fname) + r'\s*\((.*)\)$', proto, re.S)
         ret, params = m.group(1).strip(), m.group(2)
         ret = re.sub(r'\b__(cdecl|stdcall|fastcall|thiscall)\b', '', ret).strip()
-        if re.search(r'\b(float|double|float10)\b', params):
-            decl = proto
-        else:
+        if a.unprototyped and not re.search(r'\b(float|double|float10)\b', params):
             if ret == 'void' and not a.strict_void:
                 ret = 'undefined4'
             decl = '%s %s()' % (ret, fname)
+        else:
+            # Full prototype, so every argument is converted to its parameter type (a 64-bit expression passed
+            # to an unprototyped function would occupy two stack slots). Callers see void functions as
+            # returning EAX, like the original machine code does.
+            if ret == 'void' and not a.strict_void:
+                decl = 'undefined4 %s(%s)' % (fname, params)
+            else:
+                decl = '%s %s(%s)' % (ret, fname, params)
         fh.write('#ifndef HM_SELF_%s\n%s;\n#endif\n' % (fname, decl))
 
 # ---------------------------------------------------------------- types header

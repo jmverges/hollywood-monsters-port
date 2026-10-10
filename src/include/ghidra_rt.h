@@ -35,20 +35,22 @@ typedef int code();
 typedef unsigned long long hm_u64;
 typedef long long hm_s64;
 
-#define CONCAT11(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 8 | ((hm_u64)(b) & 0xffULL)))
-#define CONCAT12(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 16 | ((hm_u64)(b) & 0xffffULL)))
-#define CONCAT13(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 24 | ((hm_u64)(b) & 0xffffffULL)))
+/* CONCATxy yields x+y bytes: 32-bit when x+y <= 4 (a 64-bit value would take two argument slots
+ * in calls to unprototyped functions and shift every following argument). */
+#define CONCAT11(a,b) ((unsigned int)(((hm_u64)(a) & 0xffULL) << 8 | ((hm_u64)(b) & 0xffULL)))
+#define CONCAT12(a,b) ((unsigned int)(((hm_u64)(a) & 0xffULL) << 16 | ((hm_u64)(b) & 0xffffULL)))
+#define CONCAT13(a,b) ((unsigned int)(((hm_u64)(a) & 0xffULL) << 24 | ((hm_u64)(b) & 0xffffffULL)))
 #define CONCAT14(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 32 | ((hm_u64)(b) & 0xffffffffULL)))
 #define CONCAT15(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 40 | ((hm_u64)(b) & 0xffffffffffULL)))
 #define CONCAT16(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 48 | ((hm_u64)(b) & 0xffffffffffffULL)))
 #define CONCAT17(a,b) ((hm_u64)(((hm_u64)(a) & 0xffULL) << 56 | ((hm_u64)(b) & 0xffffffffffffffULL)))
-#define CONCAT21(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffULL) << 8 | ((hm_u64)(b) & 0xffULL)))
-#define CONCAT22(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffULL) << 16 | ((hm_u64)(b) & 0xffffULL)))
+#define CONCAT21(a,b) ((unsigned int)(((hm_u64)(a) & 0xffffULL) << 8 | ((hm_u64)(b) & 0xffULL)))
+#define CONCAT22(a,b) ((unsigned int)(((hm_u64)(a) & 0xffffULL) << 16 | ((hm_u64)(b) & 0xffffULL)))
 #define CONCAT23(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffULL) << 24 | ((hm_u64)(b) & 0xffffffULL)))
 #define CONCAT24(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffULL) << 32 | ((hm_u64)(b) & 0xffffffffULL)))
 #define CONCAT25(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffULL) << 40 | ((hm_u64)(b) & 0xffffffffffULL)))
 #define CONCAT26(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffULL) << 48 | ((hm_u64)(b) & 0xffffffffffffULL)))
-#define CONCAT31(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffffULL) << 8 | ((hm_u64)(b) & 0xffULL)))
+#define CONCAT31(a,b) ((unsigned int)(((hm_u64)(a) & 0xffffffULL) << 8 | ((hm_u64)(b) & 0xffULL)))
 #define CONCAT32(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffffULL) << 16 | ((hm_u64)(b) & 0xffffULL)))
 #define CONCAT33(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffffULL) << 24 | ((hm_u64)(b) & 0xffffffULL)))
 #define CONCAT34(a,b) ((hm_u64)(((hm_u64)(a) & 0xffffffULL) << 32 | ((hm_u64)(b) & 0xffffffffULL)))
