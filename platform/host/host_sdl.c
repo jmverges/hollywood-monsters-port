@@ -209,7 +209,8 @@ static int pending_char = -1;
 
 /* ---- scripted input for automated testing (HM_SCRIPT=file)
  * Each line: <time_ms> <command> [args]; time is absolute since start, or "+N" relative to the previous line.
- * Commands: move X Y | click X Y | rclick X Y | down X Y | up X Y | key VK | char C | shot NAME | quit */
+ * Commands: move X Y | click X Y | rclick X Y | down X Y | up X Y | rdown X Y | rup X Y | key VK | char C | shot NAME
+ *           | poke8|poke16|poke32 ADDR VALUE (write game memory, e.g. the room id at 0x6ca1be) | quit */
 struct script_ev { unsigned t; char cmd[16]; int a, b; char name[64]; };
 static struct script_ev *g_script;
 static int g_script_n, g_script_i, g_script_loaded;
@@ -255,19 +256,30 @@ static void run_script(void)
         struct script_ev *s = &g_script[g_script_i++];
         struct host_event e;
         memset(&e, 0, sizeof e);
-        if (!strcmp(s->cmd, "move") || !strcmp(s->cmd, "click") || !strcmp(s->cmd, "rclick") || !strcmp(s->cmd, "down") || !strcmp(s->cmd, "up")) {
+        const char *c = s->cmd;
+        int right = c[0] == 'r' && strcmp(c, "rclick") != 0 ? 1 : !strcmp(c, "rclick");
+        const char *base = (c[0] == 'r' && strcmp(c, "rclick")) ? c + 1 : c;   /* rdown -> down, rup -> up */
+        if (!strcmp(base, "move") || !strcmp(base, "click") || !strcmp(base, "rclick") || !strcmp(base, "down") || !strcmp(base, "up")) {
             g_mx = s->a; g_my = s->b;
             e.type = HOST_EV_MOUSEMOVE; e.x = g_mx; e.y = g_my;
             g_inject[g_inject_n++] = e;
-            int btn = !strcmp(s->cmd, "rclick") ? 3 : 1;
-            if (strcmp(s->cmd, "move") && strcmp(s->cmd, "up")) { e.type = HOST_EV_MOUSEDOWN; e.button = btn; g_inject[g_inject_n++] = e; }
-            if (!strcmp(s->cmd, "click") || !strcmp(s->cmd, "rclick") || !strcmp(s->cmd, "up")) { e.type = HOST_EV_MOUSEUP; e.button = btn; g_inject[g_inject_n++] = e; }
+            int btn = right ? 3 : 1;
+            if (strcmp(base, "move") && strcmp(base, "up")) { e.type = HOST_EV_MOUSEDOWN; e.button = btn; g_inject[g_inject_n++] = e; }
+            if (!strcmp(base, "click") || !strcmp(base, "rclick") || !strcmp(base, "up")) { e.type = HOST_EV_MOUSEUP; e.button = btn; g_inject[g_inject_n++] = e; }
         } else if (!strcmp(s->cmd, "key")) {
             e.type = HOST_EV_KEYDOWN; e.vk = s->a; g_inject[g_inject_n++] = e;
             if (s->a == 0x0D || s->a == 0x1B || s->a == 0x20) { e.type = HOST_EV_CHAR; e.ch = s->a; g_inject[g_inject_n++] = e; }
             e.type = HOST_EV_KEYUP; g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "char")) {
             e.type = HOST_EV_CHAR; e.ch = (unsigned char)s->name[0]; g_inject[g_inject_n++] = e;
+        } else if (!strncmp(s->cmd, "poke", 4)) {          /* poke8|poke16|poke32 ADDR VALUE (debug warps) */
+            unsigned long addr = strtoul(s->name, NULL, 0);
+            unsigned long val = (unsigned long)s->b;
+            int bits = atoi(s->cmd + 4);
+            if (bits == 8) *(volatile unsigned char *)addr = (unsigned char)val;
+            else if (bits == 16) *(volatile unsigned short *)addr = (unsigned short)val;
+            else *(volatile unsigned int *)addr = (unsigned int)val;
+            host_log("HM_SCRIPT: poke%d %#lx = %lu", bits, addr, val);
         } else if (!strcmp(s->cmd, "shot")) {
             save_shot(s->name);
         } else if (!strcmp(s->cmd, "quit")) {
