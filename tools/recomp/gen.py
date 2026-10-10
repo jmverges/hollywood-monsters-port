@@ -6,7 +6,6 @@ Output layout (all generated, never hand-edit; overrides go in src/override/):
   gen/hm_funcs.h      prototypes of every game function (copied from the definitions)
   gen/hm_imports.h    prototypes of every Win32 / CRT function the game calls
   gen/f_<addr>.c      one file per game function, globals mapped to their original addresses
-  gen/hm_fixups.c     code pointers stored in initialized data, to patch at load time
   gen/imports.tsv     list of imports the platform layer must implement
 """
 import argparse, os, re, sys, collections
@@ -395,41 +394,6 @@ with open(os.path.join(a.out, 'hm_funcs.h'), 'w') as fh:
                 ret = 'undefined4'
             decl = '%s %s()' % (ret, fname)
         fh.write('#ifndef HM_SELF_%s\n%s;\n#endif\n' % (fname, decl))
-
-# ---------------------------------------------------------------- data pointer fixups
-rows = []
-with open(os.path.join(a.rx, 'dataptrs.tsv')) as fh:
-    for line in fh:
-        p = line.rstrip('\n').split('\t')
-        da, ta = int(p[0], 16), int(p[1], 16)
-        r = resolve(ta)
-        if isinstance(r, int) and r in game:
-            rows.append((da, ta, ident(game[r]['name'])))
-        else:
-            c = None
-            if isinstance(r, int) and r in funcs:
-                c, _ = cname_for_entry(r)
-            rows.append((da, ta, None))
-            stats['fixup_unresolved'] += 1
-with open(os.path.join(a.out, 'hm_fixups.c'), 'w') as fh:
-    fh.write('/* Generated: code pointers stored in the original initialized data. */\n#include "hm_common.h"\n#include "hm_fixups.h"\n')
-    fh.write('const struct hm_fixup hm_fixups[] = {\n')
-    for da, ta, c in rows:
-        if c:
-            fh.write('  { 0x%08xU, 0x%08xU, (void *)%s },\n' % (da, ta, c))
-        else:
-            fh.write('  /* { 0x%08xU, 0x%08xU, unresolved } */\n' % (da, ta))
-    fh.write('  { 0, 0, 0 }\n};\n')
-    # address -> function map for every game function and every ILT thunk (for runtime lookups)
-    fh.write('const struct hm_funcmap hm_funcmap[] = {\n')
-    for e in sorted(game):
-        if e in func_c_names:
-            fh.write('  { 0x%08xU, (void *)%s },\n' % (e, func_c_names[e]))
-    for k in sorted(ilt):
-        r = resolve(k)
-        if isinstance(r, int) and r in func_c_names:
-            fh.write('  { 0x%08xU, (void *)%s },\n' % (k, func_c_names[r]))
-    fh.write('  { 0, 0 }\n};\n')
 
 # ---------------------------------------------------------------- types header
 def fix_types(src):

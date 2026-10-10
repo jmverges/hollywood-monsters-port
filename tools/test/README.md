@@ -37,3 +37,10 @@ Timing differs between runs (animations, timers), so compare states, not pixels.
 `poke` commands are applied with `tools/test/hmpoke.exe` (build it with
 `i686-w64-mingw32-gcc -O2 -o tools/test/hmpoke.exe tools/test/hmpoke.c`), which writes into the
 original's memory through `WriteProcessMemory` under Wine.
+
+## Savegame and smoke test
+
+* `make_savegame.sh <data-dir>` plays the intro (~7 min) and saves "autotest" in slot 0. Most scripts start
+  by loading it (`Esc`, `Cargar`, first slot).
+* `smoke.sh <data-dir>` warps through every room of chapters 1–8 in parallel (room ids are read from the
+  generated `WinMain`) with random clicks, and fails if any run crashes. Use it after changing the pipeline.
