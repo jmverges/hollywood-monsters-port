@@ -180,7 +180,7 @@ static void fill_desc(struct dd_surface *s, DDSURFACEDESC2 *d)
     d->ddsCaps.dwCaps = s->caps;
 }
 
-static long surf_GetSurfaceDesc(IDirectDrawSurface7 *This, DDSURFACEDESC2 *d) { fill_desc(SURF(This), d); return DD_OK; }
+static long surf_GetSurfaceDesc(IDirectDrawSurface7 *This, DDSURFACEDESC2 *d) { HM_TRACE("GetSurfaceDesc %p -> %p", (void *)This, (void *)d); fill_desc(SURF(This), d); return DD_OK; }
 static long surf_GetCaps(IDirectDrawSurface7 *This, DDSCAPS2 *c) { HM_MEMSET(c, 0, sizeof *c); c->dwCaps = SURF(This)->caps; return DD_OK; }
 
 static long surf_Lock(IDirectDrawSurface7 *This, DXRECT *r, DDSURFACEDESC2 *d, ulong flags, void *ev)
@@ -201,6 +201,7 @@ static long surf_Unlock(IDirectDrawSurface7 *This, DXRECT *r)
 
 static long surf_GetAttachedSurface(IDirectDrawSurface7 *This, DDSCAPS2 *caps, IDirectDrawSurface7 **out)
 {
+    HM_TRACE("GetAttachedSurface %p -> %p", (void *)This, (void *)out);
     (void)caps;
     struct dd_surface *s = SURF(This);
     if (!s->back) return DDERR_NOTFOUND;
@@ -382,6 +383,7 @@ static long dd_CreateSurface(IDirectDraw7 *This, DDSURFACEDESC2 *d, IDirectDrawS
 
 static long dd_CreatePalette(IDirectDraw7 *This, ulong flags, DXPALETTEENTRY *e, IDirectDrawPalette **out, void *outer)
 {
+    HM_TRACE("CreatePalette flags=%#lx -> %p", (unsigned long)flags, (void *)out);
     (void)This; (void)flags; (void)outer;
     *out = &new_palette(e)->iface;
     return DD_OK;

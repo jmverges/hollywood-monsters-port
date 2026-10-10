@@ -173,6 +173,19 @@ int main(int argc, char **argv)
     if (!dir) dir = "ux0:data/hollywood-monsters";
 #endif
     if (dir && chdir(dir) != 0) { host_log("cannot enter data directory %s", dir); return 1; }
+#ifdef __vita__
+    /* No shell on the Vita: HM_* variables (HM_DEBUG=1 ...) can be set in hm_env.txt, one per line. */
+    FILE *envf = fopen("hm_env.txt", "r");
+    if (envf) {
+        char line[256];
+        while (fgets(line, sizeof line, envf)) {
+            line[strcspn(line, "\r\n")] = 0;
+            char *eq = strchr(line, '=');
+            if (eq && line[0] != '#') { *eq = 0; setenv(line, eq + 1, 1); host_log("hm_env.txt: %s=%s", line, eq + 1); }
+        }
+        fclose(envf);
+    }
+#endif
     char exe[256];
     if (!find_exe(exe, sizeof exe)) {
         host_log("MONSTERS.EXE (FX Interactive edition) not found in the data directory.\n"

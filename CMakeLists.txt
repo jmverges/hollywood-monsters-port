@@ -5,7 +5,8 @@ project(hollywood_monsters_port C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
-add_compile_options(-fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -fno-omit-frame-pointer)
+# -fsigned-char: the game was compiled for x86, where char is signed; ARM (PS Vita) defaults to unsigned.
+add_compile_options(-fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -fno-omit-frame-pointer -fsigned-char)
 if(VITA)
   # PS Vita (cmake -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake): 32-bit ARM, little-endian,
   # no fixed mapping, so the image is relocatable.

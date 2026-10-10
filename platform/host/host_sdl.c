@@ -28,13 +28,23 @@ static unsigned char *g_frame;          /* 8bpp */
 static int g_fw, g_fh, g_frame_dirty;
 static unsigned char g_pal[1024];
 
+#ifdef __vita__
+#include <psp2/kernel/clib.h>
+#endif
+
 void host_log(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
+#ifdef __vita__
+    char buf[1024];                         /* stderr goes nowhere on the Vita; the kernel log (and Vita3K) shows this */
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    sceClibPrintf("%s\n", buf);
+#else
     vfprintf(stderr, fmt, ap);
-    va_end(ap);
     fputc('\n', stderr);
+#endif
+    va_end(ap);
 }
 
 int host_is_main_thread(void) { return pthread_equal(pthread_self(), g_main_thread); }
@@ -66,6 +76,9 @@ int host_window_open(const char *title, int width, int height)
     int ww = width * g_scale, wh = height * g_scale;
 #ifdef __vita__
     flags = SDL_WINDOW_FULLSCREEN; ww = 960; wh = 544;
+    /* SDL's native GXM renderer has precompiled shaders. The OpenGL ES one (vitaGL) compiles shaders at run time
+     * and needs libshacccg.suprx, which each user must extract from their own console. */
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "VITA gxm");
 #endif
     g_win = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ww, wh, flags);
     if (!g_win) { host_log("SDL_CreateWindow: %s", SDL_GetError()); return 0; }
@@ -76,7 +89,9 @@ int host_window_open(const char *title, int width, int height)
     if (!g_ren) { host_log("SDL_CreateRenderer: %s", SDL_GetError()); return 0; }
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     SDL_RenderSetLogicalSize(g_ren, width, height);
-    SDL_StartTextInput();
+#ifndef __vita__
+    SDL_StartTextInput();                            /* on the Vita this opens the on-screen keyboard bar */
+#endif
     SDL_ShowCursor(SDL_DISABLE);                     /* the game's cursor is drawn by draw_cursor() */
     return 1;
 }
@@ -726,7 +741,12 @@ unsigned host_fwrite(const void *buf, unsigned size, unsigned n, void *f) { retu
 int host_fseek(void *f, long off, int whence) { return f ? fseek((FILE *)f, off, whence) : -1; }
 long host_ftell(void *f) { return f ? ftell((FILE *)f) : -1; }
 
-void *host_malloc(unsigned n) { return malloc(n); }
+void *host_malloc(unsigned n)
+{
+    void *p = malloc(n);
+    if (!p && n) host_log("host_malloc(%u) failed: out of memory", n);
+    return p;
+}
 void host_free(void *p) { free(p); }
 long long host_time(void) { return (long long)time(NULL); }
 

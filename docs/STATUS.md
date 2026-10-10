@@ -28,6 +28,7 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 | Chapter 7 cutscene vs original | Warping through chapter 7 as the room tour does, then 60 s of the cutscene that follows (café, Ron, Hannover's office, Bel Air, the street): 29 screenshots within 2.7 % |
 | English | With the fan translation installed by `tools/lang/english_patch.py`: options menu, load/save, verb bar, action line ("Look at purse"), object names and dialogue subtitles in English; voices stay Spanish. The Spanish build is unchanged (inventory screens identical to the original, smoke test) |
 | Relocatable build | `-DHM_RELOCATABLE=ON` with the image at a high address and the original range inaccessible: smoke test passes, room tour 65/11/1 (as the normal build), no access to the original range |
+| PS Vita (emulated) | The VPK runs in Vita3K (v0.2.1, Linux, OpenGL backend): boot, DirectDraw/DirectSound, sound streaming threads and the intro up to the newspaper office. Not tried on a real console yet |
 | Long session | 30 minutes of random clicks, verb gestures and occasional room warps in chapter 1: no crash, memory steady at about 112 MB (+0.5 MB over the run) |
 | Register leftovers | Since all ~3,000 are initialised to 0, the smoke test still passes in all 77 rooms |
 

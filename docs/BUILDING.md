@@ -37,7 +37,7 @@ build/hollywood-monsters /path/to/gamedata
 `pipeline.sh` accepts `STEP=export` or `STEP=gen` to resume from a later step once the Ghidra project exists.
 Re-run `cmake` after regenerating (the source list is a glob).
 
-## PS Vita (not tested on hardware yet)
+## PS Vita (runs in the Vita3K emulator; not tested on hardware yet)
 
 Built with VitaSDK, for example with its Docker image:
 
@@ -50,7 +50,8 @@ This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita
 (see PORTING.md). Install it with VitaShell and copy the game data (MONSTERS.EXE, the RESOURCE files, and
 hm_lang.tsv for English) to `ux0:data/hollywood-monsters/`. Controls: touch screen as mouse, or the left stick
 and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
-for the menu. The same controls work with any game controller on the other builds.
+for the menu. The same controls work with any game controller on the other builds. On the Vita, HM_* variables
+(HM_DEBUG=1 ...) can be set in `hm_env.txt` in the data folder; messages go to the kernel log (`sceClibPrintf`).
 
 ## English
 
