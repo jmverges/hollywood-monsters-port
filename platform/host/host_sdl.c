@@ -117,6 +117,22 @@ static void dump_frame_if_requested(const Uint32 *argb, int w, int h)
     fclose(f);
 }
 
+static void save_shot(const char *name)
+{
+    const char *dir = getenv("HM_SHOT_DIR");
+    char path[512];
+    snprintf(path, sizeof path, "%s/%s.ppm", dir ? dir : ".", name);
+    pthread_mutex_lock(&g_frame_mx);
+    FILE *f = g_frame ? fopen(path, "wb") : NULL;
+    if (f) {
+        fprintf(f, "P6\n%d %d\n255\n", g_fw, g_fh);
+        for (int i = 0; i < g_fw * g_fh; i++) fwrite(&g_pal[g_frame[i] * 4], 1, 3, f);
+        fclose(f);
+        host_log("shot %s", path);
+    }
+    pthread_mutex_unlock(&g_frame_mx);
+}
+
 void host_render_pending(void)
 {
     if (!g_ren) return;
@@ -184,11 +200,83 @@ static void to_logical(int wx, int wy, int *lx, int *ly)
 
 static int pending_char = -1;
 
+/* ---- scripted input for automated testing (HM_SCRIPT=file)
+ * Each line: <time_ms> <command> [args]; time is absolute since start, or "+N" relative to the previous line.
+ * Commands: move X Y | click X Y | rclick X Y | down X Y | up X Y | key VK | char C | shot NAME | quit */
+struct script_ev { unsigned t; char cmd[16]; int a, b; char name[64]; };
+static struct script_ev *g_script;
+static int g_script_n, g_script_i, g_script_loaded;
+static unsigned g_script_t0;
+static int g_mx = 320, g_my = 240;
+static struct host_event g_inject[8];
+static int g_inject_n;
+
+static void load_script(void)
+{
+    g_script_loaded = 1;
+    const char *path = getenv("HM_SCRIPT");
+    if (!path) return;
+    FILE *f = fopen(path, "r");
+    if (!f) { host_log("HM_SCRIPT %s not found", path); return; }
+    char line[256];
+    unsigned last = 0;
+    while (fgets(line, sizeof line, f)) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+        struct script_ev ev;
+        memset(&ev, 0, sizeof ev);
+        char tbuf[32];
+        int n = sscanf(line, "%31s %15s %63s %d", tbuf, ev.cmd, ev.name, &ev.b);
+        if (n < 2) continue;
+        unsigned t = tbuf[0] == '+' ? last + (unsigned)atoi(tbuf + 1) : (unsigned)atoi(tbuf);
+        ev.t = last = t;
+        ev.a = atoi(ev.name);
+        g_script = realloc(g_script, sizeof *g_script * (g_script_n + 1));
+        g_script[g_script_n++] = ev;
+    }
+    fclose(f);
+    g_script_t0 = SDL_GetTicks();
+    host_log("HM_SCRIPT: %d events", g_script_n);
+}
+
+static void save_shot(const char *name);
+
+static void run_script(void)
+{
+    if (!g_script_loaded) load_script();
+    unsigned now = SDL_GetTicks() - g_script_t0;
+    while (g_script_i < g_script_n && g_script[g_script_i].t <= now && g_inject_n < 6) {
+        struct script_ev *s = &g_script[g_script_i++];
+        struct host_event e;
+        memset(&e, 0, sizeof e);
+        if (!strcmp(s->cmd, "move") || !strcmp(s->cmd, "click") || !strcmp(s->cmd, "rclick") || !strcmp(s->cmd, "down") || !strcmp(s->cmd, "up")) {
+            g_mx = s->a; g_my = s->b;
+            e.type = HOST_EV_MOUSEMOVE; e.x = g_mx; e.y = g_my;
+            g_inject[g_inject_n++] = e;
+            int btn = !strcmp(s->cmd, "rclick") ? 3 : 1;
+            if (strcmp(s->cmd, "move") && strcmp(s->cmd, "up")) { e.type = HOST_EV_MOUSEDOWN; e.button = btn; g_inject[g_inject_n++] = e; }
+            if (!strcmp(s->cmd, "click") || !strcmp(s->cmd, "rclick") || !strcmp(s->cmd, "up")) { e.type = HOST_EV_MOUSEUP; e.button = btn; g_inject[g_inject_n++] = e; }
+        } else if (!strcmp(s->cmd, "key")) {
+            e.type = HOST_EV_KEYDOWN; e.vk = s->a; g_inject[g_inject_n++] = e;
+            if (s->a == 0x0D || s->a == 0x1B || s->a == 0x20) { e.type = HOST_EV_CHAR; e.ch = s->a; g_inject[g_inject_n++] = e; }
+            e.type = HOST_EV_KEYUP; g_inject[g_inject_n++] = e;
+        } else if (!strcmp(s->cmd, "char")) {
+            e.type = HOST_EV_CHAR; e.ch = (unsigned char)s->name[0]; g_inject[g_inject_n++] = e;
+        } else if (!strcmp(s->cmd, "shot")) {
+            save_shot(s->name);
+        } else if (!strcmp(s->cmd, "quit")) {
+            host_log("HM_SCRIPT: quit at %u ms", now);
+            exit(0);
+        }
+    }
+}
+
 int host_poll_event(struct host_event *ev)
 {
     SDL_Event e;
     memset(ev, 0, sizeof *ev);
     if (host_is_main_thread()) host_render_pending();
+    run_script();
+    if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pending_char >= 0) { ev->type = HOST_EV_CHAR; ev->ch = pending_char; pending_char = -1; return 1; }
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
@@ -230,6 +318,7 @@ int host_poll_event(struct host_event *ev)
 
 void host_get_mouse(int *x, int *y)
 {
+    if (g_script_n) { *x = g_mx; *y = g_my; return; }
     int wx = 0, wy = 0;
     SDL_GetMouseState(&wx, &wy);
     if (g_ren) to_logical(wx, wy, x, y); else { *x = wx; *y = wy; }
