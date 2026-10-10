@@ -68,8 +68,11 @@ int host_window_open(const char *title, int width, int height)
     return 1;
 }
 
+static volatile int g_quitting;
+
 void host_quit(int code)
 {
+    g_quitting = 1;                 /* other threads (the game's timer) must stop calling into SDL video */
     SDL_Quit();
     exit(code);
 }
@@ -221,6 +224,8 @@ static int g_mx = 320, g_my = 240;
 /* SetCursorPos semantics: after a warp, GetCursorPos reports the new position until the pointer really moves.
  * SDL cannot warp on some systems (Wayland) and may report the old position until the next event elsewhere. */
 static int g_warp_pending, g_warp_x, g_warp_y;
+static volatile int g_warp_request;   /* a warp asked for by another thread, done by the main thread */
+static void apply_warp(void);
 
 static struct host_event g_inject[8];
 static int g_inject_n;
@@ -318,11 +323,12 @@ int host_poll_event(struct host_event *ev)
     memset(ev, 0, sizeof *ev);
     if (host_is_main_thread()) host_render_pending();
     run_script();
+    if (g_warp_request && host_is_main_thread()) apply_warp();
     if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pending_char >= 0) { ev->type = HOST_EV_CHAR; ev->ch = pending_char; pending_char = -1; return 1; }
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
-        case SDL_QUIT: ev->type = HOST_EV_QUIT; return 1;
+        case SDL_QUIT: host_log("SDL_QUIT (window closed or SIGINT/SIGTERM)"); ev->type = HOST_EV_QUIT; return 1;
         case SDL_MOUSEMOTION: g_warp_pending = 0; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
         case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
             ev->type = e.type == SDL_MOUSEBUTTONDOWN ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
@@ -379,17 +385,27 @@ void host_get_mouse(int *x, int *y)
     if (g_ren) to_logical(wx, wy, x, y); else { *x = wx; *y = wy; }
 }
 
-void host_set_mouse(int x, int y)
+static void apply_warp(void)
 {
-    if (getenv("HM_NO_WARP")) return;
-    if (g_script_n) { g_mx = x; g_my = y; }   /* scripted pointer: a warp moves it, as SetCursorPos does on Windows */
-    g_warp_pending = 1; g_warp_x = x; g_warp_y = y;
-    if (!g_win || !g_ren) return;
+    g_warp_request = 0;
+    if (!g_win || !g_ren || g_quitting) return;
+    int x = g_warp_x, y = g_warp_y;
     int ww, wh; SDL_GetWindowSize(g_win, &ww, &wh);
     if (!g_tw || !g_th) return;
     float sx = (float)ww / g_tw, sy = (float)wh / g_th, s = sx < sy ? sx : sy;
     int ox = (int)((ww - g_tw * s) / 2), oy = (int)((wh - g_th * s) / 2);
     SDL_WarpMouseInWindow(g_win, ox + (int)(x * s), oy + (int)(y * s));
+}
+
+/* SetCursorPos. The game calls it from its timer thread too; SDL video calls belong on the main thread, so
+ * those warps are recorded here and applied by the main thread on its next event poll. */
+void host_set_mouse(int x, int y)
+{
+    if (getenv("HM_NO_WARP") || g_quitting) return;
+    if (g_script_n) { g_mx = x; g_my = y; }   /* scripted pointer: a warp moves it, as SetCursorPos does on Windows */
+    g_warp_x = x; g_warp_y = y; g_warp_pending = 1;
+    if (host_is_main_thread()) apply_warp();
+    else g_warp_request = 1;
 }
 
 void host_show_cursor(int show) { SDL_ShowCursor(show ? SDL_ENABLE : SDL_DISABLE); }

@@ -43,6 +43,10 @@ Ubuntu 24.04 (x86-64 host, i386 build), FX Interactive 2010 build of `MONSTERS.E
 
 ## Known issues / open work
 
+* Fixed on 2026-10-10: the game calls `SetCursorPos` from its timer thread, and the SDL host warped the pointer
+  from that thread. On a real desktop (KDE Wayland via XWayland, Legion Go with Bazzite) this crashed during
+  shutdown. Warps from other threads are now applied by the main thread. Headless runs never showed it.
+
 * Fixed on 2026-10-10: `gen.py` placed the `g_ddsd` macro (the surface descriptor the game passes to `Lock`) at
   the address of its `lpSurface` field instead of the structure's start, so every `Lock` wrote the descriptor
   0x24 bytes too far, over the first entries of Sue's animation table. Visible as orange streaks where Sue's
