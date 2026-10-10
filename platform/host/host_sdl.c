@@ -40,6 +40,10 @@ void host_log(const char *fmt, ...)
     char buf[1024];                         /* stderr goes nowhere on the Vita; the kernel log (and Vita3K) shows this */
     vsnprintf(buf, sizeof buf, fmt, ap);
     sceClibPrintf("%s\n", buf);
+    static FILE *logf;                       /* and hm_log.txt in the data folder, readable over FTP */
+    static int log_bytes;
+    if (!logf) logf = fopen("hm_log.txt", "w");
+    if (logf && log_bytes < 4 << 20) { log_bytes += fprintf(logf, "%s\n", buf); fflush(logf); }
 #else
     vfprintf(stderr, fmt, ap);
     fputc('\n', stderr);
@@ -320,6 +324,70 @@ static void apply_warp(void);
 static struct host_event g_inject[8];
 static int g_inject_n;
 
+/* Touch screen as mouse (PS Vita, Legion Go): a tap is a left click; dragging aims and the click comes on lifting
+ * the finger; holding still for half a second is the right button (the verb bar), then sliding moves the
+ * pointer slowly, like a mouse, and lifting releases it. */
+static struct { int active, right, moved; long long id; Uint32 t0; float x0, y0, lx, ly; } g_touch;
+
+static void inject_pointer(int type, int button)
+{
+    if (g_inject_n >= 8) return;
+    struct host_event e;
+    memset(&e, 0, sizeof e);
+    e.type = type; e.x = (int)g_px; e.y = (int)g_py; e.button = button;
+    g_inject[g_inject_n++] = e;
+}
+
+static void touch_event(const SDL_Event *e)
+{
+    if (!g_win || !g_ren) return;
+#ifdef __vita__
+    if (e->tfinger.touchId != SDL_GetTouchDevice(0)) return;      /* front panel only */
+#endif
+    int ww, wh, lx, ly;
+    SDL_GetWindowSize(g_win, &ww, &wh);
+    to_logical((int)(e->tfinger.x * ww), (int)(e->tfinger.y * wh), &lx, &ly);
+    float gx = (float)lx, gy = (float)ly;
+    if (e->type == SDL_FINGERDOWN) {
+        if (g_touch.active) return;                                  /* one finger at a time */
+        g_touch.active = 1; g_touch.right = 0; g_touch.moved = 0; g_touch.id = (long long)e->tfinger.fingerId;
+        g_touch.t0 = SDL_GetTicks(); g_touch.x0 = g_touch.lx = gx; g_touch.y0 = g_touch.ly = gy;
+        g_pad_mode = 1; g_px = gx; g_py = gy; g_warp_pending = 0; g_cursor_dirty = 1; g_mouse_in = 1;
+        if (g_script_n) { g_mx = (int)g_px; g_my = (int)g_py; }
+        inject_pointer(HOST_EV_MOUSEMOVE, 0);
+        return;
+    }
+    if (!g_touch.active || (long long)e->tfinger.fingerId != g_touch.id) return;
+    if (e->type == SDL_FINGERMOTION) {
+        if (g_touch.right) {
+            g_px += (gx - g_touch.lx) * 0.15f; g_py += (gy - g_touch.ly) * 0.15f;
+        } else {
+            float dx = gx - g_touch.x0, dy = gy - g_touch.y0;
+            if (dx * dx + dy * dy > 64) g_touch.moved = 1;
+            g_px = gx; g_py = gy;
+        }
+        if (g_px < 0) g_px = 0;
+        if (g_py < 0) g_py = 0;
+        if (g_px > g_tw - 1) g_px = (float)(g_tw - 1);
+        if (g_py > g_th - 1) g_py = (float)(g_th - 1);
+        g_touch.lx = gx; g_touch.ly = gy; g_cursor_dirty = 1; g_warp_pending = 0;
+        if (g_script_n) { g_mx = (int)g_px; g_my = (int)g_py; }
+        inject_pointer(HOST_EV_MOUSEMOVE, 0);
+    } else if (e->type == SDL_FINGERUP) {
+        if (g_touch.right) inject_pointer(HOST_EV_MOUSEUP, 3);
+        else { inject_pointer(HOST_EV_MOUSEDOWN, 1); inject_pointer(HOST_EV_MOUSEUP, 1); }
+        g_touch.active = 0;
+    }
+}
+
+static void touch_hold(void)
+{
+    if (g_touch.active && !g_touch.right && !g_touch.moved && SDL_GetTicks() - g_touch.t0 >= 500) {
+        g_touch.right = 1;
+        inject_pointer(HOST_EV_MOUSEDOWN, 3);
+    }
+}
+
 static void load_script(void)
 {
     g_script_loaded = 1;
@@ -367,6 +435,19 @@ static void run_script(void)
             int btn = right ? 3 : 1;
             if (strcmp(base, "move") && strcmp(base, "up")) { e.type = HOST_EV_MOUSEDOWN; e.button = btn; g_inject[g_inject_n++] = e; }
             if (!strcmp(base, "click") || !strcmp(base, "rclick") || !strcmp(base, "up")) { e.type = HOST_EV_MOUSEUP; e.button = btn; g_inject[g_inject_n++] = e; }
+        } else if (!strcmp(s->cmd, "tdown") || !strcmp(s->cmd, "tmove") || !strcmp(s->cmd, "tup")) {
+            /* touch screen (tdown/tmove/tup X Y): pushed as SDL finger events, like the Vita's front panel */
+            if (g_win && g_ren) {
+                SDL_Event te;
+                memset(&te, 0, sizeof te);
+                te.type = s->cmd[1] == 'd' ? SDL_FINGERDOWN : s->cmd[1] == 'm' ? SDL_FINGERMOTION : SDL_FINGERUP;
+                te.tfinger.touchId = 1; te.tfinger.fingerId = 1;
+                int ww, wh, wx, wy;
+                SDL_GetWindowSize(g_win, &ww, &wh);
+                SDL_RenderLogicalToWindow(g_ren, s->a + 0.5f, s->b + 0.5f, &wx, &wy);
+                te.tfinger.x = (float)wx / ww; te.tfinger.y = (float)wy / wh;
+                SDL_PushEvent(&te);
+            }
         } else if (!strcmp(s->cmd, "key")) {
             e.type = HOST_EV_KEYDOWN; e.vk = s->a; g_inject[g_inject_n++] = e;
             if (s->a == 0x0D || s->a == 0x1B || s->a == 0x20) { e.type = HOST_EV_CHAR; e.ch = s->a; g_inject[g_inject_n++] = e; }
@@ -447,6 +528,8 @@ int host_poll_event(struct host_event *ev)
     if (g_warp_request && host_is_main_thread()) apply_warp();
     if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pending_char >= 0) { ev->type = HOST_EV_CHAR; ev->ch = pending_char; pending_char = -1; return 1; }
+    touch_hold();
+    if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
     if (pad_move(ev)) return 1;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
@@ -474,8 +557,15 @@ int host_poll_event(struct host_event *ev)
             break;
         }
         case SDL_QUIT: host_log("SDL_QUIT (window closed or SIGINT/SIGTERM)"); ev->type = HOST_EV_QUIT; return 1;
-        case SDL_MOUSEMOTION: g_pad_mode = 0; g_warp_pending = 0; g_cursor_dirty = 1; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
+        case SDL_FINGERDOWN: case SDL_FINGERMOTION: case SDL_FINGERUP:
+            touch_event(&e);
+            if (g_inject_n) { *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n); return 1; }
+            break;
+        case SDL_MOUSEMOTION:
+            if (e.motion.which == SDL_TOUCH_MOUSEID) break;           /* touch is handled from the finger events */
+            g_pad_mode = 0; g_warp_pending = 0; g_cursor_dirty = 1; ev->type = HOST_EV_MOUSEMOVE; ev->x = e.motion.x; ev->y = e.motion.y; return 1;
         case SDL_MOUSEBUTTONDOWN: case SDL_MOUSEBUTTONUP:
+            if (e.button.which == SDL_TOUCH_MOUSEID) break;
             ev->type = e.type == SDL_MOUSEBUTTONDOWN ? HOST_EV_MOUSEDOWN : HOST_EV_MOUSEUP;
             ev->x = e.button.x; ev->y = e.button.y;
             if (g_warp_pending) { ev->x = g_warp_x; ev->y = g_warp_y; }   /* Windows: a click happens where the cursor was warped */

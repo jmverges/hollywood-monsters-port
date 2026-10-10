@@ -48,10 +48,12 @@ docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/src -w /src vitasdk/v
 
 This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita build is always relocatable
 (see PORTING.md). Install it with VitaShell and copy the game data (MONSTERS.EXE, the RESOURCE files, and
-hm_lang.tsv for English) to `ux0:data/hollywood-monsters/`. Controls: touch screen as mouse, or the left stick
-and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
+hm_lang.tsv for English) to `ux0:data/hollywood-monsters/`. Controls: on the touch screen a tap is a click, dragging
+aims and clicks on release, and holding still for half a second is the right button (the verb bar: slide to
+choose, lift to confirm); or the left stick and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
 for the menu. The same controls work with any game controller on the other builds. On the Vita, HM_* variables
-(HM_DEBUG=1 ...) can be set in `hm_env.txt` in the data folder; messages go to the kernel log (`sceClibPrintf`).
+(HM_DEBUG=1 ...) can be set in `hm_env.txt` in the data folder; messages go to the kernel log (`sceClibPrintf`) and
+to `hm_log.txt` in the data folder.
 
 ## English
 

@@ -25,6 +25,7 @@ previous line. Coordinates are game pixels (640x480). The same format drives the
 | `shot` | name | save the last submitted frame as `<shots-dir>/<name>.png` |
 | `poke8`, `poke16`, `poke32` | addr value | write game memory (debug warps, e.g. room id `0x6ca1be`) |
 | `dump`, `dumpp` | addr len | write `len` bytes at `addr` (`dumpp`: at the pointer stored at `addr`) to a file |
+| `tdown`, `tmove`, `tup` | x y | touch screen (port only): tap = click, hold 0.5 s = right button |
 | `trap` | | stop in the debugger (port only, with `HM_GDB=1`) |
 | `quit` | | exit |
 
