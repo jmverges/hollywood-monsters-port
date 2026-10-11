@@ -15,7 +15,8 @@ Everything above `platform/host/host.h` is plain C with no OS dependencies. A ne
    pointer that escaped relocation crashes with its address; it passes the smoke test and the room tour.
 3. **An implementation of `host.h`**: window + 8bpp-with-palette presentation, input events translated to
    Windows virtual-key codes, threads/mutexes/events, an audio pull callback (stereo S16), and stdio-like
-   file access with case-insensitive names. `host_sdl.c` (~560 lines) is the reference; with SDL2 available
+   file access with case-insensitive names (plus an overlay subdirectory read first, for the English files),
+   a software cursor and a one-line notice over the frame. `host_sdl.c` is the reference; with SDL2 available
    on the target it may work unchanged.
 
 ### Assumptions the generated code makes about the target

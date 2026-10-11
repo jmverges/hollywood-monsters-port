@@ -101,6 +101,9 @@ void hm_pump_host_events(void)
              * happens on every click elsewhere, so it only gets these with HM_FOCUS_PAUSE=1. */
             if (hm_getenv("HM_FOCUS_PAUSE")) hm_post_message(WM_ACTIVATEAPP, ev.focus ? 1 : 0, 0);
             break;
+        case HOST_EV_LANG:
+            hm_lang_toggle();
+            break;
         }
     }
 }

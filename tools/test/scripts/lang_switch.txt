@@ -1,0 +1,43 @@
+# Subtitles on ("Both"), switch language in the first scene, talk to Junior (still Spanish: the room was loaded
+# before the switch), climb to the terrace and talk to Joseph in the hall: English, the same as a start in English.
+# Needs the make_savegame.sh save and en/ from tools/lang/english_patch.py; start in Spanish (HM_LANG=es).
+6000 key 27
+9000 click 172 232
+12000 click 320 60
+14000 key 27
+15500 click 523 439
+16500 click 175 254
+17500 lang
+20000 rdown 190 400
+20800 move 10 462
+21600 rup 10 462
+22300 click 190 400
+64000 click 130 300
+74000 click 215 195
+88000 move 260 190
+88400 rdown 260 190
+89200 move 25 462
+90000 rup 25 462
+90700 click 260 190
+93000 shot j91
+95000 shot j93
+97000 shot j95
+99000 shot j97
+101000 shot j99
+103000 shot j101
+105000 shot j103
+107000 shot j105
+109000 shot j107
+111000 shot j109
+113000 shot j111
+115000 shot j113
+117000 shot j115
+119000 shot j117
+121000 shot j119
+123000 shot j121
+125000 shot j123
+127000 shot j125
+129000 shot j127
+131000 shot j129
+133000 shot j131
+134000 quit

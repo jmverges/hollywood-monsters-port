@@ -27,6 +27,7 @@ previous line. Coordinates are game pixels (640x480). The same format drives the
 | `dump`, `dumpp` | addr len | write `len` bytes at `addr` (`dumpp`: at the pointer stored at `addr`) to a file |
 | `tdown`, `tmove`, `tup` | x y | touch screen (port only): tap = click, hold 0.5 s = right button |
 | `t2down`, `t2up` | x y | a second finger (two-finger tap = Escape) |
+| `lang` | | as F8: switch language (port only; from the next room, with `en/` installed) |
 | `trap` | | stop in the debugger (port only, with `HM_GDB=1`) |
 | `quit` | | exit |
 

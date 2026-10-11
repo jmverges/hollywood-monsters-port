@@ -37,7 +37,7 @@ build/hollywood-monsters /path/to/gamedata
 `pipeline.sh` accepts `STEP=export` or `STEP=gen` to resume from a later step once the Ghidra project exists.
 Re-run `cmake` after regenerating (the source list is a glob).
 
-## PS Vita (runs in the Vita3K emulator; not tested on hardware yet)
+## PS Vita (runs on a real Vita and in the Vita3K emulator)
 
 Built with VitaSDK, for example with its Docker image:
 
@@ -47,11 +47,11 @@ docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/src -w /src vitasdk/v
 ```
 
 This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita build is always relocatable
-(see PORTING.md). Install it with VitaShell and copy the game data (MONSTERS.EXE, the RESOURCE files, and
-hm_lang.tsv for English) to `ux0:data/hollywood-monsters/`. Controls: on the touch screen a tap is a click, dragging
+(see PORTING.md). Install it with VitaShell and copy the game data (MONSTERS.EXE, the RESOURCE files, and the
+`en` folder for English) to `ux0:data/hollywood-monsters/`. Controls: on the touch screen a tap is a click, dragging
 aims and clicks on release, and holding still for half a second is the right button (the verb bar: slide to
 choose, lift to confirm), and a tap with two fingers is Escape (menu, skip); or the left stick and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
-for the menu. The same controls work with any game controller on the other builds. On the Vita, HM_* variables
+for the menu, Select for the other language. The same controls work with any game controller on the other builds. On the Vita, HM_* variables
 (HM_DEBUG=1 ...) can be set in `hm_env.txt` in the data folder; messages go to the kernel log (`sceClibPrintf`) and
 to `hm_log.txt` in the data folder.
 
@@ -62,19 +62,23 @@ the 2002 FX CD edition) can be installed for the port; it translates all texts a
 Spanish:
 
 ```
-tools/lang/english_patch.py /path/to/unpacked-patch /path/to/spanish-data /path/to/new-english-data
-build/hollywood-monsters /path/to/new-english-data
+tools/lang/english_patch.py /path/to/unpacked-patch /path/to/data
 ```
 
-The script copies the Spanish data, puts the patch's RESOURCE files over the copy and writes `hm_lang.tsv`
-with the verbs and menus taken from the patch's own executable (which the port cannot run). Choose "Text" or
-"Both" in the options to see the subtitles.
+The script writes `en/` inside the data directory (about 25 MB) and leaves the Spanish files alone: the
+patch's RESOURCE files that differ, and `hm_lang.tsv` with the verbs and menus taken from the patch's own
+executable (which the port cannot run). The game then switches language with F8, or Select/Back on a
+controller. The switch takes effect when the next room or saved game loads, so a room never shows both
+languages; a notice at the top of the screen says so. The choice is kept in `hm_lang.txt` and `HM_LANG=en|es`
+overrides it. Saved games load in either language. Choose "Text" or "Both" in the options to see the
+subtitles.
 
 ## Run-time options (environment variables)
 
 | Variable | Effect |
 |---|---|
 | `HM_DATA=dir` | data directory when none is given on the command line |
+| `HM_LANG=en\|es` | language at start-up (default: the last one chosen, Spanish the first time) |
 | `HM_SCALE=n` | window scale factor (default 2) |
 | `HM_FULLSCREEN=1` | desktop fullscreen |
 | `HM_DEBUG=1` | trace Win32/DirectX calls |

@@ -1,14 +1,34 @@
-/* Translations of the game's texts (hm_lang.tsv in the data directory, made by tools/lang/english_patch.py).
+/* Language: the game's own Spanish, or the English fan translation installed in the en/ subdirectory of the
+ * data directory by tools/lang/english_patch.py. The player switches with F8 (or Select/Back on a controller);
+ * the choice is kept in hm_lang.txt ("en" or "es"), and HM_LANG=en|es overrides it.
  *
- * Lines are   original<TAB>translation   (texts the code uses directly, matched by content in hm_text)
- * or          @address<TAB>translation   (entries of tables the code indexes, e.g. the verbs at 0x5e4074,
- *                                          written over the executable's data when they fit their slot).
- * Escapes: \t \n \\ \xNN. Texts are in the game's own code page. Without the file nothing changes. */
+ * English is two things:
+ *   - en/RESOURCE.*: the translated dialogue, object names and pictures. The host reads files from en/ first
+ *     (host_set_overlay_dir). The game reads a room's texts from RESOURCE.003 when it enters the room or loads
+ *     a saved game, and keeps them while it stays there.
+ *   - en/hm_lang.tsv: texts inside the executable. Lines are
+ *        original<TAB>translation   texts the code uses directly, matched by content in hm_text
+ *        @address<TAB>translation   entries of tables the code indexes, e.g. the verbs at 0x5e4074, written over
+ *                                   the executable's data when they fit their slot (and restored on the way back)
+ *     Escapes: \t \n \\ \xNN. Texts are in the game's own code page.
+ *
+ * So that a room never mixes the two languages, a switch waits for the game to open RESOURCE.003 (the next room
+ * or loaded game) and then changes everything at once; a notice says so meanwhile.
+ *
+ * Both tables stay in memory for the whole run: the game may keep a pointer hm_text returned. A data directory
+ * from older versions of the script (a full English copy with hm_lang.tsv at the top) still works, in English
+ * only. */
 #include "hm_platform.h"
 
 struct entry { char *from, *to; };
+struct patch { char *dst, *orig, *to; int cap; };
 static struct entry *g_map;
 static int g_n;
+static struct patch *g_patch;
+static int g_np;
+static int g_have_en;            /* en/ is installed: the player can switch */
+static int g_en;                 /* English is on */
+static int g_want;               /* the player's choice, applied on the next room load (hm_lang_file_opening) */
 
 static int unescape(char *s)
 {
@@ -31,35 +51,49 @@ static int unescape(char *s)
     return (int)(o - s);
 }
 
-static char *dup(const char *s)
+static char *dup(const char *s, int n)
 {
-    unsigned n = 0;
-    while (s[n]) n++;
-    char *d = host_malloc(n + 1);
-    for (unsigned i = 0; i <= n; i++) d[i] = s[i];
+    char *d = host_malloc((unsigned)n + 1);
+    for (int i = 0; i < n; i++) d[i] = s[i];
+    d[n] = 0;
     return d;
 }
 
-static void patch_in_place(unsigned addr, const char *text, int len)
+static void *grow(void *old, int n, int *cap, unsigned size)
 {
-    char *dst = (char *)(addr + host_image_delta());
-    int cap = 0;
-    while (dst[cap]) cap++;                          /* the original text ... */
-    while (cap < 256 && dst[cap] == 0) cap++;        /* ... plus the zero padding up to the next datum */
-    if (len + 1 > cap) { host_log("hm_lang: %#x: \"%s\" does not fit (%d bytes)", addr, text, cap); return; }
-    for (int i = 0; i <= len; i++) dst[i] = text[i];
-    for (int i = len + 1; i < cap; i++) dst[i] = 0;
+    if (n < *cap) return old;
+    int c = *cap ? *cap * 2 : 64;
+    char *m = host_malloc((unsigned)c * size), *o = old;
+    for (unsigned i = 0; i < (unsigned)n * size; i++) m[i] = o[i];
+    if (old) host_free(old);
+    *cap = c;
+    return m;
 }
 
-void hm_lang_load(void)
+static void add_patch(unsigned addr, const char *text, int len)
 {
-    void *f = host_fopen("hm_lang.tsv", "rb");
-    if (!f) return;
+    static int cap;
+    char *dst = (char *)(addr + host_image_delta());
+    int room = 0;
+    while (dst[room]) room++;                        /* the original text ... */
+    while (room < 256 && dst[room] == 0) room++;     /* ... plus the zero padding up to the next datum */
+    if (len + 1 > room) { host_log("hm_lang: %#x: \"%s\" does not fit (%d bytes)", addr, text, room); return; }
+    g_patch = grow(g_patch, g_np, &cap, sizeof *g_patch);
+    struct patch *p = &g_patch[g_np++];
+    p->dst = dst; p->cap = room;
+    p->orig = dup(dst, room);
+    p->to = dup(text, len);
+}
+
+static int load_table(const char *path)
+{
+    void *f = host_fopen(path, "rb");
+    if (!f) return 0;
     static char buf[1 << 16];
     unsigned n = host_fread(buf, 1, sizeof buf - 1, f);
     host_fclose(f);
     buf[n] = 0;
-    int cap = 0, patched = 0;
+    int cap = 0;
     for (char *line = buf; line && *line; ) {
         char *next = line;
         while (*next && *next != '\n') next++;
@@ -77,24 +111,82 @@ void hm_lang_load(void)
                 unsigned addr = 0;
                 for (char *p = line + 1; *p; p++)
                     addr = addr * 16 + (unsigned)(*p >= '0' && *p <= '9' ? *p - '0' : (*p | 32) - 'a' + 10);
-                patch_in_place(addr, to, tolen);
-                patched++;
+                add_patch(addr, to, tolen);
             } else {
-                unescape(line);
-                if (g_n == cap) {
-                    struct entry *m = host_malloc((unsigned)(cap ? cap * 2 : 64) * sizeof *m);
-                    for (int i = 0; i < g_n; i++) m[i] = g_map[i];
-                    if (g_map) host_free(g_map);
-                    g_map = m; cap = cap ? cap * 2 : 64;
-                }
-                g_map[g_n].from = dup(line);
-                g_map[g_n].to = dup(to);
+                int fromlen = unescape(line);
+                g_map = grow(g_map, g_n, &cap, sizeof *g_map);
+                g_map[g_n].from = dup(line, fromlen);
+                g_map[g_n].to = dup(to, tolen);
                 g_n++;
             }
         }
         line = next;
     }
-    host_log("hm_lang.tsv: %d texts, %d table entries", g_n, patched);
+    host_log("%s: %d texts, %d table entries", path, g_n, g_np);
+    return 1;
+}
+
+static void apply(int en)
+{
+    for (int i = 0; i < g_np; i++) {
+        const char *src = en ? g_patch[i].to : g_patch[i].orig;
+        int k = 0;
+        for (; src[k] && k < g_patch[i].cap; k++) g_patch[i].dst[k] = src[k];
+        for (; k < g_patch[i].cap; k++) g_patch[i].dst[k] = en ? 0 : g_patch[i].orig[k];
+    }
+    g_en = en;
+    host_set_overlay_dir(en && g_have_en ? "en" : 0);
+}
+
+static int wants_english(void)
+{
+    const char *env = hm_getenv("HM_LANG");
+    char saved[4] = "";
+    if (!env) {
+        void *f = host_fopen("hm_lang.txt", "rb");
+        if (f) { host_fread(saved, 1, 2, f); host_fclose(f); }
+        env = saved;
+    }
+    return (env[0] | 32) == 'e' && (env[1] | 32) == 'n';
+}
+
+void hm_lang_load(void)
+{
+    if (load_table("en/hm_lang.tsv")) {
+        g_have_en = 1;
+        apply(g_want = wants_english());
+    } else if (load_table("hm_lang.tsv")) {          /* older full English copy of the data */
+        apply(g_want = 1);
+    }
+    host_log("language: %s%s", g_en ? "English" : "Spanish", g_have_en ? " (F8 or Select switches)" : "");
+}
+
+void hm_lang_toggle(void)
+{
+    if (!g_have_en) {
+        host_log("language: no en/ directory with the English translation (tools/lang/english_patch.py)");
+        host_osd(g_en ? "ENGLISH ONLY" : "SOLO ESPAÑOL");
+        return;
+    }
+    g_want = !g_want;
+    void *f = host_fopen("hm_lang.txt", "wb");
+    if (f) { host_fwrite(g_want ? "en\n" : "es\n", 1, 3, f); host_fclose(f); }
+    host_log("language: %s%s", g_want ? "English" : "Spanish", g_want != g_en ? " from the next room" : "");
+    if (g_want == g_en) host_osd(g_en ? "ENGLISH" : "ESPAÑOL");
+    else host_osd(g_want ? "ENGLISH IN THE NEXT ROOM" : "ESPAÑOL EN LA SIGUIENTE SALA");
+}
+
+void hm_lang_file_opening(const char *name)
+{
+    if (g_want == g_en) return;
+    const char *p = name, *base = name;
+    for (; *p; p++) if (*p == '\\' || *p == '/' || *p == ':') base = p + 1;
+    const char *want = "RESOURCE.003";
+    int i = 0;
+    while (want[i] && (base[i] == want[i] || (base[i] >= 'a' && base[i] <= 'z' && base[i] - 32 == want[i]))) i++;
+    if (want[i] || base[i]) return;
+    apply(g_want);
+    host_log("language: %s now", g_en ? "English" : "Spanish");
 }
 
 char *hm_text(const char *s)
@@ -106,6 +198,7 @@ char *hm_text(const char *s)
         if (now - last > 1000) host_request_text_input();
         last = now;
     }
+    if (!g_en) return (char *)s;
     for (int i = 0; i < g_n; i++) {
         const char *a = g_map[i].from, *b = s;
         while (*a && *a == *b) { a++; b++; }

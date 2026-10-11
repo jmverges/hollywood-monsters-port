@@ -221,6 +221,54 @@ static void draw_cursor(void)
     SDL_RenderCopy(g_ren, c->tex, NULL, &r);
 }
 
+/* ------------------------------------------------------------------ notices */
+static char g_osd[32];
+static volatile Uint32 g_osd_until;
+
+void host_osd(const char *text)
+{
+    int n = 0;
+    for (const unsigned char *p = (const unsigned char *)text; *p && n < (int)sizeof g_osd - 1; p++) {
+        if (p[0] == 0xC3 && (p[1] == 0x91 || p[1] == 0xB1)) { g_osd[n++] = '~'; p++; }   /* Ñ ñ */
+        else g_osd[n++] = (char)(*p >= 'a' && *p <= 'z' ? *p - 32 : *p);
+    }
+    g_osd[n] = 0;
+    g_osd_until = SDL_GetTicks() + 2000;
+    g_cursor_dirty = 1;
+}
+
+static void draw_osd(void)
+{
+    static const unsigned char font[27][7] = {     /* 5x7, A-Z and Ñ ('~') */
+        {14,17,17,31,17,17,17}, {30,17,17,30,17,17,30}, {14,17,16,16,16,17,14}, {30,17,17,17,17,17,30},
+        {31,16,16,30,16,16,31}, {31,16,16,30,16,16,16}, {14,17,16,23,17,17,15}, {17,17,17,31,17,17,17},
+        {14,4,4,4,4,4,14},      {7,2,2,2,2,18,12},      {17,18,20,24,20,18,17}, {16,16,16,16,16,16,31},
+        {17,27,21,21,17,17,17}, {17,17,25,21,19,17,17}, {14,17,17,17,17,17,14}, {30,17,17,30,16,16,16},
+        {14,17,17,17,21,18,13}, {30,17,17,30,20,18,17}, {15,16,16,14,1,1,30},   {31,4,4,4,4,4,4},
+        {17,17,17,17,17,17,14}, {17,17,17,17,17,10,4},  {17,17,17,21,21,21,10}, {17,17,10,4,10,17,17},
+        {17,17,17,10,4,4,4},    {31,1,2,4,8,16,31},     {13,22,0,25,21,19,17},
+    };
+    if (!g_osd_until) return;
+    if ((Sint32)(SDL_GetTicks() - g_osd_until) >= 0) { g_osd_until = 0; return; }
+    const int px = 3, n = (int)strlen(g_osd), w = n * 6 * px + 3 * px, h = 7 * px + 6 * px;
+    SDL_Rect box = { (g_fw - w) / 2, 12, w, h };
+    SDL_SetRenderDrawBlendMode(g_ren, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(g_ren, 0, 0, 0, 190);
+    SDL_RenderFillRect(g_ren, &box);
+    SDL_SetRenderDrawColor(g_ren, 255, 214, 90, 255);
+    for (int i = 0; i < n; i++) {
+        char c = g_osd[i];
+        const unsigned char *g = c == '~' ? font[26] : c >= 'A' && c <= 'Z' ? font[c - 'A'] : NULL;
+        for (int y = 0; g && y < 7; y++)
+            for (int x = 0; x < 5; x++)
+                if (g[y] & (16 >> x)) {
+                    SDL_Rect r = { box.x + 2 * px + (i * 6 + x) * px, box.y + 3 * px + y * px, px, px };
+                    SDL_RenderFillRect(g_ren, &r);
+                }
+    }
+    g_cursor_dirty = 1;                             /* keep presenting until the notice is gone */
+}
+
 void host_render_pending(void)
 {
     static Uint32 last_present;
@@ -236,6 +284,7 @@ void host_render_pending(void)
         if (!g_tex) return;
         SDL_RenderClear(g_ren);
         SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
+        draw_osd();
         draw_cursor();
         SDL_RenderPresent(g_ren);
         return;
@@ -268,6 +317,7 @@ void host_render_pending(void)
     SDL_UnlockMutex(g_frame_mx);
     SDL_RenderClear(g_ren);
     SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
+    draw_osd();
     draw_cursor();
     SDL_RenderPresent(g_ren);
 }
@@ -528,6 +578,8 @@ static void run_script(void)
             e.type = HOST_EV_KEYDOWN; e.vk = s->a; g_inject[g_inject_n++] = e;
             if (s->a == 0x0D || s->a == 0x1B || s->a == 0x20) { e.type = HOST_EV_CHAR; e.ch = s->a; g_inject[g_inject_n++] = e; }
             e.type = HOST_EV_KEYUP; g_inject[g_inject_n++] = e;
+        } else if (!strcmp(s->cmd, "lang")) {              /* as F8: switch language */
+            e.type = HOST_EV_LANG; g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "char")) {
             e.type = HOST_EV_CHAR; e.ch = (unsigned char)s->name[0]; g_inject[g_inject_n++] = e;
         } else if (!strncmp(s->cmd, "poke", 4)) {          /* poke8|poke16|poke32 ADDR VALUE (debug warps) */
@@ -629,7 +681,11 @@ int host_poll_event(struct host_event *ev)
             int b = e.cbutton.button;
             static int logged;
             if (getenv("HM_DEBUG") || logged < 40) { logged++; host_log("controller button %d %s", b, down ? "down" : "up"); }
-            if (b == SDL_CONTROLLER_BUTTON_START || b == SDL_CONTROLLER_BUTTON_BACK) {
+            if (b == SDL_CONTROLLER_BUTTON_BACK) {          /* Select (Vita), View (Legion Go): other language */
+                if (!down) break;
+                ev->type = HOST_EV_LANG; return 1;
+            }
+            if (b == SDL_CONTROLLER_BUTTON_START) {
                 inject_key(27, down);
                 *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n);
                 return 1;
@@ -676,6 +732,10 @@ int host_poll_event(struct host_event *ev)
                 char name[64];
                 snprintf(name, sizeof name, "screenshot_%u", SDL_GetTicks());
                 save_shot(name);
+                break;
+            }
+            if (e.key.keysym.sym == SDLK_F8) {             /* the game uses F1-F3; F8 is free */
+                if (e.type == SDL_KEYDOWN && !e.key.repeat) { ev->type = HOST_EV_LANG; return 1; }
                 break;
             }
             int vk = vk_from_sdl(e.key.keysym.sym);
@@ -901,10 +961,26 @@ static int resolve_path(const char *in, char *out, size_t outsz, int for_create)
     return 1;
 }
 
+static char g_overlay[64];
+
+void host_set_overlay_dir(const char *dir)
+{
+    snprintf(g_overlay, sizeof g_overlay, "%s", dir ? dir : "");
+}
+
 void *host_fopen(const char *path, const char *mode)
 {
     char real[1024];
-    int create = strchr(mode, 'w') || strchr(mode, 'a');
+    int create = strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+');
+    if (g_overlay[0] && !create) {
+        char over[1024];
+        snprintf(over, sizeof over, "%s/%s", g_overlay, path);
+        if (resolve_path(over, real, sizeof real, 0)) {
+            FILE *f = fopen(real, mode);
+            if (getenv("HM_TRACE_FILES")) host_log("fopen(%s, %s) -> %s %p", path, mode, real, (void *)f);
+            if (f) return f;
+        }
+    }
     if (!resolve_path(path, real, sizeof real, create)) {
         if (getenv("HM_TRACE_FILES")) host_log("fopen(%s, %s) -> not found", path, mode);
         return NULL;

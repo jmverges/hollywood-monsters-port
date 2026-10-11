@@ -110,9 +110,12 @@ The COM objects are plain C structs whose first member is the vtable pointer; th
 
 `gen.py --exe` turns string literals into `HM_STR(address)` when the text occurs once in the executable's data
 (`HM_TEXT("...")` otherwise), and addresses of texts passed as arguments (`&DAT_005d061c`) into `HM_STR` too.
-Both go through `hm_text()` (`platform/win32/lang.c`), which returns the text itself or, when the data
-directory has an `hm_lang.tsv`, its translation. Entries of tables the code indexes (the verbs at 0x5e4074)
-are written over the executable's data at start-up instead. This also means the generated code no longer
+Both go through `hm_text()` (`platform/win32/lang.c`), which returns the text itself or, in English, its
+translation from `en/hm_lang.tsv`. Entries of tables the code indexes (the verbs at 0x5e4074) are written over
+the executable's data instead, and the original bytes are kept to switch back. The translated RESOURCE files
+in `en/` are found through the host's overlay directory (`host_set_overlay_dir`). A language switch waits
+until the game opens RESOURCE.003, where it reads the texts of the room it enters, and then changes both at
+once. This also means the generated code no longer
 carries the game's texts.
 
 ## Bugs of the original game

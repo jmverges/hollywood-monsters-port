@@ -32,7 +32,7 @@ void *crt__memmove(void *d, const void *s, size_t n) { return __builtin_memmove(
 void *crt__memset(void *d, int c, size_t n) { return __builtin_memset(d, c, n); }
 
 /* files: the FILE* handed to the game is an opaque host handle */
-FILE *crt__fopen(const char *name, const char *mode) { return (FILE *)host_fopen(name, mode); }
+FILE *crt__fopen(const char *name, const char *mode) { hm_lang_file_opening(name); return (FILE *)host_fopen(name, mode); }
 int crt__fclose(FILE *f) { return host_fclose(f); }
 size_t crt__fread(void *buf, size_t size, size_t n, FILE *f) { return host_fread(buf, size, n, f); }
 size_t crt__fwrite(const void *buf, size_t size, size_t n, FILE *f) { return host_fwrite(buf, size, n, f); }

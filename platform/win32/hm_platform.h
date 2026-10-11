@@ -37,5 +37,10 @@ extern int hm_screen_w, hm_screen_h;
 /* ddraw.c */
 void hm_ddraw_present_now(void);
 
+/* lang.c */
+void hm_lang_load(void);
+void hm_lang_toggle(void);
+void hm_lang_file_opening(const char *name);   /* crt fopen: a pending switch happens here */
+
 /* misc */
 const char *hm_getenv(const char *name);
