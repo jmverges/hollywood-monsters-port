@@ -1,0 +1,88 @@
+# Hollywood Monsters walkthrough for the port's guide (platform/win32/guide.c): one action per line.
+# Object (oN) and item (iN) numbers are the game's own; the names in the comments are the Spanish ones.
+# Written from the walkthroughs at abandonsocios.org (cireja, 2025) and nosolobits.com (FX Interactive)
+# and checked by playing it in the port.
+
+== Sue en la mansión de Otto J. Hannover
+go o1                   # escalera: a la terraza
+take o5                 # vaso
+use i12 o6              # vaso con ponchera
+go o1                   # puerta: el vestíbulo (Joseph mira la lista de invitados)
+talk o8                 # Joseph
+open o2                 # la puerta de la fiesta, tres veces: sale Frankie
+open o2
+open o2
+go o1 until room 0x1b76 # a la terraza
+take o3 until has i11   # el hueso de Húmero, cuando calla la música
+go o2 until room 0x1b62 # escalera: a la calle
+use i11 o2              # hueso con caseta de perro: la planta persigue el hueso hasta el vestíbulo
+go o1 until room 0x1b76 # escalera: a la terraza
+go o1 until room 0x1b80 # puerta: el vestíbulo, Joseph ha ido tras la planta
+take o7                 # la primera hoja de la libreta
+look i15                # leer la hoja
+talk o2                 # Charlie, el del guardarropa
+take o3                 # trapo
+go o1 until room 0x1b80   # al vestíbulo
+go o3 until not room 0x1b80   # escalera: al piso de arriba
+give i13 o2             # vaso con ponche al gorila (1): deja ver una llave
+go o5 until room 0x1b80 # escalera: al vestíbulo
+go o1 until room 0x1b76 # terraza
+take o5                 # otro vaso
+use i12 o6              # lleno de ponche
+go o1 until room 0x1b80 # al vestíbulo
+go o3 until room 0x1b94 # arriba
+give i13 o2             # (2)
+go o5 until room 0x1b80
+go o1 until room 0x1b76
+take o5                 # otro vaso
+use i12 o6              # lleno de ponche
+go o1 until room 0x1b80 # al vestíbulo
+go o3 until room 0x1b94 # arriba
+give i13 o2             # (3)
+go o5 until room 0x1b80
+go o1 until room 0x1b76
+take o5                 # otro vaso
+use i12 o6              # lleno de ponche
+go o1 until room 0x1b80 # al vestíbulo
+go o3 until room 0x1b94 # arriba
+give i13 o2             # (4): ya se mueve despacio
+take o8 fast until has i17   # la llave, mientras bebe
+use i17 o3              # llave con la primera puerta: el despacho de Hannover
+go o3 until not room 0x1b94
+use i16 o8              # trapo con carbón
+use i8 i15              # trapo con carbón con la hoja: se lee lo que escribió Frankie
+look i6                 # leer el mensaje
+go o1 until room 0x1b94 # pasillo
+go o5 until room 0x1b80 # escalera: al vestíbulo
+go o1 until room 0x1b76 # terraza
+go o2 until room 0x1b62 # escalera: a la calle
+go o3 until has i9      # edificio del fondo: Otto la para; darle plantón: da una tarjeta
+go o1 until room 0x1b76 # escalera: a la terraza
+go o1 until room 0x1b80 # vestíbulo
+go o3 until room 0x1b94 # arriba
+go o3 until room 0x1b9e # despacho de Otto
+use i9 o5               # tarjeta con la puerta: el despacho de la secretaria
+go o5 until not room 0x1b9e
+take o6                 # manivela
+go o1 until room 0x1b9e # al despacho de Otto
+use i19 o3              # manivela en el gramófono
+use o10                 # la manivela, ya en el gramófono: media vuelta
+go o5 until not room 0x1b9e   # despacho de la secretaria: ha cambiado
+go o1 until room 0x1b9e
+go o1 until room 0x1b94 # pasillo
+go o5 until room 0x1b80 # escalera: al vestíbulo
+go o1 until room 0x1b76 # terraza
+go o2 until room 0x1b62 # escalera: a la calle
+go o3                   # edificio del fondo: Otto ve la luz y cree que ha llegado su secretaria
+go o1 until room 0x1b76 # escalera: a la terraza
+go o1 until room 0x1b80 # vestíbulo
+go o3 until room 0x1b94 # arriba
+go o3 until room 0x1b9e # despacho de Otto
+go o5 until not room 0x1b9e   # la alcoba de la secretaria
+use o8                  # mover la armadura delante de la ventana
+go o1 until room 0x1b9e # al despacho de Otto
+go o1 until room 0x1b94 # pasillo
+go o5 until room 0x1b80 # escalera: al vestíbulo
+go o1 until room 0x1b76 # terraza
+go o2 until room 0x1b62 # escalera: a la calle
+go o3 until not room 0x1b62   # edificio del fondo: Otto ve la silueta y la deja pasar; la bodega

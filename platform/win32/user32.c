@@ -56,55 +56,77 @@ static void send_setcursor(unsigned mouse_msg)
     if (g_wndproc) g_wndproc(HM_HWND, WM_SETCURSOR, (WPARAM)HM_HWND, (LPARAM)((mouse_msg << 16) | 1 /* HTCLIENT */));
 }
 
+/* One input event, as Windows would deliver it to the window. The guide's automatic actions come through here
+ * too (hm_inject_event), so they take the same path as the player's mouse. */
+static void dispatch(const struct host_event *e)
+{
+    struct host_event ev = *e;
+    switch (ev.type) {
+    case HOST_EV_QUIT:
+        hm_post_message(WM_DESTROY, 0, 0);
+        break;
+    case HOST_EV_MOUSEMOVE:
+        send_setcursor(WM_MOUSEMOVE);
+        g_mouse_x = ev.x; g_mouse_y = ev.y;
+        hm_post_message(WM_MOUSEMOVE, g_buttons, mk_lparam(ev.x, ev.y));
+        break;
+    case HOST_EV_MOUSEDOWN:
+    case HOST_EV_MOUSEUP: {
+        int down = ev.type == HOST_EV_MOUSEDOWN;
+        unsigned bit = ev.button == 1 ? 1 : ev.button == 3 ? 2 : 0x10;
+        g_mouse_x = ev.x; g_mouse_y = ev.y;
+        if (down) g_buttons |= bit; else g_buttons &= ~bit;
+        unsigned msg = ev.button == 1 ? (down ? WM_LBUTTONDOWN : WM_LBUTTONUP)
+                     : ev.button == 3 ? (down ? WM_RBUTTONDOWN : WM_RBUTTONUP)
+                                      : (down ? WM_MBUTTONDOWN : WM_MBUTTONUP);
+        if (down) send_setcursor(msg);
+        hm_post_message(msg, g_buttons, mk_lparam(ev.x, ev.y));
+        break;
+    }
+    case HOST_EV_WHEEL:
+        hm_post_message(WM_MOUSEWHEEL, ((unsigned)(short)(ev.wheel * 120) << 16) | g_buttons, mk_lparam(ev.x, ev.y));
+        break;
+    case HOST_EV_KEYDOWN:
+        hm_post_message(WM_KEYDOWN, ev.vk, 1);
+        break;
+    case HOST_EV_KEYUP:
+        hm_post_message(WM_KEYUP, ev.vk, (int)0xC0000001u);
+        break;
+    case HOST_EV_CHAR:
+        hm_post_message(WM_CHAR, ev.ch & 0xff, 1);
+        break;
+    case HOST_EV_FOCUS:
+        /* The game treats deactivation like being minimised from fullscreen: it stops its sounds (the
+         * current spoken line ends early) and restores surfaces and palette on return. In a window that
+         * happens on every click elsewhere, so it only gets these with HM_FOCUS_PAUSE=1. */
+        if (hm_getenv("HM_FOCUS_PAUSE")) hm_post_message(WM_ACTIVATEAPP, ev.focus ? 1 : 0, 0);
+        break;
+    case HOST_EV_LANG:
+        hm_lang_toggle();
+        break;
+    case HOST_EV_GUIDE:
+        hm_guide_command(ev.text);
+        break;
+    }
+}
+
+void hm_inject_event(const struct host_event *ev)
+{
+    if (ev->type == HOST_EV_MOUSEMOVE || ev->type == HOST_EV_MOUSEDOWN || ev->type == HOST_EV_MOUSEUP)
+        host_set_mouse(ev->x, ev->y);              /* the pointer is seen moving, as if the player did it */
+    dispatch(ev);
+}
+
 void hm_pump_host_events(void)
 {
     struct host_event ev;
+    hm_guide_tick();
     /* leave events in the host queue while ours is nearly full */
     while (queue_count() < QSIZE - 8 && host_poll_event(&ev)) {
-        switch (ev.type) {
-        case HOST_EV_QUIT:
-            hm_post_message(WM_DESTROY, 0, 0);
-            break;
-        case HOST_EV_MOUSEMOVE:
-            send_setcursor(WM_MOUSEMOVE);
-            g_mouse_x = ev.x; g_mouse_y = ev.y;
-            hm_post_message(WM_MOUSEMOVE, g_buttons, mk_lparam(ev.x, ev.y));
-            break;
-        case HOST_EV_MOUSEDOWN:
-        case HOST_EV_MOUSEUP: {
-            int down = ev.type == HOST_EV_MOUSEDOWN;
-            unsigned bit = ev.button == 1 ? 1 : ev.button == 3 ? 2 : 0x10;
-            g_mouse_x = ev.x; g_mouse_y = ev.y;
-            if (down) g_buttons |= bit; else g_buttons &= ~bit;
-            unsigned msg = ev.button == 1 ? (down ? WM_LBUTTONDOWN : WM_LBUTTONUP)
-                         : ev.button == 3 ? (down ? WM_RBUTTONDOWN : WM_RBUTTONUP)
-                                          : (down ? WM_MBUTTONDOWN : WM_MBUTTONUP);
-            if (down) send_setcursor(msg);
-            hm_post_message(msg, g_buttons, mk_lparam(ev.x, ev.y));
-            break;
-        }
-        case HOST_EV_WHEEL:
-            hm_post_message(WM_MOUSEWHEEL, ((unsigned)(short)(ev.wheel * 120) << 16) | g_buttons, mk_lparam(ev.x, ev.y));
-            break;
-        case HOST_EV_KEYDOWN:
-            hm_post_message(WM_KEYDOWN, ev.vk, 1);
-            break;
-        case HOST_EV_KEYUP:
-            hm_post_message(WM_KEYUP, ev.vk, (int)0xC0000001u);
-            break;
-        case HOST_EV_CHAR:
-            hm_post_message(WM_CHAR, ev.ch & 0xff, 1);
-            break;
-        case HOST_EV_FOCUS:
-            /* The game treats deactivation like being minimised from fullscreen: it stops its sounds (the
-             * current spoken line ends early) and restores surfaces and palette on return. In a window that
-             * happens on every click elsewhere, so it only gets these with HM_FOCUS_PAUSE=1. */
-            if (hm_getenv("HM_FOCUS_PAUSE")) hm_post_message(WM_ACTIVATEAPP, ev.focus ? 1 : 0, 0);
-            break;
-        case HOST_EV_LANG:
-            hm_lang_toggle();
-            break;
-        }
+        int pointer = ev.type == HOST_EV_MOUSEMOVE || ev.type == HOST_EV_MOUSEDOWN || ev.type == HOST_EV_MOUSEUP ||
+                      ev.type == HOST_EV_WHEEL;
+        if (pointer && hm_guide_busy()) continue;  /* the guide is acting: the player's pointer waits */
+        dispatch(&ev);
     }
 }
 

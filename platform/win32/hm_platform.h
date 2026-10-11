@@ -42,5 +42,12 @@ void hm_lang_load(void);
 void hm_lang_toggle(void);
 void hm_lang_file_opening(const char *name);   /* crt fopen: a pending switch happens here */
 
+/* guide.c: walkthrough actions played by the port */
+struct host_event;
+void hm_inject_event(const struct host_event *ev);   /* user32.c: as if the player did it */
+void hm_guide_tick(void);
+int  hm_guide_busy(void);
+void hm_guide_command(const char *text);
+
 /* misc */
 const char *hm_getenv(const char *name);

@@ -22,7 +22,8 @@ void host_render_pending(void);
 /* ---- input */
 enum { HOST_EV_NONE, HOST_EV_QUIT, HOST_EV_MOUSEMOVE, HOST_EV_MOUSEDOWN, HOST_EV_MOUSEUP, HOST_EV_WHEEL,
        HOST_EV_KEYDOWN, HOST_EV_KEYUP, HOST_EV_CHAR, HOST_EV_FOCUS,
-       HOST_EV_LANG };    /* the player asked for the other language (F8, or Select/Back on a controller) */
+       HOST_EV_LANG,      /* the player asked for the other language (F8, or Select/Back on a controller) */
+       HOST_EV_GUIDE };   /* a command for the guide (platform/win32/guide.c) in text, from a test script */
 struct host_event {
     int type;
     int x, y;          /* mouse position in game coordinates */
@@ -31,6 +32,7 @@ struct host_event {
     int ch;            /* character for HOST_EV_CHAR */
     int wheel;         /* +1 / -1 */
     int focus;         /* for HOST_EV_FOCUS */
+    char text[96];     /* for HOST_EV_GUIDE */
 };
 int  host_poll_event(struct host_event *ev);
 void host_get_mouse(int *x, int *y);
@@ -42,7 +44,8 @@ void host_request_text_input(void);       /* the game waits for typed text: show
  * The system pointer stays hidden over the window (Windows drew the game's cursor in its place). */
 void *host_cursor_create(const unsigned *argb, int w, int h, int hot_x, int hot_y);
 void  host_cursor_set(void *cursor);     /* NULL: no cursor */
-void  host_osd(const char *text);         /* a short notice over the frame for two seconds (A-Z, space, UTF-8 Ñ) */
+void  host_osd(const char *text);
+void  host_screenshot(const char *name);  /* the current frame to <HM_SHOT_DIR or .>/<name>.ppm (tests, debugging) */         /* a short notice over the frame for two seconds (A-Z, space, UTF-8 Ñ) */
 
 /* ---- the original executable as mapped in memory */
 unsigned host_image_resource_rva(void);   /* RVA of the resource directory, 0 if none */

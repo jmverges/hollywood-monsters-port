@@ -162,6 +162,9 @@ static void dump_frame_if_requested(const Uint32 *argb, int w, int h)
     fclose(f);
 }
 
+static void save_shot(const char *name);
+void host_screenshot(const char *name) { save_shot(name); }
+
 static void save_shot(const char *name)
 {
     const char *dir = getenv("HM_SHOT_DIR");
@@ -397,7 +400,7 @@ void host_request_text_input(void)
  * Commands: move X Y | click X Y | rclick X Y | down X Y | up X Y | rdown X Y | rup X Y | key VK | char C | shot NAME
  *           | poke8|poke16|poke32 ADDR VALUE (write game memory, e.g. the room id at 0x6ca1be)
  *           | trap (SIGTRAP: stop in gdb at this moment) | dump ADDR LEN (raw memory to the shot dir) | quit */
-struct script_ev { unsigned t; char cmd[16]; int a, b; char name[64]; };
+struct script_ev { unsigned t; char cmd[16]; int a, b; char name[64]; char rest[96]; };
 
 /* Scripts use the original addresses (e.g. the room id at 0x6ca1be); the image may live elsewhere. */
 static unsigned long image_addr(unsigned long a)
@@ -525,8 +528,11 @@ static void load_script(void)
         struct script_ev ev;
         memset(&ev, 0, sizeof ev);
         char tbuf[32];
-        int n = sscanf(line, "%31s %15s %63s %d", tbuf, ev.cmd, ev.name, &ev.b);
+        int rest = 0;
+        int n = sscanf(line, "%31s %15s %n%63s %d", tbuf, ev.cmd, &rest, ev.name, &ev.b);
         if (n < 2) continue;
+        snprintf(ev.rest, sizeof ev.rest, "%s", line + rest);
+        ev.rest[strcspn(ev.rest, "\r\n")] = 0;
         unsigned t = tbuf[0] == '+' ? last + (unsigned)atoi(tbuf + 1) : (unsigned)atoi(tbuf);
         ev.t = last = t;
         ev.a = atoi(ev.name);
@@ -578,6 +584,8 @@ static void run_script(void)
             e.type = HOST_EV_KEYDOWN; e.vk = s->a; g_inject[g_inject_n++] = e;
             if (s->a == 0x0D || s->a == 0x1B || s->a == 0x20) { e.type = HOST_EV_CHAR; e.ch = s->a; g_inject[g_inject_n++] = e; }
             e.type = HOST_EV_KEYUP; g_inject[g_inject_n++] = e;
+        } else if (!strcmp(s->cmd, "guide")) {             /* guide <command>: see platform/win32/guide.c */
+            e.type = HOST_EV_GUIDE; snprintf(e.text, sizeof e.text, "%s", s->rest); g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "lang")) {              /* as F8: switch language */
             e.type = HOST_EV_LANG; g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "char")) {
