@@ -22,8 +22,10 @@
  *       last one (usually goodbye) when nothing new is left
  *     fast: no waiting for the game to settle before (actions with a short window, like taking the key while
  *       the gorilla drinks): it waits for the object to show up and then goes for it quickly
- *     until: repeat the action (up to 30 times) until the condition holds: "has iN", "room 0xN", "gone oN"
+ *     until: repeat the action (up to 30 times) until the condition holds: "has iN", "room 0xN", "gone oN",
+ *       "moved" (in another room than when the step started)
  *   wait <ms>                  let the game go on (music, animations)
+ *   click <x> <y>              a click on a screen without objects (the travel agenda)
  *   == title                   a section of the walkthrough
  *   # comment
  *
@@ -35,6 +37,7 @@
  *   stop                       stop playing after the current action
  *   save <row> <name>          save the game in that row of the game's list (1 = top), through its menu
  *   load <row>                 load the game in that row
+ *   find <text>                log the inventory items whose name contains the text (writing the walkthrough)
  */
 #include "hm_platform.h"
 
@@ -120,6 +123,15 @@ static int inventory(unsigned char *items, int max)
     return n;
 }
 
+/* Which way to scroll the inventory panel to show an item: -1 up, 1 down, 0 shown or not carried. */
+static int item_scroll(int item)
+{
+    unsigned c = g8(0x6b61cc), first = g8(0x68912c + c), count = g8(0x6ceade + c);
+    for (unsigned k = 0; k <= count; k++)
+        if ((int)g8(0x6c4b80 + c * 0x79 + k) == item) return k < first ? -1 : k >= first + 16 ? 1 : 0;
+    return 0;
+}
+
 /* Where an item is in the open inventory panel. */
 static int item_point(int item, int *px, int *py)
 {
@@ -141,8 +153,8 @@ static const char *utf8(const char *s)
     static char buf[4][96];
     static int k;
     char *o = buf[k = (k + 1) & 3], *end = o + sizeof buf[0] - 3;
-    static const unsigned char from[] = { 0xa0, 0x82, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0x81, 0xb5, 0x90, 0xd6, 0xe0, 0xe9, 0xad, 0xa8 };
-    static const char *const to[] = { "á", "é", "í", "ó", "ú", "ñ", "Ñ", "ü", "Á", "É", "Í", "Ó", "Ú", "¡", "¿" };
+    static const unsigned char from[] = { 0xa0, 0x82, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0x81, 0xb5, 0x90, 0xd6, 0xe0, 0xe9, 0xad, 0xa8, 0xae, 0xaf, 0x87 };
+    static const char *const to[] = { "á", "é", "í", "ó", "ú", "ñ", "Ñ", "ü", "Á", "É", "Í", "Ó", "Ú", "¡", "¿", "«", "»", "ç" };
     for (const unsigned char *p = (const unsigned char *)trim(s); *p && o < end; p++) {
         if (*p < 0x80) { *o++ = (char)*p; continue; }
         const char *t = "?";
@@ -230,6 +242,7 @@ static int g_nops, g_op;
 static unsigned g_op_t0, g_stable_since;
 static int g_from_x, g_from_y, g_ptr_x = 320, g_ptr_y = 240;
 static int g_failed;
+static int g_tries;                  /* attempts of the current walkthrough step (0: not playing a step) */
 static int g_fast;                   /* the current action is "fast": wait for missing objects */
 static int g_walks;                  /* walks towards an off-screen object in this action */
 
@@ -312,7 +325,9 @@ static int on_screen(int id)
     return 0;
 }
 
-/* "has iN", "room 0xN", "gone oN"; an empty condition holds */
+static int g_step_room;              /* the room when the current step started, for "moved" */
+
+/* "has iN", "room 0xN", "gone oN", "moved" (another room than when the step started); an empty condition holds */
 static int condition(const char *c)
 {
     c = trim(c);
@@ -322,6 +337,7 @@ static int condition(const char *c)
     int r = 1;
     if (c[0] == 'h' && c[1] == 'a' && c[2] == 's') { c += 3; c = trim(c); if (*c == 'i') c++; r = has_item(read_num(&c)); }
     else if (c[0] == 'r' && c[1] == 'o' && c[2] == 'o' && c[3] == 'm') { c += 4; r = room_id() / 10 == read_num(&c) / 10; }  /* rooms go in tens, the last digit is a state: 0x1b80..0x1b82 */
+    else if (c[0] == 'm' && c[1] == 'o' && c[2] == 'v' && c[3] == 'e' && c[4] == 'd') r = room_id() / 10 != g_step_room / 10;
     else if (c[0] == 'g' && c[1] == 'o' && c[2] == 'n' && c[3] == 'e') { c = trim(c + 4); if (*c == 'o') c++; r = !on_screen(read_num(&c)); }
     else host_log("guide: unknown condition \"%s\"", c);
     return neg ? !r : r;
@@ -330,6 +346,16 @@ static int condition(const char *c)
 static int start_action(const char *s)
 {
     s = trim(s);
+    if (s[0] == 'c' && s[1] == 'l' && s[2] == 'i' && s[3] == 'c' && s[4] == 'k') {   /* click <x> <y>: screens without objects */
+        s += 5;
+        int x = read_num(&s), y = read_num(&s);
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_IDLE, 0, 0);
+        push(OP_AT, x, y); push(OP_DOWN, 1, 0); push(OP_WAIT, 60, 0); push(OP_UP, 1, 0);
+        push(OP_IDLE, 0, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
     if (s[0] == 'w' && s[1] == 'a' && s[2] == 'i' && s[3] == 't') {   /* wait <ms>: let the game go on */
         s += 4;
         g_nops = g_op = 0; g_failed = 0;
@@ -348,7 +374,8 @@ static int start_action(const char *s)
     int id1, id2;
     if (!verb || !parse_thing(&s, &k1, &id1)) { host_log("guide: bad action \"%s\"", s); return 0; }
     int two = parse_thing(&s, &k2, &id2);
-    g_nsay = g_say_i = 0; g_nsaid = 0;
+    g_nsay = g_say_i = 0;
+    if (!g_tries) g_nsaid = 0;                       /* a retry of the same step remembers what was said */
     s = trim(s);
     if (s[0] == 's' && s[1] == 'a' && s[2] == 'y' && s[3] == ' ') {
         s += 4;
@@ -459,6 +486,17 @@ void hm_guide_tick(void)
             if (o->b == 0) {
                 int ok = o->kind == OP_OBJ ? object_point(o->a, &tx, &ty) : item_point(o->a, &tx, &ty);
                 if (!ok && g_fast && el < 8000) return;   /* it may be about to appear */
+                if (!ok && o->kind == OP_ITEM && item_scroll(o->a) && g_walks < 12) {
+                    /* a full inventory: the arrows at the right of the panel scroll it by a row */
+                    int up = item_scroll(o->a) < 0;
+                    g_walks++;
+                    insert_op(g_op, OP_AT, 617); g_ops[g_op].b = up ? 388 : 419;
+                    insert_op(g_op + 1, OP_DOWN, 1);
+                    insert_op(g_op + 2, OP_UP, 1);
+                    insert_op(g_op + 3, OP_WAIT, 400);
+                    g_op_t0 = now;
+                    return;
+                }
                 if (!ok && o->kind == OP_OBJ && o->b == 0) {   /* off screen: walk that way so the room scrolls */
                     int side = object_side(o->a), x, y;
                     if (side && g_walks < 4 && edge_spot(side, &x, &y)) {
@@ -530,7 +568,7 @@ static void step_aside(void)
 static char *g_text;                 /* hm_actions.txt, lines split in place */
 static char *g_steps[MAX_STEPS];     /* action lines (section titles and comments left out) */
 static char *g_section[MAX_STEPS];   /* the title each step belongs to */
-static int g_nsteps, g_step, g_play_left, g_tries;
+static int g_nsteps, g_step, g_play_left;
 
 static void load_steps(void)
 {
@@ -628,6 +666,7 @@ static void play_tick(void)
         if (!g_play_left) return;
     }
     if (g_step >= g_nsteps) { g_play_left = 0; host_log("guide: end of the walkthrough"); return; }
+    g_step_room = room_id();
     if (*until_of(g_steps[g_step]) && condition(until_of(g_steps[g_step]))) {   /* already done: skip it */
         host_log("guide: step %d already done: %s", g_step + 1, g_steps[g_step]);
         g_step++;
@@ -654,6 +693,17 @@ void hm_guide_command(const char *text)
     }
     else if (s[0] == 'g' && s[1] == 'o' && s[2] == 't') { load_steps(); s += 4; g_step = read_num(&s) - 1; if (g_step < 0) g_step = 0; }
     else if (s[0] == 's' && s[1] == 't') g_play_left = 0;
+    else if (s[0] == 'f' && s[1] == 'i' && s[2] == 'n') {   /* find <text>: item ids whose name has it (authoring) */
+        const char *t = trim(s + 4);
+        for (int id = 1; id < 256; id++) {
+            const char *n = utf8(item_name(id));
+            for (const char *p = n; *p; p++) {
+                int k = 0;
+                while (t[k] && p[k] == t[k]) k++;
+                if (!t[k]) { host_log("guide:   i%d \"%s\"", id, n); break; }
+            }
+        }
+    }
     else if ((s[0] == 's' && s[1] == 'a' && s[2] == 'v') || (s[0] == 'l' && s[1] == 'o' && s[2] == 'a')) {
         /* save <row> <name> / load <row>: through the game's own menu (Escape); row 1 is the top of its list */
         int save = s[0] == 's';
@@ -664,7 +714,8 @@ void hm_guide_command(const char *text)
         push(OP_IDLE, 0, 0);
         push(OP_KEY, 27, 0); push(OP_WAIT, 1500, 0);
         push(OP_AT, save ? 80 : 172, 232); push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_WAIT, 1200, 0);
-        push(OP_AT, 320, 30 + 20 * row); push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_WAIT, 1200, 0);
+        push(OP_AT, 320, (49 + 43 * row) / 2);   /* rows 21.5 pixels apart from y 46 */
+        push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_WAIT, 1200, 0);
         if (save) {
             for (int i = 0; s[i] && i < 12; i++) push(OP_CHAR, (unsigned char)s[i], 0);
             push(OP_KEY, 13, 0); push(OP_WAIT, 1500, 0);

@@ -10,7 +10,8 @@
 #
 # Steps:
 #   import  Ghidra import + auto-analysis, create every function listed in the incremental-link table
-#   types   DirectX interfaces, CRT names/FPU signatures, Decompiler Parameter ID, EAX returns
+#   types   DirectX interfaces, CRT names/FPU signatures, Decompiler Parameter ID, EAX returns, stack purge of
+#           functions that end in a tail jump (FixTailPurge.java)
 #   export  decompile every function (C + per-access global types), data types, symbols
 #   gen     generate src/gen/*.c (tools/recomp/gen.py)
 set -euo pipefail
@@ -52,6 +53,7 @@ case "$STEP" in import)
   run -process "$NAME" -noanalysis -postScript ApplyTypes.java "$TYPES/dx_min.h" "$TYPES/globals_dx.tsv" -postScript SetSigs.java
   run -process "$NAME" -noanalysis -postScript RunParamId.java
   run -process "$NAME" -noanalysis -postScript SetReturns.java "$TYPES/void_returns_all.txt"
+  run -process "$NAME" -noanalysis -postScript FixTailPurge.java
   ;& export)
   log "export"
   rm -rf "$RX"
