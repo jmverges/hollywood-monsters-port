@@ -19,6 +19,32 @@ DECOMPILER_FIXES = [
         new='(short)(&local_1c)[DAT_00649400]  /* RECOMP: decompiler fix */',
         count=4,
     ),
+    # FUN_00516060, the travel agenda: two tables of 7 shorts, the chapter of each destination at [esp+0x8]
+    # (1000, 2000, 3000, 4000, 5000, 6000, 8000) and its first room at [esp+0x18] (0x3f4 ... 0x1f4a). Ghidra put
+    # the lookups 4 bytes too far (local_20, local_10) and dropped the first two stores as dead, so choosing a
+    # destination read the wrong chapter and the game quit (the room was not in WinMain's list).
+    dict(
+        addr=0x00516060,
+        why='travel agenda: chapter table starts 4 bytes before local_20; its first two entries were dropped',
+        old='  local_20[0] = 3000;',
+        new='  ((ushort *)(hm_frame + 76))[0] = 1000;   /* RECOMP: decompiler fix, the table starts at [esp+0x8] */\n'
+            '  ((ushort *)(hm_frame + 76))[1] = 2000;\n'
+            '  local_20[0] = 3000;',
+    ),
+    dict(
+        addr=0x00516060,
+        why='travel agenda: lookups 4 bytes off',
+        old='local_20[*(byte *)((int)&DAT_006d6638 + (uint)bVar1)]',
+        new='((ushort *)(hm_frame + 76))[*(byte *)((int)&DAT_006d6638 + (uint)bVar1)]  /* RECOMP: decompiler fix */',
+        count=1,
+    ),
+    dict(
+        addr=0x00516060,
+        why='travel agenda: lookups 4 bytes off',
+        old='local_10[*(byte *)((int)&DAT_006d6638 + (uint)bVar1)]',
+        new='(&local_14)[*(byte *)((int)&DAT_006d6638 + (uint)bVar1)]  /* RECOMP: decompiler fix */',
+        count=1,
+    ),
 ]
 
 FIXUPS = [
