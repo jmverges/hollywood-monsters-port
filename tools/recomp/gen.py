@@ -14,7 +14,7 @@ GAME_LO, GAME_HI = 0x401000, 0x536f60      # game code; CRT/library code starts 
 ILT_LO, ILT_HI = 0x401005, 0x405bb9        # incremental-link jump thunks
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fixups import FIXUPS  # noqa: E402  (fixes for bugs in the original game)
+from fixups import FIXUPS, DECOMPILER_FIXES  # noqa: E402  (fixes for the original game's bugs and the decompiler's)
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--rx', required=True)
@@ -516,11 +516,13 @@ for e in sorted(game):
     elif decl_block and new_decl_lines != decl_block.split('\n'):
         body = body[:open_idx] + '\n'.join(new_decl_lines) + body[decl_end:]
 
-    for fx in FIXUPS:
+    for fx in FIXUPS + DECOMPILER_FIXES:
         if fx['addr'] == e:
-            if fx['old'] not in body:
-                sys.exit('fixup for %08x: snippet not found in the generated code (%s)' % (e, fx['why'][:60]))
-            body = body.replace(fx['old'], fx['new'], 1)
+            count = fx.get('count', 1)
+            if body.count(fx['old']) != count:
+                sys.exit('fixup for %08x: snippet found %d times, expected %d (%s)'
+                         % (e, body.count(fx['old']), count, fx['why'][:60]))
+            body = body.replace(fx['old'], fx['new'])
             stats['fixups'] += 1
             applied_fixups.add(e)
 
@@ -655,7 +657,7 @@ with open(os.path.join(a.rx, 'types.h')) as fh:
     open(os.path.join(a.out, 'hm_types.h'), 'w').write(fix_types(fh.read()))
 
 print(dict(stats))
-missing_fixups = [fx for fx in FIXUPS if fx['addr'] not in applied_fixups]
+missing_fixups = [fx for fx in FIXUPS + DECOMPILER_FIXES if fx['addr'] not in applied_fixups]
 if missing_fixups:
     sys.exit('fixups not applied (function missing from the export?): ' +
              ', '.join('%08x' % fx['addr'] for fx in missing_fixups))

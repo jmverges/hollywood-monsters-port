@@ -6,6 +6,21 @@ out to platform/win32/fixes.c for anything longer than a line, and let HM_ORIGIN
 time so the original behaviour stays reproducible.
 """
 
+# Mistakes of the decompiler: code that does not do what the original instructions do. Same format, plus "count"
+# (how many times the snippet occurs; all are replaced). These are not switched off by HM_ORIGINAL_BUGS.
+DECOMPILER_FIXES = [
+    dict(
+        addr=0x00413f10,
+        why='Ghidra lost track of the stack depth (the first call\'s arguments are still pushed when the second '
+            'reads the table: [esp+idx+0x18], then [esp+idx+0x28]) and indexed the frame table from local_14, '
+            '8 bytes past its start at local_1c (0, 0, 1, 2, 3, 4, 5, 6, then 7..22 from 0x5c5333). Frames 9..23 '
+            'read past the table: the party scene where Quasimodo lifts the grate (chapter 2) crashed.',
+        old='(short)local_14[DAT_00649400]',
+        new='(short)(&local_1c)[DAT_00649400]  /* RECOMP: decompiler fix */',
+        count=4,
+    ),
+]
+
 FIXUPS = [
     dict(
         addr=0x00512c00,
