@@ -86,3 +86,347 @@ go o5 until room 0x1b80 # escalera: al vestíbulo
 go o1 until room 0x1b76 # terraza
 go o2 until room 0x1b62 # escalera: a la calle
 go o3 until not room 0x1b62   # edificio del fondo: Otto ve la silueta y la deja pasar; la bodega
+
+== Ron entra en acción
+open i106               # cartera: unas monedas
+go o1 until moved        # escaleras: a la terraza
+take o5 until gone o5   # ponchera
+take o8 until gone o8   # el Increíble Hombre Menguante
+take o6 until gone o6   # rodaja de limón
+go o1 until moved       # entrada: el vestíbulo
+go o2 until moved       # salón: la fiesta
+talk o5                 # el Hombre Invisible: da una nota
+look i33                # leer la nota de Frankenstein
+go o2 until moved       # más a la derecha
+take o4 until gone o4   # micrófono
+take o5 until gone o5   # pie de micro
+look o9                 # el cartel de la puerta de la cocina
+talk o3                 # Spencer McDundee: Escocia, a la libreta
+open i35                # micrófono: un imán
+go o1 until moved       # a la otra parte de la fiesta
+go o1 until moved       # hall
+go o1 until moved       # puerta: el guardarropa
+take o6 until gone o6   # maletín
+open i25                # maletín: algodón, bisturí, jeringuilla y serrucho
+talk o2                 # Charlie: varias direcciones
+go o1 until moved       # al vestíbulo
+take o4 until gone o4   # el globo lila
+use i3 o3               # bisturí con el cordón rojo
+take o3 until gone o3   # cordón
+go o2 until moved       # salón: la fiesta
+go o2 until moved       # más a la derecha
+use i19 o10             # serrucho con la cadena del fantasma
+go o1 until moved       # a la otra parte de la fiesta
+take o7 fast until has i34   # el ticket amarillo, cuando el Dr. Mosca levanta el brazo
+go o1 until moved       # hall
+go o1 until moved       # puerta: el guardarropa
+give i34 o2             # el ticket a Charlie: un paquete
+open i29                # paquete: control remoto y artilugio del Dr. Mosca
+go o1 until moved       # hall
+go o10 until moved      # terraza
+use i2 o4               # algodón con el plato: algodón empapado de grasa
+go o7 until moved       # escaleras: a la calle
+go o3 until moved       # edificio: la bodega
+use i36 i23             # pie de micro con algodón grasiento (no al revés): engrasador
+use i16 o4              # engrasador con el raíl del techo
+use o7                  # palanca izquierda: el gancho sobre la rejilla
+use o8                  # palanca derecha: lo baja
+use i30 o5              # cadena con el gancho
+use o8                  # palanca derecha otra vez: la polea se estropea
+go o1 until moved       # camino: a la calle
+go o1 until moved       # escaleras: a la terraza
+go o1 until moved       # entrada: el vestíbulo
+go o2 until moved       # salón: la fiesta
+go o2 until moved       # más a la derecha
+talk o6 until gone o6   # Quasimodo, dos veces: una demostración de las campanas en la bodega
+take o3 until has i22   # la cinta de Sue (Quasimodo ha levantado la rejilla; Ron sigue en la bodega)
+use i22 i9              # la cinta en el magnetófono
+use i9                  # oír la grabación
+open i9                 # sacar la cinta de Sue
+go o1 until moved       # camino: a la calle
+go o4 until moved       # el coche, abajo a la derecha
+
+== Estudios M.K.O.
+click 165 160 until moved     # en la agenda: Estudios M.K.O.
+go o1 until not gone o6 # el hangar de la derecha, hasta que tiran un rollo de película
+take o6 until gone o6   # película
+go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy
+take o7 until gone o7   # paraguas
+take o6 fast until has i90   # la lupa de Taffy, cuando la suelta en la mesa
+talk o5                 # Taffy: pedir hablar con el Sr. Hannover
+go o4 until moved       # a la oficina de Taffy
+go o2 until moved       # exterior
+go o7 until moved       # el coche: la agenda
+
+== Suiza: la casa de Frankenstein
+click 425 67 until moved      # en la agenda: Frankenstein
+go o4 until moved       # al bosque: una cabaña
+take o8 until has i53   # un palo del suelo
+go o4 until moved       # la cabaña del ciego
+take o7 until has i55   # varita
+take o6 until has i54   # salero
+talk o2                 # el ciego
+go o4 until moved       # exterior
+go o3 until moved       # el camino del fondo: la niña
+use i8 o4 until has i56 # jeringuilla con la planta: savia
+talk o2                 # la niña: hablar de todo y pedirle una margarita
+talk o2 say 3,3,3,3,3,3,3,3,3,3,3   # insistir con la margarita: a la décima, por las malas
+take o3 until has i57   # la margarita
+go o1 until moved       # camino: de vuelta a la cabaña
+go o4 until moved       # la cabaña del ciego
+talk o2                 # el ciego: de todo, también del laxante
+go o4 until moved       # exterior
+go o1 until moved       # camino: donde llegamos a Suiza
+go o3 until moved       # el molino
+take o2 until has i49   # maza
+go o1 until moved       # camino: fuera del molino
+go o6 until room 0xffff       # camino, abajo: la agenda, para viajar
+
+== Mansión Hannover
+click 175 67 until moved      # en la agenda: Mansión Hannover
+go o1 until moved       # escaleras: a la terraza
+go o1 until moved       # entrada: el vestíbulo
+go o2 until moved       # salón: la fiesta
+give i54 o3             # el salero a Junior: el revienta-cráneos
+go o1 until moved       # hall
+go o10 until moved      # terraza
+go o7 until moved       # escaleras: a la calle
+go o4 until room 0xffff # el coche: la agenda
+
+== Transilvania: el castillo de Drácula
+click 140 346 until moved     # en la agenda: Drácula
+go o3 until moved       # el foso: tirarse, insistiendo
+use i32 o1              # revienta-cráneos con la reja
+go o2 until moved      # la escalera: a las mazmorras
+talk o4                 # el esqueleto de pie: se le cae un hueso
+take o11 until gone o11 # el hueso que se le cae
+use i53 o10             # el palo en el agujero de la dama de hierro
+use o10                 # la palanca improvisada
+take o9 until gone o9   # cuerda
+use i61 i27 until has i107    # cuerda con el cordón rojo: cuerda larga
+go o1 until moved       # puerta del fondo: el corredor
+take o8 until has i60   # candil
+go o1 until moved       # el balcón
+use i107 o1             # la cuerda larga con el saliente
+use o3 until moved      # subir por la cuerda: la habitación de Sherilyn
+take o6 until has i65   # el frasco de perfume
+take o3 until has i64   # el cuadro pequeño
+go o1 until moved       # sal por la puerta
+go o2 until moved       # la puerta del centro: Gwendolyn comiendo
+use i3 o4 until has i69 # bisturí con la carne: un filete
+take o5 until has i67   # la botella de aceite
+use i67 i60             # aceite con el candil
+go o1 until moved       # a la galería
+go o7 until moved       # todo a la derecha: la sala
+open o3                 # la placa de la base del trofeo: aparece Drácula
+talk o6                 # Drácula
+go o1 until moved       # corredor
+go o5 until moved       # baja al patio
+take o2 until has i70   # un poco de paja
+use o6                  # la rueda: baja el puente levadizo
+go o1 until moved       # el puente levadizo
+take o5 until has i58   # el objeto brillante: el camafeo de Samarkanda
+look o6                 # leer la postal: la dirección del Hombre Lobo en Australia
+go o8 until room 0xffff # el coche: la agenda
+
+== Mansión Hannover, otra vez
+click 175 67 until moved      # en la agenda: Mansión Hannover
+go o1 until moved       # escaleras: a la terraza
+go o1 until moved       # entrada: el vestíbulo
+go o2 until moved       # salón: la fiesta
+use i65 o6              # el frasco de perfume con las babas del Dr. Mosca
+go o1 until moved       # hall
+go o10 until moved      # terraza
+go o7 until moved       # escaleras: a la calle
+go o4 until room 0xffff # el coche: la agenda
+
+== Estudios M.K.O., otra vez
+click 165 160 until moved     # en la agenda: Estudios M.K.O.
+go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy
+use i57 o4              # la margarita en la máquina de café (es laxante)
+talk o5                 # Taffy: pedir hablar con el Sr. Hannover; Otto toma el café y sale corriendo
+take o3 until has i92   # el saxofón del despacho de Otto
+go o4 until moved       # a la oficina de Taffy
+go o2 until moved       # exterior
+go o7 until room 0xffff # el coche: la agenda
+
+== Suiza, otra vez
+click 425 67 until moved      # en la agenda: Frankenstein
+go o4 until moved       # al bosque: la cabaña
+go o4 until moved       # la cabaña del ciego
+give i92 o2             # el saxofón al ciego
+use i70 o5              # la paja en la chimenea: el ciego abre la ventana
+go o4 until moved       # exterior
+take o5 until has i51   # el diario secreto del Dr. Frankenstein, que ha caído por la ventana
+look i51 nowait         # leerlo
+key 27                  # cerrar el libro
+go o1 until moved       # camino: donde llegamos a Suiza
+go o6 until room 0xffff # camino, abajo: la agenda
+
+== Escocia
+click 160 256 until moved     # en la agenda: Clan McDundee
+talk o1 say @0x6349a2,@0x6349a2,@0x6349a2   # el pescador: tres preguntas sobre el árbol genealógico (la respuesta que el juego eligió al azar)
+go o6 until room 0xffff # el hidroavión: la agenda
+
+== Australia: las minas, la casa del Hombre Lobo
+click 420 252 until moved     # en la agenda: Hombre Lobo
+go o3                   # entrar en la mina andando (vuelve agotado; ya se puede usar la vagoneta)
+use o1 until moved      # la vagoneta, la primera vez: siempre a la misma parada
+# la mina: cada parada se elige con "mine <sala>", que pone las agujas según la tabla de esta partida
+take o4 until has i78   # gas: una piedra del suelo
+use i28 o3 until has i77      # el globo con la grieta: lleno de gas
+use o1 until moved      # la vagoneta: de vuelta a la entrada
+mine 0x13e2             # las cascadas y el lago subterráneo
+use i26 o5 until has i82      # la ponchera con la cascada: llena de agua
+use o3 until moved      # la vagoneta
+mine 0x13ec             # el ascensor
+use o5 until moved      # el botón de arriba: la sala del proyector
+take o13 until has i86  # las pinzas
+use o6 until moved      # la coctelera (Nessie Boom: leche, grog y whisky, en cualquier orden)
+go o1 until mem 0x639e60 = 11   # cambiar de bebida hasta la leche (clics sin verbo: el botón derecho sale de la máquina)
+go o2                  # abrir el grifo
+go o1 until mem 0x639e60 = 12   # el grog
+go o2
+go o1 until mem 0x639e60 = 14   # el whisky
+go o2                  # el cóctel queda en la copa
+use o3 until moved      # el ascensor, botón del centro: el jacuzzi del Hombre Lobo
+take o5 until has i83   # el calzoncillo
+talk o7                 # el Hombre Lobo: de todo
+give i89 o7             # la película: pide que se la pongamos en el proyector
+use o2 until moved      # el ascensor, botón de arriba: el proyector
+use i89 o8              # la película en el proyector: el Hombre Lobo sube a verla
+use o3 until moved      # botón del centro: el jacuzzi
+take o12 until has i85  # el espejo
+take o6 until has i84   # el tratamiento capilar
+use o4 until moved      # el ascensor, botón de abajo: la vagoneta
+use o1 until moved      # la vagoneta: a la entrada
+mine 0x13a6             # las niñas scouts
+talk o7                 # la chica de la guitarra
+give i83 o7 until has i72     # el calzoncillo, a cambio de una baraja de cartas
+use o1 until moved      # la vagoneta
+mine 0x13b0             # el minero
+look o8                 # la caja
+take o9 until gone o9   # el calcetín viejo
+look o8                 # la caja otra vez: una llave
+take o10 until has i75  # la llave
+use o1 until moved      # la vagoneta
+mine 0x13d8             # la casa del minero: escaleras
+use i75 o8              # sube, abre la puerta con la llave y entra
+take o2 until has i81   # el libro de Karl, del sofá
+look i81 read           # leerlo
+open i81                # abrirlo: un sobre
+open i20                # abrir el sobre: un papiro
+look i18 read           # leerlo
+go o7 until not gone o1 # escalera: bajar (la casa y la parada son la misma sala)
+use o1 until moved      # la vagoneta
+mine 0x13ce             # la caseta abandonada
+take o6 until has i79   # "algo colgado": un gorro de aviador
+take o2 until has i80   # la pala
+use o1 until moved      # la vagoneta
+mine 0x139c             # el TNT
+take o4 until has i71   # un madero
+use o1 until moved      # la vagoneta
+go o7 until moved       # el camino de la derecha: hacia Escocia
+
+== Escocia, otra vez
+click 160 256 until moved     # en la agenda: Clan McDundee
+go o4 until moved       # el alto del acantilado
+take o3 until has i108  # el huevo
+use i108 i79            # el huevo con el gorro de aviador: nace el polluelo
+take o5 until has i93   # la cáscara que ha caído al suelo
+go o1 until moved       # camino: abajo, junto al lago
+go o6 until room 0xffff # el hidroavión: la agenda
+
+== Estudios M.K.O., el buzón
+click 165 160 until moved     # en la agenda: Estudios M.K.O.
+use i86 o5 until has i88      # las pinzas en el buzón: un folleto
+look i88 read           # leerlo
+go o7 until room 0xffff # el coche: la agenda
+
+== Suiza: el molino
+click 425 67 until moved      # en la agenda: Frankenstein
+go o4 until moved       # al bosque: la cabaña
+use i88 o2 until has i52      # el folleto con el árbol del centro del camino: resina, folleto pegajoso
+use i52 i84 until has i21     # el folleto pegajoso con el tratamiento capilar: tratamiento adelgazante
+go o1 until moved       # camino: donde llegamos a Suiza
+go o6 until room 0xffff # camino, abajo: la agenda
+
+== Transilvania, segunda visita
+click 140 346 until moved     # en la agenda: Drácula
+go o1 until moved       # el puente levadizo: el patio
+go o5 until moved       # interior del castillo
+go o1 until moved       # la puerta de Sherilyn
+talk o9                 # Sherilyn: una partida de strip-póquer (se pierde)
+use i85 o4              # el espejo en la alcayata: así se ven sus cartas
+talk o9 until has i63   # otra partida: esta vez gana Ron, el camisón de Sherilyn
+go o1 until moved       # salir a la galería
+go o3 until moved       # dos puertas a la derecha: la cripta del órgano
+use i58 o2              # el camafeo en el órgano: Drácula viene y se va
+go o1 until moved       # a la galería
+go o7 until moved       # la sala
+open o3                 # la base del trofeo: vuelve Drácula
+give i21 o6             # el tratamiento adelgazante a Drácula: tira el pastillero por la ventana
+go o1 until moved       # corredor: a la galería
+go o5 until moved       # baja al patio
+go o1 until moved       # el puente levadizo: fuera
+take o7 until has i59   # el pastillero, junto a la postal
+go o1 until moved       # entrada: el patio
+go o5 until moved       # interior del castillo
+go o2 until moved       # la habitación de Gwendolyn
+open i59 until has i14  # abrir el pastillero: las píldoras del Dr. Mabuse
+use i14 o9              # las píldoras en las bolsas de comida
+go o1 until moved       # a la galería
+go o5 until moved       # baja al patio
+go o1 until moved       # el puente levadizo: fuera
+go o8 until room 0xffff # el coche: la agenda
+
+== Egipto
+click 405 158 until moved     # en la agenda: La Momia
+go o2 until moved       # la pirámide, a la izquierda
+go o2 until moved       # la rampa: la piscina de la princesa
+talk o1                 # la princesa Amesis-Huni: de todo
+give i69 o4             # el filete al tigre: se lo come sin pestañear
+go o6 until moved       # entrada de la pirámide
+go o1 until moved       # al mercado
+give i63 o4 until not has i63 # vender el camisón al mercader de azul
+give i73 o4 until not has i73 # y el calcetín remendado
+go o2 until moved       # la pirámide
+use o3                  # la anilla: llamar; sale la Momia y se habla de todo (conjuro, resurrección, laberinto)
+go o1 until moved       # al mercado
+talk o3 say 1,2 until has i43   # el mercader de la izquierda: flores del Nilo, "me lo llevo" (unas semillas)
+talk o3 say 1,2 until has i42   # y el pergamino con el conjuro, "me lo llevo"
+go o1 until moved       # la esfinge
+use i80 o8              # la pala con la pata delantera más cercana: un montoncito de arena
+use i43 o3              # las semillas en la montañita de arena
+use i82 o3              # regarlas con el agua de la ponchera
+take o6 until has i44   # la flor del Nilo
+go o1 until moved       # al mercado
+go o8 until room 0xffff # la avioneta: la agenda
+
+== Transilvania, otro filete
+click 140 346 until moved     # en la agenda: Drácula
+go o1 until moved       # el puente levadizo: el patio
+go o5 until moved       # interior del castillo
+go o2 until moved       # la habitación de Gwendolyn
+use i3 o4 until has i69 # otro filete
+go o1 until moved       # a la galería
+go o5 until moved       # baja al patio
+go o1 until moved       # el puente levadizo: fuera
+go o8 until room 0xffff # el coche: la agenda
+
+== Egipto, el colmillo
+click 405 158 until moved     # en la agenda: La Momia
+go o2 until moved       # la pirámide
+go o2 until moved       # la rampa: la piscina
+use i78 i69             # el pedrusco dentro del filete
+give i17 o4             # el filete durillo al tigre: pierde un colmillo
+take o3 until gone o3   # el diente de tigre, junto a la rueda de la hamaca
+go o6 until moved       # entrada de la pirámide
+go o1 until moved       # al mercado
+go o1 until moved       # la esfinge
+use i38 o4              # el colmillo en la hendidura: se abre un pasadizo
+go o2 until moved       # el pasadizo: la sala del mural
+use i18 o3 nowait       # el papiro con el mural: el puzle
+mural                   # reconstruir el mural (el motor coloca las 48 piezas)
+go o5 until moved       # el laberinto, siguiendo al escarabajo
+maze                    # seguir el camino del escarabajo hasta la cámara de las dos columnas

@@ -17,15 +17,22 @@
  * The walkthrough is hm_actions.txt in the data directory, one step per line:
  *   <verb> <thing> [<thing>] [say a,b,...] [until <condition>]
  *     verb: go talk take look use open close give; thing: oN (room object N) or iN (inventory item N)
- *     say: in the dialogue menus that follow, choose these options (1 = the top one) first; after them, and
+ *     say: in the dialogue menus that follow, choose these options (1 = the top one) first, or @address for
+ *       the option whose 0-based number the game keeps at that address (the fisherman's quiz); after them, and
  *       without "say", the guide talks about everything: each option not chosen yet, top to bottom, and the
  *       last one (usually goodbye) when nothing new is left
+ *     read: if the action opens a reading screen (control does not come back), close it with Escape
+ *     nowait: do not wait for the game to give control back afterwards
  *     fast: no waiting for the game to settle before (actions with a short window, like taking the key while
  *       the gorilla drinks): it waits for the object to show up and then goes for it quickly
  *     until: repeat the action (up to 30 times) until the condition holds: "has iN", "room 0xN", "gone oN",
- *       "moved" (in another room than when the step started)
+ *       "moved" (in another room than when the step started), "mem 0xADDR = V" (a byte of the game's state)
  *   wait <ms>                  let the game go on (music, animations)
  *   click <x> <y>              a click on a screen without objects (the travel agenda)
+ *   key <vk>                   a key, without waiting for control first (27: Escape closes a reading screen)
+ *   maze                       walk Egypt's maze along the beetle's path (from inside it)
+ *   mural                      solve the mural puzzle in Egypt (after using the papyrus with the mural)
+ *   mine <room>                set the switch levers of Australia's mine for that room and ride the cart
  *   == title                   a section of the walkthrough
  *   # comment
  *
@@ -80,6 +87,28 @@ static int object_point(int id, int *px, int *py)
         for (int x = 0; x < 640; x += 2)
             if (object_at(x, y) == id) {
                 long d = (long)(x - cx) * (x - cx) + (long)(y - cy) * (y - cy);
+                if (best < 0 || d < best) { best = d; *px = x; *py = y; }
+            }
+    return 1;
+}
+
+/* A point of a raw screen region (the map's value itself, not an object): the mine's switch panel uses them. */
+static int region_point(int r, int *px, int *py)
+{
+    const unsigned char *map = (const unsigned char *)(unsigned long)g32(0x6c4cd0);
+    if (!map) return 0;
+    int sx = (short)g16(0x700f62);
+    long n = 0, cx = 0, cy = 0;
+    for (int y = 0; y < 480; y += 2)
+        for (int x = 0; x < 640; x += 2)
+            if (map[x + sx + y * 0x400] == r) { n++; cx += x; cy += y; }
+    if (!n) return 0;
+    cx /= n; cy /= n;
+    long best = -1;
+    for (int y = 0; y < 480; y += 2)
+        for (int x = 0; x < 640; x += 2)
+            if (map[x + sx + y * 0x400] == r) {
+                long d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
                 if (best < 0 || d < best) { best = d; *px = x; *py = y; }
             }
     return 1;
@@ -187,6 +216,8 @@ static void probe(void)
         if (seen[id]) continue;
         int side = object_side(id);
         if (side) host_log("guide:   o%d \"%s\" off screen to the %s", id, utf8(object_name(id)), side < 0 ? "left" : "right");
+        else if (id < 39 && *utf8(object_name(id)) && *utf8(object_name(id)) != ' ')
+            host_log("guide:   o%d \"%s\" not in the room now", id, utf8(object_name(id)));
     }
     unsigned char items[128];
     int n = inventory(items, (int)sizeof items);
@@ -214,8 +245,11 @@ static int choose_line(void)
     for (int i = 0; i < lines && nopt < 8; i++)
         if (i == 0 || g8(0x6d2140 + i) != g8(0x6d2140 + i - 1)) first[nopt++] = i;
     if (!nopt) return -1;
+    for (int k = 0; k < nopt; k++)                   /* the whole menu, for writing "say" lists */
+        host_log("guide:   menu %d: %s", k + 1, utf8((const char *)GA(0x6b59a0 + (unsigned)first[k] * 0x65)));
     if (g_say_i < g_nsay) {
         int k = g_say[g_say_i++] - 1;
+        if (k < -1) k = (int)g8((unsigned)(-(k + 2)));   /* @address: the option the game keeps there (0-based) */
         if (k >= 0 && k < nopt) return first[k];
     }
     for (int k = 0; k < nopt - 1; k++) {
@@ -235,7 +269,7 @@ static void line_point(int line, int *x, int *y)
 }
 
 /* ------------------------------------------------------------------ playing an action */
-enum { OP_MOVE, OP_DOWN, OP_UP, OP_WAIT, OP_IDLE, OP_INV_OPEN, OP_INV_CLOSE, OP_OBJ, OP_ITEM, OP_VERB, OP_LINE, OP_KEY, OP_CHAR, OP_AT, OP_APPEAR };
+enum { OP_MOVE, OP_DOWN, OP_UP, OP_WAIT, OP_IDLE, OP_INV_OPEN, OP_INV_CLOSE, OP_OBJ, OP_ITEM, OP_VERB, OP_LINE, OP_KEY, OP_CHAR, OP_AT, OP_APPEAR, OP_REGION, OP_VANISH, OP_CONTROL, OP_CLOSE_READING, OP_MURAL, OP_MAZE, OP_CELL };
 struct op { int kind, a, b; };
 static struct op g_ops[32];
 static int g_nops, g_op;
@@ -248,7 +282,11 @@ static int g_walks;                  /* walks towards an off-screen object in th
 
 static void insert_op(int at, int kind, int a)
 {
-    if (g_nops >= 32) return;
+    if (g_nops >= 32 && g_op > 0) {                  /* drop the ops already done */
+        for (int i = g_op; i < g_nops; i++) g_ops[i - g_op] = g_ops[i];
+        g_nops -= g_op; at -= g_op; g_op = 0;
+    }
+    if (g_nops >= 32) { host_log("guide: too many queued ops"); return; }
     for (int i = g_nops; i > at; i--) g_ops[i] = g_ops[i - 1];
     g_nops++;
     g_ops[at].kind = kind; g_ops[at].a = a; g_ops[at].b = 0;
@@ -327,7 +365,7 @@ static int on_screen(int id)
 
 static int g_step_room;              /* the room when the current step started, for "moved" */
 
-/* "has iN", "room 0xN", "gone oN", "moved" (another room than when the step started); an empty condition holds */
+/* "has iN", "room 0xN", "gone oN", "moved", "mem 0xADDR = V"; an empty condition holds */
 static int condition(const char *c)
 {
     c = trim(c);
@@ -338,6 +376,13 @@ static int condition(const char *c)
     if (c[0] == 'h' && c[1] == 'a' && c[2] == 's') { c += 3; c = trim(c); if (*c == 'i') c++; r = has_item(read_num(&c)); }
     else if (c[0] == 'r' && c[1] == 'o' && c[2] == 'o' && c[3] == 'm') { c += 4; r = room_id() / 10 == read_num(&c) / 10; }  /* rooms go in tens, the last digit is a state: 0x1b80..0x1b82 */
     else if (c[0] == 'm' && c[1] == 'o' && c[2] == 'v' && c[3] == 'e' && c[4] == 'd') r = room_id() / 10 != g_step_room / 10;
+    else if (c[0] == 'm' && c[1] == 'e' && c[2] == 'm' && c[3] == ' ') {   /* mem 0xADDR = V: a byte of the game's state */
+        c += 4;
+        unsigned a = (unsigned)read_num(&c);
+        c = trim(c);
+        if (*c == '=') c++;
+        r = (int)g8(a) == read_num(&c);
+    }
     else if (c[0] == 'g' && c[1] == 'o' && c[2] == 'n' && c[3] == 'e') { c = trim(c + 4); if (*c == 'o') c++; r = !on_screen(read_num(&c)); }
     else host_log("guide: unknown condition \"%s\"", c);
     return neg ? !r : r;
@@ -353,6 +398,70 @@ static int start_action(const char *s)
         push(OP_IDLE, 0, 0);
         push(OP_AT, x, y); push(OP_DOWN, 1, 0); push(OP_WAIT, 60, 0); push(OP_UP, 1, 0);
         push(OP_IDLE, 0, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
+    if (s[0] == 'm' && s[1] == 'i' && s[2] == 'n' && s[3] == 'e' && s[4] == ' ') {
+        /* mine <room>: Australia's mine cart. Where it goes depends on two switch levers through a table the game
+         * shuffles for each new game (9 ints at 0x69d240, room = table[left * 3 + right]; levers at 0x6b69e4/5).
+         * Set the levers in the switch panel (object 5: regions 1-3 left lever, 4-6 right lever, 7 leaves), then
+         * use the cart (object 1). */
+        s += 5;
+        int room = read_num(&s), at = -1;
+        char t[64];
+        int k = 0;
+        for (int i = 0; i < 9; i++) {
+            int v = (int)g32(0x69d240 + (unsigned)i * 4);
+            if (v / 10 == room / 10) at = i;
+            for (int d = 1000; d; d /= 10) t[k++] = (char)('0' + v / d % 10);
+            t[k++] = ' ';
+        }
+        t[k] = 0;
+        host_log("guide: mine table %s", t);
+        if (at < 0) { host_log("guide: no switch setting leads to room %#x", room); return 0; }
+        host_log("guide: mine: room %#x is levers %d,%d (now %d,%d)", room, at / 3, at % 3, (int)g8(0x6b69e4), (int)g8(0x6b69e5));
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_IDLE, 0, 0);
+        if ((int)g8(0x6b69e4) != at / 3 || (int)g8(0x6b69e5) != at % 3) {
+            /* the panel replaces the room (the cart is no longer in the region map) until region 7 closes it */
+            push(OP_VERB, VERB_USE, 0); push_thing('o', 5); push(OP_VANISH, 1, 0); push(OP_WAIT, 800, 0);
+            push(OP_REGION, 1 + at / 3, 0); push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_WAIT, 500, 0); push(OP_CONTROL, 0, 0);
+            push(OP_REGION, 4 + at % 3, 0); push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_WAIT, 500, 0); push(OP_CONTROL, 0, 0);
+            push(OP_REGION, 7, 0); push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_APPEAR, 1, 0); push(OP_IDLE, 0, 0);
+        }
+        push(OP_VERB, VERB_USE, 0); push_thing('o', 1);
+        push(OP_IDLE, 0, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
+    if (s[0] == 'm' && s[1] == 'a' && s[2] == 'z' && s[3] == 'e') {   /* maze: follow the beetle's path through Egypt's maze */
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_IDLE, 0, 0);
+        push(OP_MAZE, 0, 0);
+        push(OP_IDLE, 0, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
+    if (s[0] == 'm' && s[1] == 'u' && s[2] == 'r' && s[3] == 'a' && s[4] == 'l') {   /* mural: solve Egypt's tile puzzle */
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_CONTROL, 0, 0);
+        push(OP_MURAL, 0, 0);
+        push(OP_WAIT, 2000, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
+    if (s[0] == 'p' && s[1] == 'r' && s[2] == 'o' && s[3] == 'b' && s[4] == 'e') {   /* probe: log the state (writing) */
+        probe();
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_WAIT, 10, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
+    if (s[0] == 'k' && s[1] == 'e' && s[2] == 'y' && s[3] == ' ') {   /* key <vk>: e.g. 27 closes a reading screen */
+        s += 4;
+        int vk = read_num(&s);
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_KEY, vk, 0); push(OP_WAIT, 500, 0); push(OP_IDLE, 0, 0);
         g_op_t0 = host_ticks_ms();
         return 1;
     }
@@ -381,22 +490,28 @@ static int start_action(const char *s)
         s += 4;
         while (g_nsay < 16) {
             const char *b = s;
+            int at = *s == '@';
+            if (at) s++;
             int v = read_num(&s);
-            if (s == b) break;
-            g_say[g_nsay++] = v;
+            if (s == b + at) break;
+            g_say[g_nsay++] = at ? -v - 1 : v;      /* stored so that k = value - 1 = -(addr) - 2 */
             if (*s == ',') s++;
         }
     }
-    int fast = 0;
-    for (const char *p = s; *p; p++)
+    int fast = 0, nowait = 0, reading = 0;
+    for (const char *p = s; *p; p++) {
+        if (p[0] == 'r' && p[1] == 'e' && p[2] == 'a' && p[3] == 'd' && (p == s || p[-1] == ' ') && (p[4] == ' ' || !p[4])) reading = 1;
         if (p[0] == 'f' && p[1] == 'a' && p[2] == 's' && p[3] == 't' && (p == s || p[-1] == ' ') && (p[4] == ' ' || !p[4])) fast = 1;
+        if (p[0] == 'n' && p[1] == 'o' && p[2] == 'w' && p[3] == 'a' && p[4] == 'i' && p[5] == 't' && (p[6] == ' ' || !p[6])) nowait = 1;
+    }
     g_nops = g_op = 0; g_failed = 0;
     if (!fast) push(OP_IDLE, 0, 0);
     else if (k1 == 'o') push(OP_APPEAR, id1, 0);   /* touch nothing until the object shows up */
     if (verb != VERB_GO) push(OP_VERB, verb, 0);
     push_thing(k1, id1);
     if (two) push_thing(k2, id2);
-    push(OP_IDLE, 0, 0);
+    if (reading) { push(OP_WAIT, 1500, 0); push(OP_CLOSE_READING, 0, 0); push(OP_WAIT, 800, 0); }
+    if (nowait) push(OP_WAIT, 2500, 0); else push(OP_IDLE, 0, 0);
     g_fast = fast; g_walks = 0;
     g_op_t0 = host_ticks_ms(); g_stable_since = 0;
     return 1;
@@ -472,10 +587,114 @@ void hm_guide_tick(void)
             if (o->b == 0) { o->b = 1; o->a = g_ptr_x < 50 || g_ptr_x > 590 ? 320 : g_ptr_x; host_get_mouse(&g_from_x, &g_from_y); g_op_t0 = now; return; }
             if (glide(o->a, 479, el) && el > 3000) { fail("the inventory did not open"); return; }
             return;
+        case OP_CONTROL:                             /* only "the player has control" (screens where Ron is not shown) */
+            if (!in_control()) g_stable_since = 0;
+            else if (!g_stable_since) g_stable_since = now ? now : 1;
+            done = g_stable_since && now - g_stable_since >= 300;
+            if (!done && el > 60000) { fail("the game did not give control back"); return; }
+            break;
+        case OP_MURAL: {
+            /* Egypt's mural: 48 tiles, the tile at each position in 0x68fe40[1..48] (solved when tile == position);
+             * a click selects a position (the region map's value), a second click swaps it with another. */
+            int p = 0, q = 0;
+            for (int i = 1; i <= 48 && !p; i++) if ((int)g8(0x68fe40 + (unsigned)i) != i) p = i;
+            if (!p) { host_log("guide: mural solved"); done = 1; break; }
+            for (int i = 1; i <= 48 && !q; i++) if ((int)g8(0x68fe40 + (unsigned)i) == p) q = i;
+            if (!q || el > 900000) { fail("the mural cannot be solved"); return; }
+            /* this op stays: select p, select q, wait, then look again */
+            insert_op(g_op, OP_REGION, p);
+            insert_op(g_op + 1, OP_DOWN, 1);
+            insert_op(g_op + 2, OP_UP, 1);
+            insert_op(g_op + 3, OP_WAIT, 300);
+            insert_op(g_op + 4, OP_REGION, q);
+            insert_op(g_op + 5, OP_DOWN, 1);
+            insert_op(g_op + 6, OP_UP, 1);
+            insert_op(g_op + 7, OP_WAIT, 500);
+            insert_op(g_op + 8, OP_CONTROL, 0);
+            g_op_t0 = now;
+            return;
+        }
+        case OP_MAZE: {
+            /* Egypt's maze: a 6-wide grid, the cell at 0x68912e (0xff once out); every passage moves +-1 or +-6. The
+             * beetle's path is a table of (cell, direction) pairs at 0x5aaf24, in order. The room (0x80c..0x811) is a
+             * view of the corridor; learn which passage of each view moves how, and use that to follow the path and
+             * to undo a wrong turn. */
+            static signed char learned[6][16];
+            static unsigned short tried[256];
+            static int from_cell = -1, from_view, from_obj, trail[64], ntrail;
+            int c = (int)g8(0x68912e), view = room_id() - 0x80c;
+            if (c == 0xff || view < 0 || view > 5) { host_log("guide: out of the maze"); from_cell = -1; ntrail = 0; done = 1; break; }
+            if (el > 900000) { fail("lost in the maze"); return; }
+            if (from_cell >= 0 && c != from_cell) {
+                learned[from_view][from_obj] = (signed char)(c - from_cell);
+                if (ntrail && c == trail[ntrail - 1]) ntrail--;          /* came back one step */
+                else if (ntrail < 64) trail[ntrail++] = from_cell;        /* went further off the path */
+            }
+            if (from_cell >= 0 && c == from_cell) tried[c] |= (unsigned short)(1 << from_obj);   /* it did not move us */
+            /* where to go: the next cell of the beetle's path, or back along the way we came */
+            int target = -1;
+            for (int k = 0; k < 20; k++)
+                if ((int)g8(0x5aaf24 + (unsigned)k * 2) == c) target = k + 1 < 20 ? (int)g8(0x5aaf24 + (unsigned)(k + 1) * 2) : c + 1;
+            if (target >= 0) ntrail = 0;
+            else if (ntrail) target = trail[ntrail - 1];
+            else { fail("maze: not on the beetle's path"); return; }
+            int want = target - c, pick = 0;
+            for (int id = 1; id < 16 && !pick; id++)
+                if (learned[view][id] == want && on_screen(id)) pick = id;
+            for (int id = 1; id < 16 && !pick; id++) {
+                const char *n = trim(object_name(id));
+                int exit = *n && on_screen(id) && !g16(0x692cbc + (unsigned)(2 + id * 8) * 4) && !g16(0x692cbc + (unsigned)(4 + id * 8) * 4);
+                if (exit && !learned[view][id] && !(tried[c] & (1 << id))) pick = id;
+            }
+            if (!pick) { host_log("guide: maze: no passage for %+d at cell %d (view %d)", want, c, view); fail("maze"); return; }
+            host_log("guide: maze cell %d -> %d (view %d, passage o%d)", c, target, view, pick);
+            from_cell = c; from_view = view; from_obj = pick;
+            insert_op(g_op, OP_OBJ, pick);
+            insert_op(g_op + 1, OP_DOWN, 1);
+            insert_op(g_op + 2, OP_UP, 1);
+            insert_op(g_op + 3, OP_CELL, c);
+            insert_op(g_op + 4, OP_CONTROL, 0);
+            g_op_t0 = now;
+            return;
+        }
+        case OP_CELL:                                  /* wait for the maze cell to change (or give up after 12 s) */
+            done = (int)g8(0x68912e) != o->a || el > 12000;
+            break;
+        case OP_CLOSE_READING:                       /* a reading screen holds control until a key: Escape it */
+            if (in_control()) { done = 1; break; }
+            if (el < 2500) return;
+            {
+                struct host_event e;
+                char *p = (char *)&e;
+                for (unsigned i = 0; i < sizeof e; i++) p[i] = 0;
+                e.type = HOST_EV_KEYDOWN; e.vk = 27; hm_inject_event(&e);
+                e.type = HOST_EV_CHAR; e.ch = 27; hm_inject_event(&e);
+                e.type = HOST_EV_KEYUP; hm_inject_event(&e);
+            }
+            done = 1;
+            break;
+        case OP_VANISH:                              /* e.g. the mine's switch panel has replaced the room */
+            if (!on_screen(o->a)) { done = 1; break; }
+            if (el > 15000) { fail("the screen did not change"); return; }
+            return;
         case OP_APPEAR:
             if (on_screen(o->a)) { done = 1; break; }
             if (el > 30000) { fail("the object did not appear"); return; }
             return;
+        case OP_REGION: {
+            static int rx, ry;
+            if (o->b == 0) {
+                if (!region_point(o->a, &rx, &ry)) {
+                    if (el < 5000) return;           /* the panel may still be opening */
+                    host_log("guide: region %d not on screen", o->a);
+                    fail("region not found");
+                    return;
+                }
+                o->b = 1; host_get_mouse(&g_from_x, &g_from_y); g_op_t0 = now; return;
+            }
+            done = glide(rx, ry, el);
+            break;
+        }
         case OP_INV_CLOSE:                           /* the open panel hides the bottom of the room: leave it upwards */
             if (!inventory_open()) { done = 1; break; }
             if (glide(g_ptr_x, 200, el) && el > 3000) { fail("the inventory did not close"); return; }
@@ -486,6 +705,7 @@ void hm_guide_tick(void)
             if (o->b == 0) {
                 int ok = o->kind == OP_OBJ ? object_point(o->a, &tx, &ty) : item_point(o->a, &tx, &ty);
                 if (!ok && g_fast && el < 8000) return;   /* it may be about to appear */
+                if (!ok && o->kind == OP_OBJ && !object_side(o->a) && el < 20000) return;   /* someone walking about */
                 if (!ok && o->kind == OP_ITEM && item_scroll(o->a) && g_walks < 12) {
                     /* a full inventory: the arrows at the right of the panel scroll it by a row */
                     int up = item_scroll(o->a) < 0;
@@ -647,7 +867,9 @@ static void play_tick(void)
             /* "go to" an exit Sue already stands at does nothing (after loading a game she starts at one):
              * the next try opens it (doors), the one after first walks away from it */
             const char *st = trim(g_steps[g_step]);
-            int go = st[0] == 'g' && st[1] == 'o' && st[2] == ' ';
+            const char *u = trim(until_of(st));        /* only when the aim is to leave the room */
+            int go = st[0] == 'g' && st[1] == 'o' && st[2] == ' ' &&
+                     ((u[0] == 'm' && u[1] == 'o' && u[2] == 'v') || (u[0] == 'r' && u[1] == 'o' && u[2] == 'o'));
             if (go && g_tries % 3 == 2) {
                 char buf[160] = "open";
                 int k = 4;
@@ -666,14 +888,30 @@ static void play_tick(void)
         if (!g_play_left) return;
     }
     if (g_step >= g_nsteps) { g_play_left = 0; host_log("guide: end of the walkthrough"); return; }
+    /* Conditions and the room are only meaningful once the game has settled (after loading a game the room
+     * takes a moment to appear); "fast" steps are meant to start while something is going on. */
+    {
+        const char *p = g_steps[g_step];
+        int fast = (p[0] == 'k' && p[1] == 'e' && p[2] == 'y' && p[3] == ' ') ||   /* keys close screens that hold control */
+                   (p[0] == 'm' && p[1] == 'u' && p[2] == 'r');                     /* the mural is a screen of its own */
+        for (; *p; p++) if (p[0] == ' ' && p[1] == 'f' && p[2] == 'a' && p[3] == 's' && p[4] == 't' && (p[5] == ' ' || !p[5])) fast = 1;
+        static unsigned settled;
+        unsigned now = host_ticks_ms();
+        if (!fast) {
+            if (!idle_now()) { settled = 0; return; }
+            if (!settled) settled = now ? now : 1;
+            if (now - settled < 500) return;
+        }
+        settled = 0;
+    }
     g_step_room = room_id();
     if (*until_of(g_steps[g_step]) && condition(until_of(g_steps[g_step]))) {   /* already done: skip it */
-        host_log("guide: step %d already done: %s", g_step + 1, g_steps[g_step]);
+        host_log("guide: room %#x step %d already done: %s", room_id(), g_step + 1, g_steps[g_step]);
         g_step++;
         if (g_play_left > 0) g_play_left--;
         return;
     }
-    host_log("guide: %u step %d [%s] %s", host_ticks_ms(), g_step + 1, g_section[g_step], g_steps[g_step]);
+    host_log("guide: %u room %#x step %d [%s] %s", host_ticks_ms(), room_id(), g_step + 1, g_section[g_step], g_steps[g_step]);
     if (!start_action(g_steps[g_step])) { g_play_left = 0; return; }   /* it reads the action, not the "until" */
     g_tries = 1;
 }
