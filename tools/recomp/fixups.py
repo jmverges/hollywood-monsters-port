@@ -28,6 +28,13 @@ DECOMPILER_FIXES = [
             '        DAT_00696d74 = DAT_00696d74 + 1;',
     ),
     dict(
+        addr=0x00469a10,
+        why='the storm in Frankenstein\'s laboratory: the frame counter DAT_00642424 (to 0x6e) is kept in DX across '
+            'a call; with the leftover at 0 the storm never ended (chapter 14, the remote control)',
+        old='      DAT_00642424 = extraout_DX + 1;',
+        new='      DAT_00642424 = DAT_00642424 + 1;   /* RECOMP: decompiler fix, DX holds DAT_00642424 */',
+    ),
+    dict(
         addr=0x00494c00,
         why='an animation counter kept in CL and spilled to local_2e (Australia)',
         old="        uVar6 = extraout_ECX_00;\n        uVar5 = extraout_EDX_00;\n        if ((char)local_2c == '\\x01') {\n"
