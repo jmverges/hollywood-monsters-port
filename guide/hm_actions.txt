@@ -198,7 +198,7 @@ go o4 until room 0xffff # el coche: la agenda
 click 140 346 until moved     # en la agenda: Drácula
 go o3 until moved       # el foso: tirarse, insistiendo
 use i32 o1              # revienta-cráneos con la reja
-go o2 until moved      # la escalera: a las mazmorras
+use o2 until moved      # la escalera: a las mazmorras
 talk o4                 # el esqueleto de pie: se le cae un hueso
 take o11 until gone o11 # el hueso que se le cae
 use i53 o10             # el palo en el agujero de la dama de hierro
@@ -470,7 +470,7 @@ use i7 i12 until has i11 # el imán con el pastillero bomba (aquí: en la mina, 
 use o4 until moved      # botón de abajo: la vagoneta
 use o1 until moved      # la vagoneta: a la entrada
 mine 0x13b0             # el minero
-use i55 o5 fast         # cuando se para, cambiarle su varita de buscar diamantes por la de buscar oro: se pone a picar
+use i55 o5 fast until mem 0x668be1 = 1 # cuando se para, cambiarle su varita de buscar diamantes por la de buscar oro: se pone a picar
 use i11 o6 fast until not has i11   # el pastillero bomba con imán en el pico, cuando el viejo descansa: ¡explota!
 mine 0x13b0             # tras la explosión (Ron sale pitando hasta la entrada), volver con el viejo
 take o7 until has i74   # el diamante
