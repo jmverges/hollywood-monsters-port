@@ -1,9 +1,10 @@
 # Hollywood Monsters walkthrough for the port's guide (platform/win32/guide.c): one action per line.
 # Object (oN) and item (iN) numbers are the game's own; the names in the comments are the Spanish ones.
 # Written from the walkthroughs at abandonsocios.org (cireja, 2025) and nosolobits.com (FX Interactive)
-# and checked by playing it in the port.
+# and checked by playing it in the port. "== title @N" starts a section; N is the chapter of FX's story guide that
+# tells it (the port's menu opens the story there).
 
-== Sue en la mansión de Otto J. Hannover
+== Sue en la mansión de Otto J. Hannover  @1
 go o1                   # escalera: a la terraza
 take o5                 # vaso
 use i12 o6              # vaso con ponchera
@@ -87,7 +88,7 @@ go o1 until room 0x1b76 # terraza
 go o2 until room 0x1b62 # escalera: a la calle
 go o3 until not room 0x1b62   # edificio del fondo: Otto ve la silueta y la deja pasar; la bodega
 
-== Ron entra en acción
+== Ron entra en acción  @2
 open i106               # cartera: unas monedas
 go o1 until moved        # escaleras: a la terraza
 take o5 until gone o5   # ponchera
@@ -146,7 +147,7 @@ open i9                 # sacar la cinta de Sue
 go o1 until moved       # camino: a la calle
 go o4 until moved       # el coche, abajo a la derecha
 
-== Estudios M.K.O.
+== Estudios M.K.O.  @7
 click 165 160 until moved     # en la agenda: Estudios M.K.O.
 go o1 until not gone o6 # el hangar de la derecha, hasta que tiran un rollo de película
 take o6 until gone o6   # película
@@ -158,7 +159,7 @@ go o4 until moved       # a la oficina de Taffy
 go o2 until moved       # exterior
 go o7 until moved       # el coche: la agenda
 
-== Suiza: la casa de Frankenstein
+== Suiza: la casa de Frankenstein  @3
 click 425 67 until moved      # en la agenda: Frankenstein
 go o4 until moved       # al bosque: una cabaña
 take o8 until has i53   # un palo del suelo
@@ -182,7 +183,7 @@ take o2 until has i49   # maza
 go o1 until moved       # camino: fuera del molino
 go o6 until room 0xffff       # camino, abajo: la agenda, para viajar
 
-== Mansión Hannover
+== Mansión Hannover  @3
 click 175 67 until moved      # en la agenda: Mansión Hannover
 go o1 until moved       # escaleras: a la terraza
 go o1 until moved       # entrada: el vestíbulo
@@ -193,7 +194,7 @@ go o10 until moved      # terraza
 go o7 until moved       # escaleras: a la calle
 go o4 until room 0xffff # el coche: la agenda
 
-== Transilvania: el castillo de Drácula
+== Transilvania: el castillo de Drácula  @4
 click 140 346 until moved     # en la agenda: Drácula
 go o3 until moved       # el foso: tirarse, insistiendo
 use i32 o1              # revienta-cráneos con la reja
@@ -229,7 +230,7 @@ take o5 until has i58   # el objeto brillante: el camafeo de Samarkanda
 look o6                 # leer la postal: la dirección del Hombre Lobo en Australia
 go o8 until room 0xffff # el coche: la agenda
 
-== Mansión Hannover, otra vez
+== Mansión Hannover, otra vez  @4
 click 175 67 until moved      # en la agenda: Mansión Hannover
 go o1 until moved       # escaleras: a la terraza
 go o1 until moved       # entrada: el vestíbulo
@@ -240,7 +241,7 @@ go o10 until moved      # terraza
 go o7 until moved       # escaleras: a la calle
 go o4 until room 0xffff # el coche: la agenda
 
-== Estudios M.K.O., otra vez
+== Estudios M.K.O., otra vez  @7
 click 165 160 until moved     # en la agenda: Estudios M.K.O.
 go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy
 use i57 o4              # la margarita en la máquina de café (es laxante)
@@ -250,7 +251,7 @@ go o4 until moved       # a la oficina de Taffy
 go o2 until moved       # exterior
 go o7 until room 0xffff # el coche: la agenda
 
-== Suiza, otra vez
+== Suiza, otra vez  @14
 click 425 67 until moved      # en la agenda: Frankenstein
 go o4 until moved       # al bosque: la cabaña
 go o4 until moved       # la cabaña del ciego
@@ -263,12 +264,12 @@ key 27                  # cerrar el libro
 go o1 until moved       # camino: donde llegamos a Suiza
 go o6 until room 0xffff # camino, abajo: la agenda
 
-== Escocia
+== Escocia  @6
 click 160 256 until moved     # en la agenda: Clan McDundee
 talk o1 say @0x6349a2,@0x6349a2,@0x6349a2   # el pescador: tres preguntas sobre el árbol genealógico (la respuesta que el juego eligió al azar)
 go o6 until room 0xffff # el hidroavión: la agenda
 
-== Australia: las minas, la casa del Hombre Lobo
+== Australia: las minas, la casa del Hombre Lobo  @5
 click 420 252 until moved     # en la agenda: Hombre Lobo
 go o3                   # entrar en la mina andando (vuelve agotado; ya se puede usar la vagoneta)
 use o1 until moved      # la vagoneta, la primera vez: siempre a la misma parada
@@ -328,7 +329,7 @@ take o4 until has i71   # un madero
 use o1 until moved      # la vagoneta
 go o7 until moved       # el camino de la derecha: hacia Escocia
 
-== Escocia, otra vez
+== Escocia, otra vez  @6
 click 160 256 until moved     # en la agenda: Clan McDundee
 go o4 until moved       # el alto del acantilado
 take o3 until has i108  # el huevo
@@ -337,13 +338,13 @@ take o5 until has i93   # la cáscara que ha caído al suelo
 go o1 until moved       # camino: abajo, junto al lago
 go o6 until room 0xffff # el hidroavión: la agenda
 
-== Estudios M.K.O., el buzón
+== Estudios M.K.O., el buzón  @7
 click 165 160 until moved     # en la agenda: Estudios M.K.O.
 use i86 o5 until has i88      # las pinzas en el buzón: un folleto
 look i88 read           # leerlo
 go o7 until room 0xffff # el coche: la agenda
 
-== Suiza: el molino
+== Suiza: el molino  @8
 click 425 67 until moved      # en la agenda: Frankenstein
 go o4 until moved       # al bosque: la cabaña
 use i88 o2 until has i52      # el folleto con el árbol del centro del camino: resina, folleto pegajoso
@@ -351,7 +352,7 @@ use i52 i84 until has i21     # el folleto pegajoso con el tratamiento capilar: 
 go o1 until moved       # camino: donde llegamos a Suiza
 go o6 until room 0xffff # camino, abajo: la agenda
 
-== Transilvania, segunda visita
+== Transilvania, segunda visita  @10
 click 140 346 until moved     # en la agenda: Drácula
 go o1 until moved       # el puente levadizo: el patio
 go o5 until moved       # interior del castillo
@@ -380,7 +381,7 @@ go o5 until moved       # baja al patio
 go o1 until moved       # el puente levadizo: fuera
 go o8 until room 0xffff # el coche: la agenda
 
-== Egipto
+== Egipto  @11
 click 405 158 until moved     # en la agenda: La Momia
 go o2 until moved       # la pirámide, a la izquierda
 go o2 until moved       # la rampa: la piscina de la princesa
@@ -403,7 +404,7 @@ take o6 until has i44   # la flor del Nilo
 go o1 until moved       # al mercado
 go o8 until room 0xffff # la avioneta: la agenda
 
-== Transilvania, otro filete
+== Transilvania, otro filete  @10
 click 140 346 until moved     # en la agenda: Drácula
 go o1 until moved       # el puente levadizo: el patio
 go o5 until moved       # interior del castillo
@@ -414,7 +415,7 @@ go o5 until moved       # baja al patio
 go o1 until moved       # el puente levadizo: fuera
 go o8 until room 0xffff # el coche: la agenda
 
-== Egipto, el colmillo
+== Egipto, el colmillo  @11
 click 405 158 until moved     # en la agenda: La Momia
 go o2 until moved       # la pirámide
 go o2 until moved       # la rampa: la piscina
@@ -460,7 +461,7 @@ go o2 until moved       # exterior de la pirámide
 go o1 until moved       # al mercado
 go o8 until room 0xffff # la avioneta: la agenda
 
-== De vuelta a Australia
+== De vuelta a Australia  @12
 click 420 252 until moved     # en la agenda: Hombre Lobo
 mine 0x13ec             # el ascensor
 use o5 until moved      # el botón de arriba: el proyector
@@ -479,7 +480,7 @@ go o1 until moved       # el boquete: de vuelta con el minero
 use o1 until moved      # la vagoneta: a la entrada
 go o7 until room 0xffff # el camino de la derecha: la agenda
 
-== Otra vez en casa de Drácula
+== Otra vez en casa de Drácula  @13
 click 140 346 until moved     # en la agenda: Drácula
 go o1 until moved       # el puente levadizo: el patio
 go o5 until moved       # interior del castillo
@@ -500,7 +501,7 @@ go o5 until moved       # baja al patio
 go o1 until moved       # el puente levadizo: fuera
 go o8 until room 0xffff # el coche: la agenda
 
-== En casa de Frankie
+== En casa de Frankie  @14
 click 425 67 until moved      # en la agenda: Frankenstein
 go o3 until moved       # el molino
 go o3 until moved       # subir las escaleras
@@ -543,7 +544,7 @@ go o1 until moved       # recibidor
 go o1 until moved       # exterior
 go o6 until room 0xffff # camino, abajo: la agenda
 
-== Mansión Hannover: el cerebro
+== Mansión Hannover: el cerebro  @14
 click 175 67 until moved      # en la agenda: Mansión Hannover
 go o1 until moved       # escaleras: a la terraza
 go o1 until moved       # entrada: el vestíbulo
@@ -562,7 +563,7 @@ go o10 until moved      # terraza
 go o7 until moved       # escaleras: a la calle
 go o4 until room 0xffff # el coche: la agenda
 
-== Frankie vive
+== Frankie vive  @14
 click 425 67 until moved      # en la agenda: Frankenstein
 go o1 until moved       # la casa de Frankie
 go o3 until moved       # la biblioteca
@@ -570,7 +571,7 @@ go o2 until moved       # la puerta secreta: el laboratorio
 use i37 o3              # el cerebro, en la mesa de operaciones
 use i5                  # el mando a distancia: otra tormenta... ¡Frankie vive!
 
-== Estudios M.K.O.: el rescate de Sue
+== Estudios M.K.O.: el rescate de Sue  @15
 go o1 until moved       # el estudio de la derecha
 take o9 until has i96    # el bote de pintura
 open i45 until named i45 i109 # la navaja multiusos, hasta la lima

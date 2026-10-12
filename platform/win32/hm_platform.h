@@ -53,11 +53,14 @@ const char *hm_guide_step(int i);
 const char *hm_guide_note(int i);
 const char *hm_guide_section(int i);
 int  hm_guide_current(void);
+int  hm_guide_chapter(int i);                   /* the story guide's chapter for step i, 0 if unknown */
 int  hm_guide_playing(void);
 int  hm_guide_failed(void);
 void hm_guide_run(int i, int n);
 void hm_guide_stop(void);
 int  hm_guide_done(int i);
+void hm_guide_saved(const char *save);         /* crt.c: a game was saved to that file / loaded from it */
+void hm_guide_loaded(const char *save);
 int  hm_lang_english(void);                     /* the player's choice (applied to the game on the next room) */
 void hm_menu_toggle(void);
 int  hm_menu_is_open(void);

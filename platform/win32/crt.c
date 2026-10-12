@@ -32,9 +32,47 @@ void *crt__memmove(void *d, const void *s, size_t n) { return __builtin_memmove(
 void *crt__memset(void *d, int c, size_t n) { return __builtin_memset(d, c, n); }
 
 /* files: the FILE* handed to the game is an opaque host handle */
-FILE *crt__fopen(const char *name, const char *mode) { hm_lang_file_opening(name); return (FILE *)host_fopen(name, mode); }
-int crt__fclose(FILE *f) { return host_fclose(f); }
-size_t crt__fread(void *buf, size_t size, size_t n, FILE *f) { return host_fread(buf, size, n, f); }
+/* Saved games (SAVEGAME.nnn) are watched so the port's guide can keep its place with them (guide.c). */
+static struct { void *f; char name[16]; int write; unsigned read; } g_save;
+
+static int is_save(const char *name)
+{
+    const char *base = name, *want = "SAVEGAME.";
+    for (const char *p = name; *p; p++) if (*p == '\\' || *p == '/' || *p == ':') base = p + 1;
+    for (int i = 0; want[i]; i++) if ((base[i] & ~32) != (want[i] & ~32) && base[i] != want[i]) return 0;
+    return 1;
+}
+
+FILE *crt__fopen(const char *name, const char *mode)
+{
+    hm_lang_file_opening(name);
+    void *f = host_fopen(name, mode);
+    if (f && is_save(name)) {
+        g_save.f = f; g_save.read = 0; g_save.write = mode[0] == 'w';
+        int k = 0;
+        while (name[k] && k < 15) { g_save.name[k] = name[k]; k++; }
+        g_save.name[k] = 0;
+    }
+    return (FILE *)f;
+}
+
+int crt__fclose(FILE *f)
+{
+    int r = host_fclose(f);
+    if (f && (void *)f == g_save.f) {
+        g_save.f = 0;
+        if (g_save.write) hm_guide_saved(g_save.name);
+        else if (g_save.read > 0x1000) hm_guide_loaded(g_save.name);   /* the whole game, not its description */
+    }
+    return r;
+}
+
+size_t crt__fread(void *buf, size_t size, size_t n, FILE *f)
+{
+    size_t r = host_fread(buf, size, n, f);
+    if (f && (void *)f == g_save.f) g_save.read += (unsigned)(r * size);
+    return r;
+}
 size_t crt__fwrite(const void *buf, size_t size, size_t n, FILE *f) { return host_fwrite(buf, size, n, f); }
 int crt__fseek(FILE *f, long off, int whence) { return host_fseek(f, off, whence); }
 long crt__ftell(FILE *f) { return host_ftell(f); }

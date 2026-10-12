@@ -120,6 +120,10 @@ void hm_inject_event(const struct host_event *ev)
     dispatch(ev);
 }
 
+/* The key or click that closed the port's menu is the menu's: the rest of it (character, key or button up)
+ * must not reach the game, or Escape would open the game's own menu as the port's closes. */
+static int g_swallow_vk, g_swallow_up;
+
 void hm_pump_host_events(void)
 {
     struct host_event ev;
@@ -132,12 +136,22 @@ void hm_pump_host_events(void)
         else if (ev.type == HOST_EV_LANG) { hm_lang_toggle(); hm_menu_event(&ev); }
         else hm_menu_event(&ev);
         if (ev.type == HOST_EV_QUIT) return;
+        if (!hm_menu_is_open()) {
+            if (ev.type == HOST_EV_KEYDOWN) g_swallow_vk = ev.vk;
+            if (ev.type == HOST_EV_MOUSEDOWN) g_swallow_up = 1;
+        }
     }
     /* leave events in the host queue while ours is nearly full */
     while (queue_count() < QSIZE - 8 && host_poll_event(&ev)) {
         int pointer = ev.type == HOST_EV_MOUSEMOVE || ev.type == HOST_EV_MOUSEDOWN || ev.type == HOST_EV_MOUSEUP ||
                       ev.type == HOST_EV_WHEEL;
         if (pointer && hm_guide_busy()) continue;  /* the guide is acting: the player's pointer waits */
+        if (g_swallow_vk && ((ev.type == HOST_EV_CHAR && ev.ch == g_swallow_vk) || (ev.type == HOST_EV_KEYUP && ev.vk == g_swallow_vk))) {
+            if (ev.type == HOST_EV_KEYUP) g_swallow_vk = 0;
+            continue;
+        }
+        if (g_swallow_up && ev.type == HOST_EV_MOUSEUP) { g_swallow_up = 0; continue; }
+        if (ev.type == HOST_EV_KEYDOWN || ev.type == HOST_EV_MOUSEDOWN) g_swallow_vk = g_swallow_up = 0;
         dispatch(&ev);
     }
 }

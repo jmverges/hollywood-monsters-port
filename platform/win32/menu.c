@@ -18,14 +18,12 @@
 #define GOLD 0xFFE0B860u
 #define WHITE 0xFFF2EEE4u
 #define GREY 0xFFA09A8Cu
-#define MAX_ROWS 2000
 
 static unsigned g_px[W * H];
 enum { SCR_NONE, SCR_MAIN, SCR_EASY, SCR_STORY_LIST, SCR_STORY };
 static int g_screen, g_sel, g_top, g_section;
 static int g_movie;                          /* the guide is playing the walkthrough to the end */
 static int g_easy_step = -1;                 /* a step chosen in easy mode is being played */
-static unsigned char g_done[MAX_ROWS];       /* steps the guide has played through */
 static int g_last_step = -1;
 static char g_hud[160];                      /* the line shown over the game while the guide plays */
 static unsigned g_msg_until;                 /* ... or a message, until then */
@@ -201,7 +199,7 @@ static int section_of(int step)
     return k < 0 ? 0 : k;
 }
 
-static int done(int i) { return (i < MAX_ROWS && g_done[i]) || hm_guide_done(i); }
+static int done(int i) { return hm_guide_done(i); }
 
 static const char *step_label(int i) { const char *n = hm_guide_note(i); return *n ? n : hm_guide_step(i); }
 
@@ -456,7 +454,12 @@ static void activate(void)
             set_hud_step(L("Modo película (F9 para parar) - ", "Movie mode (F9 stops it) - "), hm_guide_current());
             close_menu();
         }
-        else if (g_sel == 3) open_screen(SCR_STORY_LIST, g_chapter_sel);
+        else if (g_sel == 3) {                   /* the chapter of the next action, if the walkthrough says it */
+            load_story();
+            int c = hm_guide_chapter(hm_guide_current());
+            if (c > 0 && c <= g_nchapters) g_chapter_sel = c - 1;
+            open_screen(SCR_STORY_LIST, g_chapter_sel);
+        }
         else if (g_sel == 4) { hm_lang_toggle(); show(); }
         break;
     case SCR_EASY: {
@@ -564,18 +567,13 @@ void hm_menu_tick(void)
 {
     int cur = hm_guide_current();
     if (cur != g_last_step) {
-        if (g_last_step >= 0 && cur > g_last_step && (g_movie || g_easy_step >= 0))
-            for (int i = g_last_step; i < cur && i < MAX_ROWS; i++) g_done[i] = 1;
-        if (g_easy_step >= 0 && cur == g_easy_step + 1 && g_easy_step < MAX_ROWS) g_done[g_easy_step] = 1;
         g_last_step = cur;
         if (g_movie) { set_hud_step(L("Modo película (F9 para parar) - ", "Movie mode (F9 stops it) - "), cur); if (g_screen == SCR_NONE) show(); }
     }
     if ((g_movie || g_easy_step >= 0) && !hm_guide_playing()) {
         int failed = hm_guide_failed();
         if (g_easy_step >= 0) {
-            int was = g_easy_step;
             g_easy_step = -1; g_hud[0] = 0;
-            if (!failed && was < MAX_ROWS) g_done[was] = 1;
             if (failed) { set_hud(L("No ha salido; puedes intentarlo otra vez", "It did not work; you can try again"), 0); g_msg_until = host_ticks_ms() + 4000; }
             open_easy();
         } else {

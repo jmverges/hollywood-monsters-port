@@ -845,8 +845,10 @@ static char *g_text;                 /* hm_actions.txt, lines split in place */
 static char *g_steps[MAX_STEPS];     /* action lines (section titles and comments left out) */
 static char *g_section[MAX_STEPS];   /* the title each step belongs to */
 static char *g_note[MAX_STEPS];      /* the comment after the step, "" if none (the port's menu shows it) */
+static unsigned char g_chapter[MAX_STEPS];   /* the story guide's chapter for the step's section ("@N"), 0 if none */
 static int g_nsteps, g_step, g_play_left;
 static int g_play_failed;            /* playing stopped because a step's condition never came true */
+static unsigned char g_done[MAX_STEPS];   /* steps played through (kept with each saved game: hm_guide_saved) */
 
 static void load_steps(void)
 {
@@ -861,6 +863,7 @@ static void load_steps(void)
     host_fclose(f);
     g_text[n] = 0;
     char *title = "";
+    int chapter = 0;
     for (char *line = g_text; line && *line && g_nsteps < MAX_STEPS; ) {
         char *next = line;
         while (*next && *next != '\n') next++;
@@ -878,8 +881,19 @@ static void load_steps(void)
         while (line[len]) len++;
         while (len && (line[len - 1] == ' ' || line[len - 1] == '\r' || line[len - 1] == '\t')) line[--len] = 0;
         line = (char *)trim(line);
-        if (line[0] == '=' && line[1] == '=') title = (char *)trim(line + 2);
-        else if (*line) { g_section[g_nsteps] = title; g_note[g_nsteps] = note; g_steps[g_nsteps++] = line; }
+        if (line[0] == '=' && line[1] == '=') {
+            title = (char *)trim(line + 2);
+            chapter = 0;
+            char *at = title;
+            while (*at && *at != '@') at++;
+            if (*at) {                                   /* "== title @N" */
+                const char *q = at + 1;
+                chapter = read_num(&q);
+                *at = 0;
+                while (at > title && at[-1] == ' ') *--at = 0;
+            }
+        }
+        else if (*line) { g_section[g_nsteps] = title; g_chapter[g_nsteps] = (unsigned char)chapter; g_note[g_nsteps] = note; g_steps[g_nsteps++] = line; }
         line = next;
     }
     host_log("guide: %d steps in hm_actions.txt", g_nsteps);
@@ -952,7 +966,7 @@ static void play_tick(void)
             return;
         }
         g_tries = 0;
-        g_step++;
+        g_done[g_step++] = 1;
         if (g_play_left > 0) g_play_left--;
         if (!g_play_left) return;
     }
@@ -976,7 +990,7 @@ static void play_tick(void)
     g_step_room = room_id();
     if (*until_of(g_steps[g_step]) && condition(until_of(g_steps[g_step]))) {   /* already done: skip it */
         host_log("guide: room %#x step %d already done: %s", room_id(), g_step + 1, g_steps[g_step]);
-        g_step++;
+        g_done[g_step++] = 1;
         if (g_play_left > 0) g_play_left--;
         return;
     }
@@ -1039,6 +1053,7 @@ const char *hm_guide_step(int i) { return i >= 0 && i < g_nsteps ? g_steps[i] : 
 const char *hm_guide_note(int i) { return i >= 0 && i < g_nsteps ? g_note[i] : ""; }
 const char *hm_guide_section(int i) { return i >= 0 && i < g_nsteps ? g_section[i] : ""; }
 int hm_guide_current(void) { return g_step; }
+int hm_guide_chapter(int i) { return i >= 0 && i < g_nsteps ? g_chapter[i] : 0; }
 int hm_guide_playing(void) { return g_play_left != 0 || hm_guide_busy(); }
 int hm_guide_failed(void) { return g_play_failed; }
 
@@ -1060,7 +1075,87 @@ void hm_guide_stop(void) { g_play_left = 0; }       /* the action under way fini
 int hm_guide_done(int i)
 {
     if (i < 0 || i >= g_nsteps) return 0;
+    if (g_done[i]) return 1;
     const char *c = trim(until_of(g_steps[i]));
     if (!((c[0] == 'h' && c[1] == 'a' && c[2] == 's') || (c[0] == 'n' && c[1] == 'a' && c[2] == 'm'))) return 0;
     return condition(c);
+}
+
+/* ------------------------------------------------------------------ the guide's place, kept with saved games */
+/* "<save>.guide" next to each saved game: "hm-guide <steps>", the current step, and one '0'/'1' per step for
+ * those done. crt.c calls these when the game writes a save, and when it reads one whole (a load: listing the
+ * saves reads only their descriptions). */
+static void guide_file(const char *save, char *out)
+{
+    const char *base = save;
+    for (const char *p = save; *p; p++) if (*p == '\\' || *p == '/' || *p == ':') base = p + 1;
+    int k = 0;
+    while (base[k] && k < 40) { out[k] = base[k]; k++; }
+    const char *ext = ".guide";
+    while (*ext) out[k++] = *ext++;
+    out[k] = 0;
+}
+
+static int put_num(char *o, int v)
+{
+    char t[12];
+    int n = 0, k = 0;
+    do { t[n++] = (char)('0' + v % 10); v /= 10; } while (v);
+    while (n) o[k++] = t[--n];
+    return k;
+}
+
+void hm_guide_saved(const char *save)
+{
+    load_steps();
+    if (!g_nsteps) return;
+    char name[64];
+    guide_file(save, name);
+    void *f = host_fopen(name, "wb");
+    if (!f) return;
+    static char buf[MAX_STEPS + 64];
+    int k = 0;
+    const char *h = "hm-guide ";
+    while (*h) buf[k++] = *h++;
+    k += put_num(buf + k, g_nsteps); buf[k++] = '\n';
+    k += put_num(buf + k, g_step); buf[k++] = '\n';
+    for (int i = 0; i < g_nsteps; i++) buf[k++] = g_done[i] ? '1' : '0';
+    buf[k++] = '\n';
+    host_fwrite(buf, 1, (unsigned)k, f);
+    host_fclose(f);
+    host_log("guide: %s written (step %d)", name, g_step + 1);
+}
+
+void hm_guide_loaded(const char *save)
+{
+    load_steps();
+    if (!g_nsteps) return;
+    g_play_left = 0; g_tries = 0;
+    char name[64];
+    guide_file(save, name);
+    void *f = host_fopen(name, "rb");
+    static char buf[MAX_STEPS + 64];
+    int n = f ? (int)host_fread(buf, 1, sizeof buf - 1, f) : 0;
+    if (f) host_fclose(f);
+    buf[n] = 0;
+    const char *p = buf;
+    int count = 0, step = -1;
+    if (n > 9 && buf[0] == 'h' && buf[8] == ' ') {
+        p = buf + 9;
+        count = read_num(&p);
+        while (*p == '\n' || *p == '\r') p++;
+        step = read_num(&p);
+    }
+    while (*p == '\n' || *p == '\r' || *p == ' ') p++;
+    if (count == g_nsteps && step >= 0 && step <= g_nsteps) {
+        g_step = step;
+        for (int i = 0; i < g_nsteps; i++) g_done[i] = p[i] == '1';
+        host_log("guide: %s read: step %d", name, g_step + 1);
+        return;
+    }
+    /* A game saved without the guide (or with another walkthrough): its place is not known. Item numbers can't
+     * tell it (each character has its own), so the guide starts over; the menu lets the player pick a section. */
+    g_step = 0;
+    for (int i = 0; i < g_nsteps; i++) g_done[i] = 0;
+    host_log("guide: no %s for this walkthrough: from the first step", name);
 }
