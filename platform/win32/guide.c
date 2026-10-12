@@ -26,13 +26,18 @@
  *     fast: no waiting for the game to settle before (actions with a short window, like taking the key while
  *       the gorilla drinks): it waits for the object to show up and then goes for it quickly
  *     until: repeat the action (up to 30 times) until the condition holds: "has iN", "room 0xN", "gone oN",
- *       "moved" (in another room than when the step started), "mem 0xADDR = V" (a byte of the game's state)
- *   wait <ms>                  let the game go on (music, animations)
+ *       "moved" (in another room than when the step started), "mem 0xADDR = V" (a byte of the game's state),
+ *       "named iA iB" (item A shows item B's name)
+ *   wait <ms>                  let the game go on (music, animations); with "until", check every <ms> for up to
+ *                              a minute
  *   click <x> <y>              a click on a screen without objects (the travel agenda)
+ *   walk <x> <y>               walk to that point of the room (room coordinates: the screen's plus the scroll)
  *   key <vk>                   a key, without waiting for control first (27: Escape closes a reading screen)
- *   maze                       walk Egypt's maze along the beetle's path (from inside it)
+ *   maze [back]                walk Egypt's maze along the beetle's path (from inside it), or back to the mural
  *   mural                      solve the mural puzzle in Egypt (after using the papyrus with the mural)
  *   mine <room>                set the switch levers of Australia's mine for that room and ride the cart
+ *   snap <name>                write the game's data (0x660000..0x710000) to snap_<name>.bin (finding state while
+ *                              writing the walkthrough)
  *   == title                   a section of the walkthrough
  *   # comment
  *
@@ -69,7 +74,9 @@ static int object_at(int x, int y)
     const unsigned char *map = (const unsigned char *)(unsigned long)g32(0x6c4cd0);
     if (!map || x < 0 || x >= 640 || y < 0 || y > 0x1df) return 0;
     int sx = (short)g16(0x700f62), sy = (int)g16(0x6c4c94);
-    return (int)g8(0x7010a0 + map[x + sx + (sy + y) * 0x400]);
+    long i = x + sx + (long)(sy + y) * 0x400;
+    if (i < 0 || i >= 0x78000) return 0;            /* the map is 1024 x 480 (0x40bf70); the ending scrolls further */
+    return (int)g8(0x7010a0 + map[i]);
 }
 
 /* A point on the object: the pixel of the object closest to the centre of its pixels (an object can be a ring or
@@ -269,9 +276,10 @@ static void line_point(int line, int *x, int *y)
 }
 
 /* ------------------------------------------------------------------ playing an action */
-enum { OP_MOVE, OP_DOWN, OP_UP, OP_WAIT, OP_IDLE, OP_INV_OPEN, OP_INV_CLOSE, OP_OBJ, OP_ITEM, OP_VERB, OP_LINE, OP_KEY, OP_CHAR, OP_AT, OP_APPEAR, OP_REGION, OP_VANISH, OP_CONTROL, OP_CLOSE_READING, OP_MURAL, OP_MAZE, OP_CELL };
+enum { OP_MOVE, OP_DOWN, OP_UP, OP_WAIT, OP_IDLE, OP_INV_OPEN, OP_INV_CLOSE, OP_OBJ, OP_ITEM, OP_VERB, OP_LINE, OP_KEY, OP_CHAR, OP_AT, OP_APPEAR, OP_REGION, OP_VANISH, OP_CONTROL, OP_CLOSE_READING, OP_MURAL, OP_MAZE, OP_CELL, OP_LEAVE };
 struct op { int kind, a, b; };
-static struct op g_ops[32];
+#define MAX_OPS 64
+static struct op g_ops[MAX_OPS];
 static int g_nops, g_op;
 static unsigned g_op_t0, g_stable_since;
 static int g_from_x, g_from_y, g_ptr_x = 320, g_ptr_y = 240;
@@ -282,17 +290,17 @@ static int g_walks;                  /* walks towards an off-screen object in th
 
 static void insert_op(int at, int kind, int a)
 {
-    if (g_nops >= 32 && g_op > 0) {                  /* drop the ops already done */
+    if (g_nops >= MAX_OPS && g_op > 0) {             /* drop the ops already done */
         for (int i = g_op; i < g_nops; i++) g_ops[i - g_op] = g_ops[i];
         g_nops -= g_op; at -= g_op; g_op = 0;
     }
-    if (g_nops >= 32) { host_log("guide: too many queued ops"); return; }
+    if (g_nops >= MAX_OPS) { host_log("guide: too many queued ops"); return; }
     for (int i = g_nops; i > at; i--) g_ops[i] = g_ops[i - 1];
     g_nops++;
     g_ops[at].kind = kind; g_ops[at].a = a; g_ops[at].b = 0;
 }
 
-static void push(int kind, int a, int b) { if (g_nops < 32) { g_ops[g_nops].kind = kind; g_ops[g_nops].a = a; g_ops[g_nops].b = b; g_nops++; } }
+static void push(int kind, int a, int b) { if (g_nops >= MAX_OPS) host_log("guide: too many queued ops"); if (g_nops < MAX_OPS) { g_ops[g_nops].kind = kind; g_ops[g_nops].a = a; g_ops[g_nops].b = b; g_nops++; } }
 
 static void send_pointer(int type, int x, int y, int button)
 {
@@ -376,6 +384,16 @@ static int condition(const char *c)
     if (c[0] == 'h' && c[1] == 'a' && c[2] == 's') { c += 3; c = trim(c); if (*c == 'i') c++; r = has_item(read_num(&c)); }
     else if (c[0] == 'r' && c[1] == 'o' && c[2] == 'o' && c[3] == 'm') { c += 4; r = room_id() / 10 == read_num(&c) / 10; }  /* rooms go in tens, the last digit is a state: 0x1b80..0x1b82 */
     else if (c[0] == 'm' && c[1] == 'o' && c[2] == 'v' && c[3] == 'e' && c[4] == 'd') r = room_id() / 10 != g_step_room / 10;
+    else if (c[0] == 'n' && c[1] == 'a' && c[2] == 'm' && c[3] == 'e' && c[4] == 'd') {
+        /* named iA iB: item A now shows item B's name (the multi-tool knife keeps its number and changes its name) */
+        c = trim(c + 5); if (*c == 'i') c++;
+        int a = read_num(&c);
+        c = trim(c); if (*c == 'i') c++;
+        int b = read_num(&c);
+        const char *x = trim(item_name(a)), *y = trim(item_name(b));
+        while (*x && *x == *y) { x++; y++; }
+        r = *x == *y;
+    }
     else if (c[0] == 'm' && c[1] == 'e' && c[2] == 'm' && c[3] == ' ') {   /* mem 0xADDR = V: a byte of the game's state */
         c += 4;
         unsigned a = (unsigned)read_num(&c);
@@ -391,9 +409,11 @@ static int condition(const char *c)
 static int start_action(const char *s)
 {
     s = trim(s);
-    if (s[0] == 'c' && s[1] == 'l' && s[2] == 'i' && s[3] == 'c' && s[4] == 'k') {   /* click <x> <y>: screens without objects */
-        s += 5;
+    int walk = s[0] == 'w' && s[1] == 'a' && s[2] == 'l' && s[3] == 'k';
+    if (walk || (s[0] == 'c' && s[1] == 'l' && s[2] == 'i' && s[3] == 'c' && s[4] == 'k')) {   /* click <x> <y>: screens without objects */
+        s += walk ? 4 : 5;
         int x = read_num(&s), y = read_num(&s);
+        if (walk) x -= (short)g16(0x700f62);         /* walk <x> <y>: a point of the room, wherever it has scrolled */
         g_nops = g_op = 0; g_failed = 0; g_fast = 0;
         push(OP_IDLE, 0, 0);
         push(OP_AT, x, y); push(OP_DOWN, 1, 0); push(OP_WAIT, 60, 0); push(OP_UP, 1, 0);
@@ -430,14 +450,15 @@ static int start_action(const char *s)
             push(OP_REGION, 7, 0); push(OP_DOWN, 1, 0); push(OP_UP, 1, 0); push(OP_APPEAR, 1, 0); push(OP_IDLE, 0, 0);
         }
         push(OP_VERB, VERB_USE, 0); push_thing('o', 1);
-        push(OP_IDLE, 0, 0);
+        push(OP_LEAVE, 0, 0); push(OP_IDLE, 0, 0);
         g_op_t0 = host_ticks_ms();
         return 1;
     }
-    if (s[0] == 'm' && s[1] == 'a' && s[2] == 'z' && s[3] == 'e') {   /* maze: follow the beetle's path through Egypt's maze */
+    if (s[0] == 'm' && s[1] == 'a' && s[2] == 'z' && s[3] == 'e') {   /* maze [back]: the beetle's path through Egypt's maze */
+        s = trim(s + 4);
         g_nops = g_op = 0; g_failed = 0; g_fast = 0;
         push(OP_IDLE, 0, 0);
-        push(OP_MAZE, 0, 0);
+        push(OP_MAZE, s[0] == 'b' ? -1 : 0, 0);
         push(OP_IDLE, 0, 0);
         g_op_t0 = host_ticks_ms();
         return 1;
@@ -447,6 +468,22 @@ static int start_action(const char *s)
         push(OP_CONTROL, 0, 0);
         push(OP_MURAL, 0, 0);
         push(OP_WAIT, 2000, 0);
+        g_op_t0 = host_ticks_ms();
+        return 1;
+    }
+    if (s[0] == 's' && s[1] == 'n' && s[2] == 'a' && s[3] == 'p' && s[4] == ' ') {
+        /* snap <name>: the game's data (0x660000..0x710000) to snap_<name>.bin, to find state while writing the walkthrough */
+        char path[96] = "snap_";
+        int k = 5;
+        for (const char *q = trim(s + 5); *q && *q != ' ' && k < 80; q++) path[k++] = *q;
+        path[k] = 0;
+        const char *tail = ".bin";
+        while (*tail) path[k++] = *tail++;
+        path[k] = 0;
+        void *f = host_fopen(path, "wb");
+        if (f) { host_fwrite((const void *)(unsigned long)GA(0x660000), 1, 0xb0000, f); host_fclose(f); host_log("guide: %s written", path); }
+        g_nops = g_op = 0; g_failed = 0; g_fast = 0;
+        push(OP_WAIT, 10, 0);
         g_op_t0 = host_ticks_ms();
         return 1;
     }
@@ -511,7 +548,8 @@ static int start_action(const char *s)
     push_thing(k1, id1);
     if (two) push_thing(k2, id2);
     if (reading) { push(OP_WAIT, 1500, 0); push(OP_CLOSE_READING, 0, 0); push(OP_WAIT, 800, 0); }
-    if (nowait) push(OP_WAIT, 2500, 0); else push(OP_IDLE, 0, 0);
+    /* conversations pause between lines with control given back for a moment */
+    if (nowait) push(OP_WAIT, 2500, 0); else push(OP_IDLE, verb == VERB_TALK ? 2000 : 0, 0);
     g_fast = fast; g_walks = 0;
     g_op_t0 = host_ticks_ms(); g_stable_since = 0;
     return 1;
@@ -561,13 +599,23 @@ void hm_guide_tick(void)
                 insert_op(g_op + 1, OP_DOWN, 1);
                 insert_op(g_op + 2, OP_UP, 1);
                 insert_op(g_op + 3, OP_IDLE, 0);
+                if (line == 0 && g8(0x6d3e75) > 1) {
+                    /* The game never highlights the top option when the pointer comes straight to it (0x46aaa0
+                     * compares it with the option of "no line", 0x6d2140[255], which is 0): come from below. */
+                    int bx, by;
+                    line_point((int)g8(0x6d3e75) - 1, &bx, &by);
+                    g_ops[g_op].kind = OP_AT; g_ops[g_op].a = bx; g_ops[g_op].b = by;
+                    insert_op(g_op + 1, OP_WAIT, 200);
+                    insert_op(g_op + 2, OP_LINE, 0);
+                    g_ops[g_op + 2].a = x; g_ops[g_op + 2].b = y;
+                }
                 host_get_mouse(&g_from_x, &g_from_y);
                 g_op_t0 = now; g_stable_since = 0;
                 return;
             }
             if (!idle_now()) g_stable_since = 0;
             else if (!g_stable_since) g_stable_since = now ? now : 1;
-            done = g_stable_since && now - g_stable_since >= 500;
+            done = g_stable_since && now - g_stable_since >= (unsigned)(o->a ? o->a : 500);
             if (!done && el > 600000) { fail("the game did not give control back"); return; }   /* chapter scenes are long */
             break;
         case OP_VERB: {                              /* hold the right button, slide to the verb, release */
@@ -634,7 +682,10 @@ void hm_guide_tick(void)
             /* where to go: the next cell of the beetle's path, or back along the way we came */
             int target = -1;
             for (int k = 0; k < 20; k++)
-                if ((int)g8(0x5aaf24 + (unsigned)k * 2) == c) target = k + 1 < 20 ? (int)g8(0x5aaf24 + (unsigned)(k + 1) * 2) : c + 1;
+                if ((int)g8(0x5aaf24 + (unsigned)k * 2) == c) {
+                    if (o->a >= 0) target = k + 1 < 20 ? (int)g8(0x5aaf24 + (unsigned)(k + 1) * 2) : c + 1;   /* out to the chamber */
+                    else target = k > 0 ? (int)g8(0x5aaf24 + (unsigned)(k - 1) * 2) : c - 1;                /* back to the mural */
+                }
             if (target >= 0) ntrail = 0;
             else if (ntrail) target = trail[ntrail - 1];
             else { fail("maze: not on the beetle's path"); return; }
@@ -657,6 +708,11 @@ void hm_guide_tick(void)
             g_op_t0 = now;
             return;
         }
+        case OP_LEAVE:                                 /* wait until we are in another room (the cart has left) */
+            if (o->b == 0) { o->b = 1; o->a = room_id(); }
+            done = room_id() / 10 != o->a / 10;
+            if (!done && el > 90000) { fail("the cart did not leave"); return; }
+            break;
         case OP_CELL:                                  /* wait for the maze cell to change (or give up after 12 s) */
             done = (int)g8(0x68912e) != o->a || el > 12000;
             break;
@@ -862,7 +918,11 @@ static void play_tick(void)
     if (g_tries) {                                   /* the last action ran: is its condition met? */
         const char *cond = until_of(g_steps[g_step]);
         if (!condition(cond)) {
-            if (g_tries >= 30) { host_log("guide: step %d: \"%s\" still not true", g_step + 1, cond); g_play_left = 0; return; }
+            /* "wait <ms> until": check every <ms> for up to a minute; actions: 30 tries */
+            const char *w = trim(g_steps[g_step]);
+            int max = 30;
+            if (w[0] == 'w' && w[1] == 'a' && w[2] == 'i' && w[3] == 't') { w += 4; int ms = read_num(&w); max = ms > 0 ? 60000 / ms : 30; }
+            if (g_tries >= max) { host_log("guide: step %d: \"%s\" still not true", g_step + 1, cond); g_play_left = 0; return; }
             g_tries++;
             /* "go to" an exit Sue already stands at does nothing (after loading a game she starts at one):
              * the next try opens it (doors), the one after first walks away from it */

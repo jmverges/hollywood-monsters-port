@@ -430,3 +430,211 @@ use i18 o3 nowait       # el papiro con el mural: el puzle
 mural                   # reconstruir el mural (el motor coloca las 48 piezas)
 go o5 until moved       # el laberinto, siguiendo al escarabajo
 maze                    # seguir el camino del escarabajo hasta la cámara de las dos columnas
+go o5 until moved       # la habitación contigua: Gunther Hecker
+talk o2 say 1,1,1,@0x688cc6,@0x688cc7,@0x688cc8   # Gunther: "Yo sé lo que significa ese jeroglífico" y las tres respuestas buenas (el juego las coloca al azar)
+go o1 until moved       # salir a la cámara: Gunther, aplastado, ha soltado su navaja
+take o7 until gone o7   # la navaja de Gunther
+go o5 until moved       # volver a entrar
+use i90 o4 until has i46      # la lupa con el sarcófago abierto: un pelo de la princesa
+use o3 until moved      # el bastón del sarcófago de la izquierda: una columna sube hasta el altar de Karnak
+use i42 o2 until not has i42  # el pergamino en el altar
+use i44 o2 until not has i44  # el polen de la flor del Nilo
+use i46 o2 until not has i46  # el pelo de la princesa: la princesa vuelve al Más Allá
+go o3 until moved       # entrada: bajar del altar
+go o1 until moved       # la cámara
+go o1 until moved       # el laberinto
+maze back               # deshacer el camino del escarabajo hasta el mural
+go o1 until moved       # la escalera: la esfinge
+go o1 until moved       # al mercado
+go o2 until moved       # la pirámide
+go o2 until moved       # la rampa: la piscina
+take o8 until gone o8   # las gafas de sol de la princesa
+take o2 until gone o2   # y su pamela
+go o6 until moved       # entrada de la pirámide
+use o3                  # la anilla: la Momia, agradecida
+take o5 until has i47   # el bastón de Ra
+use i47 o1              # usarlo con la puerta de piedra
+open o3 until has i48   # la base del trofeo: las piernas de Frankenstein
+go o1 until moved       # entrada: fuera de la pirámide
+go o2 until moved       # exterior de la pirámide
+go o1 until moved       # al mercado
+go o8 until room 0xffff # la avioneta: la agenda
+
+== De vuelta a Australia
+click 420 252 until moved     # en la agenda: Hombre Lobo
+mine 0x13ec             # el ascensor
+use o5 until moved      # el botón de arriba: el proyector
+use i15 o7              # el pastillero con la copa del Nessie-Boom: un pastillero bomba
+use o4 until moved      # botón de abajo: la vagoneta
+use o1 until moved      # la vagoneta: a la entrada
+mine 0x13b0             # el minero
+use i55 o5 fast         # cuando se para, cambiarle su varita de buscar diamantes por la de buscar oro: se pone a picar
+use i7 i12 until has i11      # el imán con el pastillero bomba
+use i11 o6 fast until not has i11   # el pastillero bomba con imán en el pico, cuando el viejo descansa: ¡explota!
+mine 0x13b0             # tras la explosión (Ron sale pitando hasta la entrada), volver con el viejo
+take o7 until has i74   # el diamante
+go o3 until moved       # por el boquete: el trofeo del Hombre Lobo
+open o4 until has i66   # la base del trofeo: el tronco y los brazos de Frankenstein
+go o1 until moved       # el boquete: de vuelta con el minero
+use o1 until moved      # la vagoneta: a la entrada
+go o7 until room 0xffff # el camino de la derecha: la agenda
+
+== Otra vez en casa de Drácula
+click 140 346 until moved     # en la agenda: Drácula
+go o1 until moved       # el puente levadizo: el patio
+go o5 until moved       # interior del castillo
+go o2 until moved       # la habitación de Gwendolyn
+open i45 until named i45 i111 # abrir la navaja multiusos hasta que salga el cuchillo
+use i45 i71 until has i6      # el cuchillo con el madero: una estaca
+use i6 o8               # la estaca con Gwendolyn
+take o10 until has i68  # la gominola del suelo
+take o3                 # el ataúd de la vampiresa, para cambiarlo por el del conde
+go o1 until moved       # a la galería
+go o3 until moved       # la cripta del órgano
+use i58 o2              # el camafeo en el órgano: viene Drácula
+go o1 until moved       # a la galería
+go o7 until moved       # la sala
+open o3 until has i76   # la base del trofeo: la cabeza de Frankenstein
+go o1 until moved       # corredor: a la galería
+go o5 until moved       # baja al patio
+go o1 until moved       # el puente levadizo: fuera
+go o8 until room 0xffff # el coche: la agenda
+
+== En casa de Frankie
+click 425 67 until moved      # en la agenda: Frankenstein
+go o3 until moved       # el molino
+go o3 until moved       # subir las escaleras
+use i31 o2              # las babas de mosca sobre la piedra que bloquea el engranaje
+go o1 until moved       # escalera: bajar
+go o1 until moved       # camino: fuera del molino
+use i91 o2              # el paraguas con las aspas: sube al tejado
+use i10                 # el invento del Dr. Mosca en el tejado: para provocar la lluvia
+go o2 until moved       # el suelo: bajar del tejado
+go o1 until moved       # la casa de Frankie, la de ladrillo rojo
+go o3 until moved       # la sala de la izquierda: la biblioteca
+use o9                  # botón izquierdo
+use o9                  # botón izquierdo
+use o9                  # botón izquierdo
+use o9                  # botón izquierdo
+use o9                  # botón izquierdo
+use o10                 # botón derecho
+use o10                 # botón derecho
+use o9
+use o9
+use o9
+use o10
+use o10
+use o10
+use o10
+use o11                 # botón rojo: se abre la puerta del laboratorio
+go o2 until moved       # la puerta secreta: el laboratorio
+open o8                 # el cajón de la mesa
+look o8                 # mirar dentro
+take o9 until has i50   # aguja e hilo quirúrgicos
+use i50 i76             # coser los trozos de Frankie
+use i62 o5              # el hueso del esqueleto en las cubetas: calcio
+use i68 o5              # la gominola: glucosa
+use i87 o5              # la rodaja de limón: ácido cítrico
+use i93 o5              # la cáscara de huevo: líquido amniótico
+use i56 o5              # la jeringuilla con savia: la sangre de un ser vivo
+use i5                  # el mando a distancia del invento del Dr. Mosca: la tormenta... pero falta el cerebro
+go o1 until moved       # escalera: la biblioteca
+go o1 until moved       # recibidor
+go o1 until moved       # exterior
+go o6 until room 0xffff # camino, abajo: la agenda
+
+== Mansión Hannover: el cerebro
+click 175 67 until moved      # en la agenda: Mansión Hannover
+go o1 until moved       # escaleras: a la terraza
+go o1 until moved       # entrada: el vestíbulo
+go o2 until moved       # salón: la fiesta
+go o2 until moved       # más a la derecha
+go o2 until moved       # la puerta de la cocina, ahora abierta
+use i77 o3              # el globo con gas: el cocinero sale corriendo
+go o2 until moved       # la despensa
+use o2                  # el interruptor de la luz
+take o4 until has i37   # el objeto envuelto en un trapo: el cerebro de Frankenstein
+go o1 until moved       # a la cocina
+go o1 until moved       # escalera: al salón
+go o1 until moved       # a la otra parte de la fiesta
+go o1 until moved       # hall
+go o10 until moved      # terraza
+go o7 until moved       # escaleras: a la calle
+go o4 until room 0xffff # el coche: la agenda
+
+== Frankie vive
+click 425 67 until moved      # en la agenda: Frankenstein
+go o1 until moved       # la casa de Frankie
+go o3 until moved       # la biblioteca
+go o2 until moved       # la puerta secreta: el laboratorio
+use i37 o3              # el cerebro, en la mesa de operaciones
+use i5                  # el mando a distancia: otra tormenta... ¡Frankie vive!
+
+== Estudios M.K.O.
+go o1 until moved       # el estudio de la derecha
+take o9 until has i96    # el bote de pintura
+open i45 until named i45 i109 # la navaja multiusos, hasta la lima
+use i45 o10 until has i95     # la lima con el alambre de la cuerda: un trozo de alambre
+go o1 until moved       # al exterior
+go o2 until moved       # la casa del fondo: el museo de cera
+open i45 until named i45 i112 # la navaja, hasta el alicate
+use i45 i95 until named i95 i114 # el alicate con el alambre: una ganzúa
+use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano
+look o1                 # mirar por la puerta del fondo del pasillo: ¡Sue!
+give i96 o4 until not has i96 # el bote de pintura, a Sue
+give i45 o4 until not has i45 # la navaja multiusos, a Sue
+talk o4 until room 0x1bbc # "mira a ver si puedes hacer algo desde dentro": ahora llevamos a Sue
+take o3 until has i21   # Sue: el póster junto a la puerta
+open i26 until named i26 i39 # la navaja, hasta el destornillador
+use i26 o5 until has i20 # desatornillar la placa del pilar
+walk 364 420            # la rata solo entra o sale con Sue lejos de ella (x > 360): esperar justo ahí
+wait 100 fast until mem 0x6e1ebe = 1 # hasta que empiece a salir (esa animación no se interrumpe)
+walk 300 420 fast       # y apartarse en ese momento: la rata se queda fuera
+use i20 o4 until not has i20 # la placa, en la ratonera de la izquierda, cuando la rata está fuera
+use i32 o5 until has i22 # pintar un agujero en la placa: la rata se da un trompazo
+give i22 o2 until not has i22 # la rata, a Ron
+give i26 o2 until not has i26 # la navaja, a Ron
+give i21 o2 until not has i21 # el póster, a Ron
+talk o2 say 1 until room 0x17bb # "piensa tú un poco": ahora llevamos a Ron otra vez
+go o3 until moved       # Ron: escalera arriba, al vestíbulo del museo
+go o4 until moved       # salida: la calle
+go o3 until moved       # el despacho de Taffy, la secretaria de Otto
+give i100 o5 until not has i100 # la rata, a Taffy: cree que es un gatito y va a por leche
+take o8 until has i94   # el bolso amarillo del perchero
+open i94 until has i103 # dentro, el pase de Taffy para el museo
+open i45 until named i45 i110 # la navaja, hasta las tijeras
+use i45 i99 until has i104 # recortar la cara del actor del póster
+use i104 i103 until has i102 # la foto, en el pase: un pase trucado
+go o2 until moved       # a la calle
+go o2 until moved       # el museo de cera
+give i102 o7            # el pase trucado, al guardia: nos deja pasar
+go o8 until moved       # el interior del museo
+go o4 until moved       # a la izquierda, por la escalera
+talk o3                 # Charlie: hablar de todo
+go o6 until moved       # bajar la escalera
+go o6 until moved       # salida del museo
+go o4 until moved       # salida: la calle
+go o3 until moved       # el despacho de Taffy
+look o9                 # la agenda: el número de Billy Ford
+use o10                 # el teléfono: llamar a Billy Ford
+go o2 until moved       # a la calle
+take o5 until has i105  # el paquete que ha llegado al buzón: el sobre de Billy Ford
+go o2 until moved       # el museo de cera
+go o8 until moved       # el interior del museo
+go o4 until moved       # la escalera: Charlie
+give i105 o3 until not has i105 # el sobre, a Charlie: sale corriendo y se olvida el maletín
+take o7 until has i101  # el maletín de Charlie
+go o6 until moved       # bajar la escalera
+go o6 until moved       # salida del museo: el vestíbulo
+use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano
+give i101 o4 until not has i101 # el maletín, a Sue
+talk o4 until room 0x1bbc # "¿puedes hacer algo desde ahí?": ahora llevamos a Sue
+open i33 until has i34  # Sue abre el maletín de maquillaje: un pintauñas multicolor
+use o8 say 5,5 until room 0x17ba # el timbre: "¿puedes hacerme un favor?", "píntame las uñas de los pies"; Ron se esconde
+go o3 until moved       # Ron: arriba, al vestíbulo
+use i74 o2 until has i98 # el diamante corta el cristal de la vitrina del jugador de béisbol: la pelota
+use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano
+go o1 until moved       # entrar en la celda: el guardia pinta las uñas a Sue
+use i98 o1              # la pelota, contra la cabeza del guardia
+wait 200000             # atados: hay que esperar sin hacer nada; a los 2-3 minutos llega el hombre menguante y nos desata
+use o1 nowait           # mientras Otto habla de la palanca, la cuerda... ¡y el final!
