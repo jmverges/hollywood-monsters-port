@@ -155,7 +155,7 @@ go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de 
 take o7 until gone o7   # paraguas
 take o6 fast until has i90   # la lupa de Taffy, cuando la suelta en la mesa
 talk o5                 # Taffy: pedir hablar con el Sr. Hannover
-go o4 until moved       # a la oficina de Taffy
+go o4 until room 0x1784 # a la oficina de Taffy (si Hannover no nos ha echado ya)
 go o2 until moved       # exterior
 go o7 until moved       # el coche: la agenda
 
@@ -247,7 +247,7 @@ go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de 
 use i57 o4              # la margarita en la máquina de café (es laxante)
 talk o5                 # Taffy: pedir hablar con el Sr. Hannover; Otto toma el café y sale corriendo
 take o3 until has i92   # el saxofón del despacho de Otto
-go o4 until moved       # a la oficina de Taffy
+go o4 until room 0x1784 # a la oficina de Taffy (si Hannover no nos ha echado ya)
 go o2 until moved       # exterior
 go o7 until room 0xffff # el coche: la agenda
 
