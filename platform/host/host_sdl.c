@@ -744,10 +744,6 @@ int host_poll_event(struct host_event *ev)
             int b = e.cbutton.button;
             static int logged;
             if (getenv("HM_DEBUG") || logged < 40) { logged++; host_log("controller button %d %s", b, down ? "down" : "up"); }
-            if (b == SDL_CONTROLLER_BUTTON_BACK) {          /* Select (Vita), View (Legion Go): other language */
-                if (!down) break;
-                ev->type = HOST_EV_LANG; return 1;
-            }
             if (b == SDL_CONTROLLER_BUTTON_X) {             /* Square (Vita): the port's menu */
                 if (!down) break;
                 ev->type = HOST_EV_MENU; return 1;
@@ -812,12 +808,8 @@ int host_poll_event(struct host_event *ev)
                 save_shot(name);
                 break;
             }
-            if (e.key.keysym.sym == SDLK_F9) {             /* the port's menu */
+            if (e.key.keysym.sym == SDLK_F9) {             /* the port's menu (the game uses F1-F3) */
                 if (e.type == SDL_KEYDOWN && !e.key.repeat) { ev->type = HOST_EV_MENU; return 1; }
-                break;
-            }
-            if (e.key.keysym.sym == SDLK_F8) {             /* the game uses F1-F3; F8 is free */
-                if (e.type == SDL_KEYDOWN && !e.key.repeat) { ev->type = HOST_EV_LANG; return 1; }
                 break;
             }
             int vk = vk_from_sdl(e.key.keysym.sym);

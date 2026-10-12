@@ -11,8 +11,8 @@ digital edition's MONSTERS.EXE, so the patch's executable cannot be used directl
   1. the patch's RESOURCE files that differ from the Spanish ones,
   2. hm_lang.tsv: the texts of the two executables paired up (verb table, verb bar, options menu).
 
-The port starts in the language saved in hm_lang.txt (Spanish by default); F8, or Select/Back on a
-controller, switches (platform/win32/lang.c). Saved games work in both languages.
+The port starts in the language saved in hm_lang.txt (Spanish by default); the port's menu (F9, or X/Square
+on a controller) switches (platform/win32/lang.c). Saved games work in both languages.
 Voices stay in Spanish: choose "Text" or "Both" in the options so the English subtitles are shown.
 """
 import os

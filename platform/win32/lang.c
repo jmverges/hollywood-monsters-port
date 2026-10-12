@@ -1,5 +1,5 @@
 /* Language: the game's own Spanish, or the English fan translation installed in the en/ subdirectory of the
- * data directory by tools/lang/english_patch.py. The player switches with F8 (or Select/Back on a controller);
+ * data directory by tools/lang/english_patch.py. The player switches in the port's menu (menu.c);
  * the choice is kept in hm_lang.txt ("en" or "es"), and HM_LANG=en|es overrides it.
  *
  * English is two things:
@@ -29,6 +29,20 @@ static int g_np;
 static int g_have_en;            /* en/ is installed: the player can switch */
 static int g_en;                 /* English is on */
 static int g_want;               /* the player's choice, applied on the next room load (hm_lang_file_opening) */
+
+/* The menus' art (verb bar, inventory and options panels, 1024 x 480) as start-up loads it. The options panel
+ * draws its labels straight onto that art each time it opens; the same words over the same words do not show,
+ * but after a switch the new ones land on the old ones. A switch puts the clean art back. */
+#define MENU_ART_SIZE 0x78000
+static unsigned char *g_art, *g_art_clean;
+
+void hm_lang_menu_art_loaded(void *art)
+{
+    g_art = art;
+    if (!g_art || g_art_clean) return;
+    g_art_clean = host_malloc(MENU_ART_SIZE);
+    for (unsigned i = 0; i < MENU_ART_SIZE; i++) g_art_clean[i] = g_art[i];
+}
 
 static int unescape(char *s)
 {
@@ -126,6 +140,47 @@ static int load_table(const char *path)
     return 1;
 }
 
+/* The verb bar: start-up writes the seven verbs onto its art (0x50fc80) and keeps a plain and a highlighted copy
+ * of each button (7 x 27 rows of 0x58 bytes at 0x6d9c00 and 0x6ddcf8). After a switch the port does the same
+ * again, from the art as it was before the verbs were written. */
+#define VERB_ART_SIZE (0xbd * 0x280)
+static unsigned char *g_verbs, *g_verbs_clean;
+
+void hm_lang_verb_art_loaded(void *art)
+{
+    g_verbs = art;
+    if (!g_verbs || g_verbs_clean) return;
+    g_verbs_clean = host_malloc(VERB_ART_SIZE);
+    for (unsigned i = 0; i < VERB_ART_SIZE; i++) g_verbs_clean[i] = g_verbs[i];
+}
+
+static void redraw_verbs(void)
+{
+    if (!g_verbs || !g_verbs_clean) return;
+    for (unsigned i = 0; i < VERB_ART_SIZE; i++) g_verbs[i] = g_verbs_clean[i];
+    /* as start-up: x of each label (centred there), the text at its address in the executable or its literal */
+    static const struct { unsigned short x; unsigned addr; const char *text; } verb[7] = {
+        { 0x33, 0x5d05b8, 0 }, { 0x8c, 0, "Coger" }, { 0xe5, 0, "Mirar" }, { 0x13f, 0x5d05a0, 0 },
+        { 0x199, 0, "Abrir" }, { 499, 0, "Cerrar" }, { 0x24c, 0x5d058c, 0 },
+    };
+    for (int k = 0; k < 7; k++) {
+        const char *t = verb[k].addr ? (const char *)(verb[k].addr + host_image_delta()) : verb[k].text;
+        FUN_00515480(verb[k].x, 0xb, 0xf1, 0, (byte *)hm_text(t), 1);
+    }
+    static const unsigned char width[7] = { 0x57, 0x57, 0x58, 0x58, 0x58, 0x57, 0x57 };
+    const unsigned short *x = (const unsigned short *)(0x5e4054 + host_image_delta());
+    unsigned char *lit = (unsigned char *)(0x6ddcf8 + host_image_delta());
+    for (int b = 0; b < 7; b++) {
+        const unsigned char *src = g_verbs + 0x1400 + x[b];
+        for (int row = 0; row < 27; row++, src += 0x280, lit += 0x58) {
+            unsigned char *plain = lit - 0x40f8;
+            for (int i = 0; i < 0x58; i++) plain[i] = lit[i] = src[i];
+            for (int i = 0; i < width[b]; i++) if (lit[i]) lit[i] += 9;
+        }
+    }
+    *(unsigned short *)(0x688a42 + host_image_delta()) = width[6];
+}
+
 static void apply(int en)
 {
     for (int i = 0; i < g_np; i++) {
@@ -134,8 +189,12 @@ static void apply(int en)
         for (; src[k] && k < g_patch[i].cap; k++) g_patch[i].dst[k] = src[k];
         for (; k < g_patch[i].cap; k++) g_patch[i].dst[k] = en ? 0 : g_patch[i].orig[k];
     }
+    if (g_art && g_art_clean && g_en != en)
+        for (unsigned i = 0; i < MENU_ART_SIZE; i++) g_art[i] = g_art_clean[i];
+    int switched = g_en != en;
     g_en = en;
     host_set_overlay_dir(en && g_have_en ? "en" : 0);
+    if (switched) redraw_verbs();
 }
 
 static int wants_english(void)
@@ -158,7 +217,7 @@ void hm_lang_load(void)
     } else if (load_table("hm_lang.tsv")) {          /* older full English copy of the data */
         apply(g_want = 1);
     }
-    host_log("language: %s%s", g_en ? "English" : "Spanish", g_have_en ? " (F8 or Select switches)" : "");
+    host_log("language: %s%s", g_en ? "English" : "Spanish", g_have_en ? " (the port's menu switches)" : "");
 }
 
 void hm_lang_toggle(void)

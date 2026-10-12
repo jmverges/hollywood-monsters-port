@@ -4,10 +4,10 @@
  *   Easy mode     the walkthrough's steps (guide/hm_actions.txt) section by section, with a check on those done;
  *                 choosing one makes the guide play it (guide.c), then the list comes back
  *   Movie mode    the guide plays the walkthrough from the current step to the end, with nothing drawn over the
- *                 game (it can be recorded); F9 stops it
+ *                 game (it can be recorded); opening the menu pauses it, and the menu offers to stop it
  *   The story     FX Interactive's guide, read from hm_story.txt in the data directory ("== title" lines start
  *                 the chapters; tools/guide/story.py writes it)
- *   Language      as F8
+ *   Language      Spanish or English (the English fan translation, when installed: lang.c)
  *
  * Keys: arrows, Page Up/Down, Enter, Escape (back); the mouse points, clicks, scrolls and right-clicks back.
  * Texts are UTF-8 and drawn in Latin-1 (menu_font.h). */
@@ -245,7 +245,8 @@ static void draw_main(void)
     const char *items[] = {
         L("Volver al juego", "Back to the game"),
         L("Modo fácil: la lista de acciones", "Easy mode: the list of actions"),
-        L("Modo película: ver la partida sola", "Movie mode: watch the game play itself"),
+        g_movie ? L("Pausar el modo película (jugar tú)", "Pause the movie (play yourself)")
+                : L("Modo película: ver la partida sola", "Movie mode: watch the game play itself"),
         L("La historia (guía de FX Interactive)", "The story (FX Interactive's guide)"),
         L("Idioma: español", "Language: English"),
     };
@@ -448,7 +449,12 @@ static void activate(void)
     case SCR_MAIN:
         if (g_sel == 0) close_menu();
         else if (g_sel == 1) { if (hm_guide_count()) open_easy(); }
-        else if (g_sel == 2) {
+        else if (g_sel == 2 && g_movie) {         /* pause: the action under way finishes, then the player plays */
+            hm_guide_stop();
+            g_movie = 0;
+            close_menu();
+        }
+        else if (g_sel == 2) {                   /* from the next step: also how a paused movie goes on */
             if (!hm_guide_count()) break;
             g_movie = 1; g_easy_step = -1;      /* nothing over the game: the movie can be recorded as it is */
             hm_guide_run(hm_guide_current(), -1);
@@ -513,11 +519,12 @@ static void side(int d)
 void hm_menu_toggle(void)
 {
     if (g_screen != SCR_NONE) { close_menu(); return; }
-    if (g_movie || g_easy_step >= 0) {           /* stop the guide; the action under way finishes */
+    if (g_easy_step >= 0) {                      /* stop the guide; the action under way finishes */
         hm_guide_stop();
-        g_movie = 0; g_easy_step = -1; g_hud[0] = 0;
+        g_easy_step = -1; g_hud[0] = 0;
     }
-    open_screen(SCR_MAIN, 0);
+    /* a movie only waits while the menu is open (the game waits too): "Back to the game" lets it go on */
+    open_screen(SCR_MAIN, g_movie ? 2 : 0);
 }
 
 int hm_menu_is_open(void) { return g_screen != SCR_NONE; }

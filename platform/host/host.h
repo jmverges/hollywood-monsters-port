@@ -22,7 +22,7 @@ void host_render_pending(void);
 /* ---- input */
 enum { HOST_EV_NONE, HOST_EV_QUIT, HOST_EV_MOUSEMOVE, HOST_EV_MOUSEDOWN, HOST_EV_MOUSEUP, HOST_EV_WHEEL,
        HOST_EV_KEYDOWN, HOST_EV_KEYUP, HOST_EV_CHAR, HOST_EV_FOCUS,
-       HOST_EV_LANG,      /* the player asked for the other language (F8, or Select/Back on a controller) */
+       HOST_EV_LANG,      /* the other language (the "lang" script command; players switch in the port's menu) */
        HOST_EV_GUIDE,     /* a command for the guide (platform/win32/guide.c) in text, from a test script */
        HOST_EV_MENU };    /* the player asked for the port's menu (F9, or X/Square on a controller) */
 struct host_event {

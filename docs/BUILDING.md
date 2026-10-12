@@ -51,7 +51,7 @@ This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita
 `en` folder for English) to `ux0:data/hollywood-monsters/`. Controls: on the touch screen a tap is a click, dragging
 aims and clicks on release, and holding still for half a second is the right button (the verb bar: slide to
 choose, lift to confirm), and a tap with two fingers is Escape (menu, skip); or the left stick and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
-for the menu, Select for the other language, Square for the port's menu (below). The same controls work with any game controller on the other builds. On the Vita, HM_* variables
+for the menu, Square for the port's menu (below). The same controls work with any game controller on the other builds. On the Vita, HM_* variables
 (HM_DEBUG=1 ...) can be set in `hm_env.txt` in the data folder; messages go to the kernel log (`sceClibPrintf`) and
 to `hm_log.txt` in the data folder.
 
@@ -67,8 +67,8 @@ tools/lang/english_patch.py /path/to/unpacked-patch /path/to/data
 
 The script writes `en/` inside the data directory (about 25 MB) and leaves the Spanish files alone: the
 patch's RESOURCE files that differ, and `hm_lang.tsv` with the verbs and menus taken from the patch's own
-executable (which the port cannot run). The game then switches language with F8, or Select/Back on a
-controller. The switch takes effect when the next room or saved game loads, so a room never shows both
+executable (which the port cannot run). The language is then chosen in the port's menu (F9, or X/Square on
+a controller). The switch takes effect when the next room or saved game loads, so a room never shows both
 languages; a notice at the top of the screen says so. The choice is kept in `hm_lang.txt` and `HM_LANG=en|es`
 overrides it. Saved games load in either language. Choose "Text" or "Both" in the options to see the
 subtitles.
@@ -81,7 +81,9 @@ is open. Arrows or the d-pad move, Enter or A chooses, Escape or B goes back; th
 * **Easy mode**: the walkthrough (`guide/hm_actions.txt`, built into the program)
   section by section, with a check on the steps done. Choosing one makes the guide do it as a player would,
   then the list comes back. Left and right change section.
-* **Movie mode**: the guide plays the game from the next step to the end. F9 stops it.
+* **Movie mode**: the guide plays the game from the next step to the end, with nothing drawn over it (it can
+  be recorded). Opening the menu pauses it; "Back to the game" lets it go on, "Pause the movie" hands the game
+  back to the player, and choosing movie mode again goes on from there.
 * **The story**: FX Interactive's walkthrough, written as a story. It is not in this repository; download it
   into the data directory once with
 

@@ -68,3 +68,23 @@ FIXUPS = [
 ''',
     ),
 ]
+
+# Hooks for the port's own features (not fixes): same format.
+PORT_HOOKS = [
+    dict(
+        addr=0x0040bf70,
+        why='start-up has just loaded the menus\' art (verb bar, inventory and options panels) into one buffer: the '
+            'port keeps a clean copy, because the options panel draws its labels straight onto that art and a '
+            'language switch would leave the old labels under the new ones (platform/win32/lang.c)',
+        old='    FUN_0050fc80();\n',
+        new='    FUN_0050fc80();\n    hm_lang_menu_art_loaded(DAT_00688a48);   /* RECOMP: port hook */\n',
+    ),
+    dict(
+        addr=0x0050fc80,
+        why='start-up is about to write the verb bar\'s labels onto its art: the port keeps the art without them, '
+            'to write them again in the other language after a switch (platform/win32/lang.c)',
+        old="  crt__fread(&DAT_006c61e0,1,16000,DAT_006cc2f8);\n",
+        new="  crt__fread(&DAT_006c61e0,1,16000,DAT_006cc2f8);\n"
+            "  hm_lang_verb_art_loaded((void *)DAT_00688f38);   /* RECOMP: port hook */\n",
+    ),
+]
