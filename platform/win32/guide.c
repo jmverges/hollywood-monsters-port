@@ -845,10 +845,23 @@ static char *g_text;                 /* hm_actions.txt, lines split in place */
 static char *g_steps[MAX_STEPS];     /* action lines (section titles and comments left out) */
 static char *g_section[MAX_STEPS];   /* the title each step belongs to */
 static char *g_note[MAX_STEPS];      /* the comment after the step, "" if none (the port's menu shows it) */
+static char *g_note_en[MAX_STEPS];   /* ... in English: the comments are "Spanish // English" */
+static char *g_section_en[MAX_STEPS];
 static unsigned char g_chapter[MAX_STEPS];   /* the story guide's chapter for the step's section ("@N"), 0 if none */
 static int g_nsteps, g_step, g_play_left;
 static int g_play_failed;            /* playing stopped because a step's condition never came true */
 static unsigned char g_done[MAX_STEPS];   /* steps played through (kept with each saved game: hm_guide_saved) */
+
+/* "Spanish // English": cuts the text at the " // " and returns the English part (the Spanish one if none) */
+static char *split_en(char *s)
+{
+    for (char *p = s; *p; p++)
+        if (p[0] == ' ' && p[1] == '/' && p[2] == '/' && p[3] == ' ') {
+            *p = 0;
+            return (char *)trim(p + 4);
+        }
+    return s;
+}
 
 static void load_steps(void)
 {
@@ -873,7 +886,7 @@ static void load_steps(void)
         for (long i = 0; i < n; i++) g_text[i] = (char)hm_actions_data[i];
     }
     g_text[n] = 0;
-    char *title = "";
+    char *title = "", *title_en = "";
     int chapter = 0;
     for (char *line = g_text; line && *line && g_nsteps < MAX_STEPS; ) {
         char *next = line;
@@ -887,6 +900,7 @@ static void load_steps(void)
             while (note[nl]) nl++;
             while (nl && (note[nl - 1] == ' ' || note[nl - 1] == '\r' || note[nl - 1] == '\t')) note[--nl] = 0;
         }
+        char *note_en = split_en(note);
         *hash = 0;
         int len = 0;
         while (line[len]) len++;
@@ -903,8 +917,12 @@ static void load_steps(void)
                 *at = 0;
                 while (at > title && at[-1] == ' ') *--at = 0;
             }
+            title_en = split_en(title);
         }
-        else if (*line) { g_section[g_nsteps] = title; g_chapter[g_nsteps] = (unsigned char)chapter; g_note[g_nsteps] = note; g_steps[g_nsteps++] = line; }
+        else if (*line) {
+            g_section[g_nsteps] = title; g_section_en[g_nsteps] = title_en; g_chapter[g_nsteps] = (unsigned char)chapter;
+            g_note[g_nsteps] = note; g_note_en[g_nsteps] = note_en; g_steps[g_nsteps++] = line;
+        }
         line = next;
     }
     host_log("guide: %d steps in hm_actions.txt", g_nsteps);
@@ -1061,8 +1079,8 @@ void hm_guide_command(const char *text)
 /* ------------------------------------------------------------------ for the port's menu (menu.c) */
 int hm_guide_count(void) { load_steps(); return g_nsteps; }
 const char *hm_guide_step(int i) { return i >= 0 && i < g_nsteps ? g_steps[i] : ""; }
-const char *hm_guide_note(int i) { return i >= 0 && i < g_nsteps ? g_note[i] : ""; }
-const char *hm_guide_section(int i) { return i >= 0 && i < g_nsteps ? g_section[i] : ""; }
+const char *hm_guide_note(int i) { return i >= 0 && i < g_nsteps ? (hm_lang_english() ? g_note_en : g_note)[i] : ""; }
+const char *hm_guide_section(int i) { return i >= 0 && i < g_nsteps ? (hm_lang_english() ? g_section_en : g_section)[i] : ""; }
 int hm_guide_current(void) { return g_step; }
 int hm_guide_chapter(int i) { return i >= 0 && i < g_nsteps ? g_chapter[i] : 0; }
 int hm_guide_playing(void) { return g_play_left != 0 || hm_guide_busy(); }
