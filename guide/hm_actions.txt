@@ -15,7 +15,8 @@ open o2                 # la puerta de la fiesta (1 de 3) // the party door (1 o
 open o2                 # la puerta de la fiesta (2 de 3) // the party door (2 of 3)
 open o2                 # la puerta de la fiesta (3 de 3): sale Frankie // the party door (3 of 3): Frankie comes out
 go o1 until room 0x1b76 # a la terraza // to the terrace
-take o3 until has i11   # el hueso de Húmero, cuando calla la música // Humerus's bone, when the music stops
+wait 250 until mem 0x6baeba = 15 # esperar a que calle la música (la canción de la terraza; 15 es el silencio, unos 11 s) // wait for the music to stop (the terrace's song; 15 is the silence, about 11 s)
+take o3 until has i11   # el hueso de Húmero, ahora que no baila // Humerus's bone, now that he is not dancing
 go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
 use i11 o2              # hueso con caseta de perro: la planta persigue el hueso hasta el vestíbulo // bone with the doghouse: the plant chases the bone into the hall
 go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
@@ -33,27 +34,12 @@ take o5                 # otro vaso // another glass
 use i12 o6              # lleno de ponche // filled with punch
 go o1 until room 0x1b80 # al vestíbulo // to the hall
 go o3 until room 0x1b94 # arriba // upstairs
-give i13 o2             # vaso con ponche al gorila (2) // glass of punch for the gorilla (2)
-go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
-go o1 until room 0x1b76 # a la terraza // to the terrace
-take o5                 # otro vaso // another glass
-use i12 o6              # lleno de ponche // filled with punch
-go o1 until room 0x1b80 # al vestíbulo // to the hall
-go o3 until room 0x1b94 # arriba // upstairs
-give i13 o2             # vaso con ponche al gorila (3) // glass of punch for the gorilla (3)
-go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
-go o1 until room 0x1b76 # a la terraza // to the terrace
-take o5                 # otro vaso // another glass
-use i12 o6              # lleno de ponche // filled with punch
-go o1 until room 0x1b80 # al vestíbulo // to the hall
-go o3 until room 0x1b94 # arriba // upstairs
-give i13 o2             # vaso con ponche al gorila (4): ya se mueve despacio // glass of punch for the gorilla (4): now he moves slowly
+give i13 o2             # vaso con ponche al gorila (2): mientras bebe, la llave se puede coger // glass of punch for the gorilla (2): while he drinks, the key can be taken
 take o8 fast until has i17   # la llave, mientras bebe // the key, while he drinks
 use i17 o3              # llave con la primera puerta: el despacho de Hannover // key with the first door: Hannover's office
 go o3 until not room 0x1b94 # el despacho de Hannover // Hannover's office
 use i16 o8              # trapo con carbón // rag with the coal
-use i8 i15              # trapo con carbón con la hoja: se lee lo que escribió Frankie // rag with coal on the sheet: what Frankie wrote shows up
-look i6                 # leer el mensaje // read the message
+use i8 i15              # trapo con carbón con la hoja: aparece y se lee lo que escribió Frankie // rag with coal on the sheet: what Frankie wrote shows up and is read
 go o1 until room 0x1b94 # pasillo // corridor
 go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
 go o1 until room 0x1b76 # terraza // terrace
