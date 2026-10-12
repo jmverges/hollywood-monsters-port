@@ -2,7 +2,7 @@
  * (host_overlay). While it is open the game waits: hm_pump_host_events keeps the game's thread here.
  *
  *   Easy mode     the walkthrough's steps (guide/hm_actions.txt) section by section, only those of the room the
- *                 player is in, with a check on those done;
+ *                 player is in and up to the next one somewhere else, with a check on those done;
  *                 choosing one makes the guide play it (guide.c), then the list comes back
  *   Movie mode    the guide plays the walkthrough from the current step to the end, with nothing drawn over the
  *                 game (it can be recorded); opening the menu pauses it, and the menu offers to stop it
@@ -271,13 +271,18 @@ static void draw_main(void)
     footer(L("Intro: aceptar   Esc: volver   F9: cerrar", "Enter: choose   Esc: back   F9: close"));
 }
 
-/* The steps of the section shown that are played in the room the game is in: easy mode offers only those. */
+/* What easy mode offers from the section shown: the steps played in the room the game is in, those done and the
+ * next ones, up to the first step still to do somewhere else (the later ones here come after it). */
 static int g_vis[600];
 
 static int easy_list(void)
 {
-    int n = 0, count = 0, first = section_steps(g_section, &n);
-    for (int k = 0; k < n && count < 600; k++) if (hm_guide_here(first + k)) g_vis[count++] = first + k;
+    int n = 0, count = 0, first = section_steps(g_section, &n), cur = hm_guide_current(), blocked = 0;
+    for (int k = 0; k < n && count < 600; k++) {
+        int i = first + k;
+        if (!hm_guide_here(i)) { if (i >= cur && !done(i)) blocked = 1; continue; }
+        if (i < cur || done(i) || !blocked) g_vis[count++] = i;
+    }
     return count;
 }
 
