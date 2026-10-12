@@ -61,8 +61,15 @@ target_include_directories(hm_override PRIVATE src/include src/gen)
 target_compile_definitions(hm_override PRIVATE HM_OVERRIDE)
 target_compile_options(hm_override PRIVATE -Wall -Wno-unused-parameter -Werror=implicit-function-declaration -Werror=incompatible-pointer-types)
 
+# The walkthrough for the port's guide and menu, built in (a hm_actions.txt in the data directory replaces it).
+set(HM_ACTIONS_C ${CMAKE_BINARY_DIR}/hm_actions_data.c)
+add_custom_command(OUTPUT ${HM_ACTIONS_C}
+  COMMAND ${CMAKE_COMMAND} -DIN=${CMAKE_SOURCE_DIR}/guide/hm_actions.txt -DOUT=${HM_ACTIONS_C} -DNAME=hm_actions_data
+          -P ${CMAKE_SOURCE_DIR}/cmake/embed.cmake
+  DEPENDS ${CMAKE_SOURCE_DIR}/guide/hm_actions.txt ${CMAKE_SOURCE_DIR}/cmake/embed.cmake)
+
 # Emulated Win32/DirectX layer, built against the game's types.
-add_library(hm_win32 OBJECT ${WIN32_SOURCES})
+add_library(hm_win32 OBJECT ${WIN32_SOURCES} ${HM_ACTIONS_C})
 target_include_directories(hm_win32 PRIVATE src/include src/gen)
 target_compile_options(hm_win32 PRIVATE -Wall -Wno-unused-parameter -Wno-int-conversion -Wno-error=int-conversion
                        -Wno-error=incompatible-pointer-types)

@@ -853,14 +853,25 @@ static unsigned char g_done[MAX_STEPS];   /* steps played through (kept with eac
 static void load_steps(void)
 {
     if (g_text) return;
+    /* the walkthrough built in (guide/hm_actions.txt), or hm_actions.txt in the data directory when there is
+     * one (writing the walkthrough) */
+    extern const unsigned char hm_actions_data[];
+    extern const unsigned hm_actions_data_size;
     void *f = host_fopen("hm_actions.txt", "rb");
-    if (!f) { host_log("guide: no hm_actions.txt"); return; }
-    host_fseek(f, 0, 2);
-    long n = host_ftell(f);
-    host_fseek(f, 0, 0);
-    g_text = host_malloc((unsigned)n + 1);
-    n = (long)host_fread(g_text, 1, (unsigned)n, f);
-    host_fclose(f);
+    long n;
+    if (f) {
+        host_fseek(f, 0, 2);
+        n = host_ftell(f);
+        host_fseek(f, 0, 0);
+        g_text = host_malloc((unsigned)n + 1);
+        n = (long)host_fread(g_text, 1, (unsigned)n, f);
+        host_fclose(f);
+        host_log("guide: hm_actions.txt from the data directory");
+    } else {
+        n = (long)hm_actions_data_size;
+        g_text = host_malloc((unsigned)n + 1);
+        for (long i = 0; i < n; i++) g_text[i] = (char)hm_actions_data[i];
+    }
     g_text[n] = 0;
     char *title = "";
     int chapter = 0;

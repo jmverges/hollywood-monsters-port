@@ -51,7 +51,7 @@ This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita
 `en` folder for English) to `ux0:data/hollywood-monsters/`. Controls: on the touch screen a tap is a click, dragging
 aims and clicks on release, and holding still for half a second is the right button (the verb bar: slide to
 choose, lift to confirm), and a tap with two fingers is Escape (menu, skip); or the left stick and d-pad to move the pointer, Cross to click, Circle held for the verb bar, Triangle for the inventory, Start
-for the menu, Select for the other language. The same controls work with any game controller on the other builds. On the Vita, HM_* variables
+for the menu, Select for the other language, Square for the port's menu (below). The same controls work with any game controller on the other builds. On the Vita, HM_* variables
 (HM_DEBUG=1 ...) can be set in `hm_env.txt` in the data folder; messages go to the kernel log (`sceClibPrintf`) and
 to `hm_log.txt` in the data folder.
 
@@ -72,6 +72,27 @@ controller. The switch takes effect when the next room or saved game loads, so a
 languages; a notice at the top of the screen says so. The choice is kept in `hm_lang.txt` and `HM_LANG=en|es`
 overrides it. Saved games load in either language. Choose "Text" or "Both" in the options to see the
 subtitles.
+
+## The port's menu: easy mode, movie mode and the story
+
+F9 (X on a controller, Square on the Vita) opens the port's own menu over the game; the game waits while it
+is open. Arrows or the d-pad move, Enter or A chooses, Escape or B goes back; the mouse works too.
+
+* **Easy mode**: the walkthrough (`guide/hm_actions.txt`, built into the program)
+  section by section, with a check on the steps done. Choosing one makes the guide do it as a player would,
+  then the list comes back. Left and right change section.
+* **Movie mode**: the guide plays the game from the next step to the end. F9 stops it.
+* **The story**: FX Interactive's walkthrough, written as a story. It is not in this repository; download it
+  into the data directory once with
+
+  ```
+  tools/guide/story.py /path/to/data
+  ```
+
+  It opens at the chapter of the next step.
+
+The guide keeps its place with each saved game, in `SAVEGAME.nnn.guide` next to it, so a loaded game shows
+its own progress. Games saved before (or without the file) start from the first step.
 
 ## Run-time options (environment variables)
 
