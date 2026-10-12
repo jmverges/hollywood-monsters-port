@@ -3,7 +3,8 @@
  *
  *   Easy mode     the walkthrough's steps (guide/hm_actions.txt) section by section, with a check on those done;
  *                 choosing one makes the guide play it (guide.c), then the list comes back
- *   Movie mode    the guide plays the walkthrough from the current step to the end; F9 stops it
+ *   Movie mode    the guide plays the walkthrough from the current step to the end, with nothing drawn over the
+ *                 game (it can be recorded); F9 stops it
  *   The story     FX Interactive's guide, read from hm_story.txt in the data directory ("== title" lines start
  *                 the chapters; tools/guide/story.py writes it)
  *   Language      as F8
@@ -449,9 +450,8 @@ static void activate(void)
         else if (g_sel == 1) { if (hm_guide_count()) open_easy(); }
         else if (g_sel == 2) {
             if (!hm_guide_count()) break;
-            g_movie = 1; g_easy_step = -1;
+            g_movie = 1; g_easy_step = -1;      /* nothing over the game: the movie can be recorded as it is */
             hm_guide_run(hm_guide_current(), -1);
-            set_hud_step(L("Modo película (F9 para parar) - ", "Movie mode (F9 stops it) - "), hm_guide_current());
             close_menu();
         }
         else if (g_sel == 3) {                   /* the chapter of the next action, if the walkthrough says it */
@@ -568,7 +568,6 @@ void hm_menu_tick(void)
     int cur = hm_guide_current();
     if (cur != g_last_step) {
         g_last_step = cur;
-        if (g_movie) { set_hud_step(L("Modo película (F9 para parar) - ", "Movie mode (F9 stops it) - "), cur); if (g_screen == SCR_NONE) show(); }
     }
     if ((g_movie || g_easy_step >= 0) && !hm_guide_playing()) {
         int failed = hm_guide_failed();
@@ -577,11 +576,7 @@ void hm_menu_tick(void)
             if (failed) { set_hud(L("No ha salido; puedes intentarlo otra vez", "It did not work; you can try again"), 0); g_msg_until = host_ticks_ms() + 4000; }
             open_easy();
         } else {
-            g_movie = 0;
-            set_hud(failed ? L("La película se ha parado: ", "The movie stopped: ") : L("Fin de la película", "End of the movie"),
-                    failed ? step_label(cur) : 0);
-            g_msg_until = host_ticks_ms() + 5000;
-            if (g_screen == SCR_NONE) show();
+            g_movie = 0;                         /* stopped or over: F9 shows where in the menu */
         }
     }
     if (g_msg_until && (int)(host_ticks_ms() - g_msg_until) >= 0) {

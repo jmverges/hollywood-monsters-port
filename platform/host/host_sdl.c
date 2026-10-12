@@ -323,6 +323,7 @@ void host_render_pending(void)
     if (!g_frame_dirty) {                           /* only the cursor moved: present the last frame again */
         SDL_UnlockMutex(g_frame_mx);
         if (!g_tex) return;
+        SDL_SetRenderDrawColor(g_ren, 0, 0, 0, 255);   /* the bars beside the 4:3 picture (draw_osd leaves its colour set) */
         SDL_RenderClear(g_ren);
         SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
         draw_overlay();
@@ -357,6 +358,7 @@ void host_render_pending(void)
     }
     g_frame_dirty = 0;
     SDL_UnlockMutex(g_frame_mx);
+    SDL_SetRenderDrawColor(g_ren, 0, 0, 0, 255);
     SDL_RenderClear(g_ren);
     SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
     draw_overlay();
