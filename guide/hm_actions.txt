@@ -637,5 +637,7 @@ use i74 o2 until has i98 # el diamante corta el cristal de la vitrina del jugado
 use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano
 go o1 until moved       # entrar en la celda: el guardia pinta las uñas a Sue
 use i98 o1              # la pelota, contra la cabeza del guardia
-wait 200000             # atados: hay que esperar sin hacer nada; a los 2-3 minutos llega el hombre menguante y nos desata
-use o1 nowait           # mientras Otto habla de la palanca, la cuerda... ¡y el final!
+wait 5000 until mem 0x6e1ebc = 1 # atados: tras ocho rondas de charla de Otto y Karloff llega el hombre menguante y nos desata
+wait 100 until not mem 0x69d232 = 0 # la cuerda solo sirve mientras habla Otto o Karloff
+use o1 nowait until mem 0x6baeba = 17 # la cuerda... (si se acaba la charla, otra vez)
+wait 5000 until not room 0x17ca  # ... ¡y el final!

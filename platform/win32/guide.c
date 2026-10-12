@@ -28,8 +28,8 @@
  *     until: repeat the action (up to 30 times) until the condition holds: "has iN", "room 0xN", "gone oN",
  *       "moved" (in another room than when the step started), "mem 0xADDR = V" (a byte of the game's state),
  *       "named iA iB" (item A shows item B's name)
- *   wait <ms>                  let the game go on (music, animations); with "until", check every <ms> for up to
- *                              a minute
+ *   wait <ms>                  let the game go on (music, animations); with "until", check every <ms>, 60 times
+ *                              or for a minute, whichever is longer
  *   click <x> <y>              a click on a screen without objects (the travel agenda)
  *   walk <x> <y>               walk to that point of the room (room coordinates: the screen's plus the scroll)
  *   key <vk>                   a key, without waiting for control first (27: Escape closes a reading screen)
@@ -951,10 +951,10 @@ static void play_tick(void)
     if (g_tries) {                                   /* the last action ran: is its condition met? */
         const char *cond = until_of(g_steps[g_step]);
         if (!condition(cond)) {
-            /* "wait <ms> until": check every <ms> for up to a minute; actions: 30 tries */
+            /* "wait <ms> until": check every <ms>, 60 times or for a minute, whichever is longer; actions: 30 tries */
             const char *w = trim(g_steps[g_step]);
             int max = 30;
-            if (w[0] == 'w' && w[1] == 'a' && w[2] == 'i' && w[3] == 't') { w += 4; int ms = read_num(&w); max = ms > 0 ? 60000 / ms : 30; }
+            if (w[0] == 'w' && w[1] == 'a' && w[2] == 'i' && w[3] == 't') { w += 4; int ms = read_num(&w); max = ms <= 0 ? 30 : ms >= 1000 ? 60 : 60000 / ms; }
             if (g_tries >= max) { host_log("guide: step %d: \"%s\" still not true", g_step + 1, cond); g_play_left = 0; g_play_failed = 1; return; }
             g_tries++;
             /* "go to" an exit Sue already stands at does nothing (after loading a game she starts at one):
