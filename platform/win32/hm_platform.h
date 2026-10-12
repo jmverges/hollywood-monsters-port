@@ -48,6 +48,21 @@ void hm_inject_event(const struct host_event *ev);   /* user32.c: as if the play
 void hm_guide_tick(void);
 int  hm_guide_busy(void);
 void hm_guide_command(const char *text);
+int  hm_guide_count(void);
+const char *hm_guide_step(int i);
+const char *hm_guide_note(int i);
+const char *hm_guide_section(int i);
+int  hm_guide_current(void);
+int  hm_guide_playing(void);
+int  hm_guide_failed(void);
+void hm_guide_run(int i, int n);
+void hm_guide_stop(void);
+int  hm_guide_done(int i);
+int  hm_lang_english(void);                     /* the player's choice (applied to the game on the next room) */
+void hm_menu_toggle(void);
+int  hm_menu_is_open(void);
+void hm_menu_event(const struct host_event *ev);
+void hm_menu_tick(void);
 
 /* misc */
 const char *hm_getenv(const char *name);

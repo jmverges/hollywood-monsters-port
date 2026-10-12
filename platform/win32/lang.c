@@ -206,3 +206,5 @@ char *hm_text(const char *s)
     }
     return (char *)s;
 }
+
+int hm_lang_english(void) { return g_want; }

@@ -162,6 +162,8 @@ static void dump_frame_if_requested(const Uint32 *argb, int w, int h)
     fclose(f);
 }
 
+static Uint32 *g_ov;
+static int g_ow, g_oh;
 static void save_shot(const char *name);
 void host_screenshot(const char *name) { save_shot(name); }
 
@@ -174,7 +176,14 @@ static void save_shot(const char *name)
     FILE *f = g_frame ? fopen(path, "wb") : NULL;
     if (f) {
         fprintf(f, "P6\n%d %d\n255\n", g_fw, g_fh);
-        for (int i = 0; i < g_fw * g_fh; i++) fwrite(&g_pal[g_frame[i] * 4], 1, 3, f);
+        for (int i = 0; i < g_fw * g_fh; i++) {
+            unsigned char rgb[3] = { g_pal[g_frame[i] * 4], g_pal[g_frame[i] * 4 + 1], g_pal[g_frame[i] * 4 + 2] };
+            if (g_ov && g_ow == g_fw && g_oh == g_fh) {   /* the port's menu over it, as on screen */
+                Uint32 o = g_ov[i], a = o >> 24;
+                for (int c = 0; c < 3; c++) rgb[c] = (unsigned char)((((o >> (16 - 8 * c)) & 255) * a + rgb[c] * (255 - a)) / 255);
+            }
+            fwrite(rgb, 1, 3, f);
+        }
         fclose(f);
         host_log("shot %s", path);
     }
@@ -272,6 +281,35 @@ static void draw_osd(void)
     g_cursor_dirty = 1;                             /* keep presenting until the notice is gone */
 }
 
+/* ------------------------------------------------------------------ the port's menu layer */
+static int g_ov_dirty, g_menu_input;
+static SDL_Texture *g_ov_tex;
+
+void host_overlay(const unsigned *argb, int w, int h)
+{
+    if (!argb) { free(g_ov); g_ov = NULL; g_cursor_dirty = 1; return; }
+    if (!g_ov || g_ow != w || g_oh != h) { free(g_ov); g_ov = malloc((size_t)w * h * 4); g_ow = w; g_oh = h; }
+    if (!g_ov) return;
+    memcpy(g_ov, argb, (size_t)w * h * 4);
+    g_ov_dirty = 1; g_cursor_dirty = 1;
+}
+
+void host_menu_input(int on) { g_menu_input = on; }
+
+static void draw_overlay(void)
+{
+    if (!g_ov) return;
+    if (g_ov_tex) { int w, h; SDL_QueryTexture(g_ov_tex, NULL, NULL, &w, &h); if (w != g_ow || h != g_oh) { SDL_DestroyTexture(g_ov_tex); g_ov_tex = NULL; } }
+    if (!g_ov_tex) {
+        g_ov_tex = SDL_CreateTexture(g_ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, g_ow, g_oh);
+        if (!g_ov_tex) return;
+        SDL_SetTextureBlendMode(g_ov_tex, SDL_BLENDMODE_BLEND);
+        g_ov_dirty = 1;
+    }
+    if (g_ov_dirty) { SDL_UpdateTexture(g_ov_tex, NULL, g_ov, g_ow * 4); g_ov_dirty = 0; }
+    SDL_RenderCopy(g_ren, g_ov_tex, NULL, NULL);
+}
+
 void host_render_pending(void)
 {
     static Uint32 last_present;
@@ -287,6 +325,7 @@ void host_render_pending(void)
         if (!g_tex) return;
         SDL_RenderClear(g_ren);
         SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
+        draw_overlay();
         draw_osd();
         draw_cursor();
         SDL_RenderPresent(g_ren);
@@ -320,6 +359,7 @@ void host_render_pending(void)
     SDL_UnlockMutex(g_frame_mx);
     SDL_RenderClear(g_ren);
     SDL_RenderCopy(g_ren, g_tex, NULL, NULL);
+    draw_overlay();
     draw_osd();
     draw_cursor();
     SDL_RenderPresent(g_ren);
@@ -399,7 +439,8 @@ void host_request_text_input(void)
  * Each line: <time_ms> <command> [args]; time is absolute since start, or "+N" relative to the previous line.
  * Commands: move X Y | click X Y | rclick X Y | down X Y | up X Y | rdown X Y | rup X Y | key VK | char C | shot NAME
  *           | poke8|poke16|poke32 ADDR VALUE (write game memory, e.g. the room id at 0x6ca1be)
- *           | trap (SIGTRAP: stop in gdb at this moment) | dump ADDR LEN (raw memory to the shot dir) | quit */
+ *           | trap (SIGTRAP: stop in gdb at this moment) | dump ADDR LEN (raw memory to the shot dir) | quit
+ *           | lang (as F8) | menu (as F9) | guide <command> */
 struct script_ev { unsigned t; char cmd[16]; int a, b; char name[64]; char rest[96]; };
 
 /* Scripts use the original addresses (e.g. the room id at 0x6ca1be); the image may live elsewhere. */
@@ -586,6 +627,8 @@ static void run_script(void)
             e.type = HOST_EV_KEYUP; g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "guide")) {             /* guide <command>: see platform/win32/guide.c */
             e.type = HOST_EV_GUIDE; snprintf(e.text, sizeof e.text, "%s", s->rest); g_inject[g_inject_n++] = e;
+        } else if (!strcmp(s->cmd, "menu")) {              /* as F9: the port's menu */
+            e.type = HOST_EV_MENU; g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "lang")) {              /* as F8: switch language */
             e.type = HOST_EV_LANG; g_inject[g_inject_n++] = e;
         } else if (!strcmp(s->cmd, "char")) {
@@ -632,6 +675,16 @@ static int pad_move(struct host_event *ev)
     float dt = last ? (now - last) / 1000.0f : 0;
     last = now;
     if (!g_pad || dt <= 0 || dt > 0.1f) return 0;
+    if (g_menu_input) {                             /* the stick as arrow keys, repeating while held */
+        static int held; static Uint32 next;
+        int sx = SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_LEFTX), sy = SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_LEFTY);
+        int vk = sy < -16000 ? 0x26 : sy > 16000 ? 0x28 : sx < -16000 ? 0x25 : sx > 16000 ? 0x27 : 0;
+        if (!vk) { held = 0; return 0; }
+        if (vk == held && (Sint32)(now - next) < 0) return 0;
+        next = now + (vk == held ? 120 : 400); held = vk;
+        ev->type = HOST_EV_KEYDOWN; ev->vk = vk;
+        return 1;
+    }
     float ax = SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_LEFTX) / 32767.0f;
     float ay = SDL_GameControllerGetAxis(g_pad, SDL_CONTROLLER_AXIS_LEFTY) / 32767.0f;
     if (ax > -0.2f && ax < 0.2f) ax = 0;
@@ -693,6 +746,21 @@ int host_poll_event(struct host_event *ev)
                 if (!down) break;
                 ev->type = HOST_EV_LANG; return 1;
             }
+            if (b == SDL_CONTROLLER_BUTTON_X) {             /* Square (Vita): the port's menu */
+                if (!down) break;
+                ev->type = HOST_EV_MENU; return 1;
+            }
+            if (g_menu_input) {
+                static const int keys[][2] = {
+                    { SDL_CONTROLLER_BUTTON_DPAD_UP, 0x26 }, { SDL_CONTROLLER_BUTTON_DPAD_DOWN, 0x28 },
+                    { SDL_CONTROLLER_BUTTON_DPAD_LEFT, 0x25 }, { SDL_CONTROLLER_BUTTON_DPAD_RIGHT, 0x27 },
+                    { SDL_CONTROLLER_BUTTON_A, 0x0D }, { SDL_CONTROLLER_BUTTON_B, 0x1B }, { SDL_CONTROLLER_BUTTON_START, 0x1B },
+                    { SDL_CONTROLLER_BUTTON_LEFTSHOULDER, 0x21 }, { SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, 0x22 },
+                };
+                for (unsigned k = 0; k < sizeof keys / sizeof keys[0]; k++)
+                    if (keys[k][0] == b) { ev->type = down ? HOST_EV_KEYDOWN : HOST_EV_KEYUP; ev->vk = keys[k][1]; return 1; }
+                break;
+            }
             if (b == SDL_CONTROLLER_BUTTON_START) {
                 inject_key(27, down);
                 *ev = g_inject[0]; memmove(g_inject, g_inject + 1, sizeof g_inject[0] * --g_inject_n);
@@ -740,6 +808,10 @@ int host_poll_event(struct host_event *ev)
                 char name[64];
                 snprintf(name, sizeof name, "screenshot_%u", SDL_GetTicks());
                 save_shot(name);
+                break;
+            }
+            if (e.key.keysym.sym == SDLK_F9) {             /* the port's menu */
+                if (e.type == SDL_KEYDOWN && !e.key.repeat) { ev->type = HOST_EV_MENU; return 1; }
                 break;
             }
             if (e.key.keysym.sym == SDLK_F8) {             /* the game uses F1-F3; F8 is free */

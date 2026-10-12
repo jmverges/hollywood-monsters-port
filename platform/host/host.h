@@ -23,7 +23,8 @@ void host_render_pending(void);
 enum { HOST_EV_NONE, HOST_EV_QUIT, HOST_EV_MOUSEMOVE, HOST_EV_MOUSEDOWN, HOST_EV_MOUSEUP, HOST_EV_WHEEL,
        HOST_EV_KEYDOWN, HOST_EV_KEYUP, HOST_EV_CHAR, HOST_EV_FOCUS,
        HOST_EV_LANG,      /* the player asked for the other language (F8, or Select/Back on a controller) */
-       HOST_EV_GUIDE };   /* a command for the guide (platform/win32/guide.c) in text, from a test script */
+       HOST_EV_GUIDE,     /* a command for the guide (platform/win32/guide.c) in text, from a test script */
+       HOST_EV_MENU };    /* the player asked for the port's menu (F9, or X/Square on a controller) */
 struct host_event {
     int type;
     int x, y;          /* mouse position in game coordinates */
@@ -45,6 +46,11 @@ void host_request_text_input(void);       /* the game waits for typed text: show
 void *host_cursor_create(const unsigned *argb, int w, int h, int hot_x, int hot_y);
 void  host_cursor_set(void *cursor);     /* NULL: no cursor */
 void  host_osd(const char *text);
+/* The port's own menu (platform/win32/menu.c): an ARGB layer (alpha 0 = transparent) of w x h game pixels drawn
+ * over the frame until called with NULL; call again after each change. In menu input mode the controller sends
+ * keys instead of moving the pointer: d-pad and stick arrows, A Enter, B Escape, shoulders Page Up/Down. */
+void  host_overlay(const unsigned *argb, int w, int h);
+void  host_menu_input(int on);
 void  host_screenshot(const char *name);  /* the current frame to <HM_SHOT_DIR or .>/<name>.ppm (tests, debugging) */         /* a short notice over the frame for two seconds (A-Z, space, UTF-8 Ñ) */
 
 /* ---- the original executable as mapped in memory */

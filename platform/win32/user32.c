@@ -107,6 +107,9 @@ static void dispatch(const struct host_event *e)
     case HOST_EV_GUIDE:
         hm_guide_command(ev.text);
         break;
+    case HOST_EV_MENU:
+        hm_menu_toggle();
+        break;
     }
 }
 
@@ -121,6 +124,15 @@ void hm_pump_host_events(void)
 {
     struct host_event ev;
     hm_guide_tick();
+    hm_menu_tick();
+    /* The port's menu is open: the game waits here (paused) and the menu gets the player's input. */
+    while (hm_menu_is_open()) {
+        if (!host_poll_event(&ev)) { host_sleep_ms(5); hm_menu_tick(); continue; }
+        if (ev.type == HOST_EV_QUIT || ev.type == HOST_EV_MENU || ev.type == HOST_EV_GUIDE) dispatch(&ev);
+        else if (ev.type == HOST_EV_LANG) { hm_lang_toggle(); hm_menu_event(&ev); }
+        else hm_menu_event(&ev);
+        if (ev.type == HOST_EV_QUIT) return;
+    }
     /* leave events in the host queue while ours is nearly full */
     while (queue_count() < QSIZE - 8 && host_poll_event(&ev)) {
         int pointer = ev.type == HOST_EV_MOUSEMOVE || ev.type == HOST_EV_MOUSEDOWN || ev.type == HOST_EV_MOUSEUP ||

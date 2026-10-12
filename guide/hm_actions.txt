@@ -9,9 +9,9 @@ take o5                 # vaso
 use i12 o6              # vaso con ponchera
 go o1                   # puerta: el vestíbulo (Joseph mira la lista de invitados)
 talk o8                 # Joseph
-open o2                 # la puerta de la fiesta, tres veces: sale Frankie
-open o2
-open o2
+open o2                 # la puerta de la fiesta (1 de 3)
+open o2                 # la puerta de la fiesta (2 de 3)
+open o2                 # la puerta de la fiesta (3 de 3): sale Frankie
 go o1 until room 0x1b76 # a la terraza
 take o3 until has i11   # el hueso de Húmero, cuando calla la música
 go o2 until room 0x1b62 # escalera: a la calle
@@ -32,15 +32,15 @@ use i12 o6              # lleno de ponche
 go o1 until room 0x1b80 # al vestíbulo
 go o3 until room 0x1b94 # arriba
 give i13 o2             # (2)
-go o5 until room 0x1b80
-go o1 until room 0x1b76
+go o5 until room 0x1b80 # escalera: al vestíbulo
+go o1 until room 0x1b76 # a la terraza
 take o5                 # otro vaso
 use i12 o6              # lleno de ponche
 go o1 until room 0x1b80 # al vestíbulo
 go o3 until room 0x1b94 # arriba
 give i13 o2             # (3)
-go o5 until room 0x1b80
-go o1 until room 0x1b76
+go o5 until room 0x1b80 # escalera: al vestíbulo
+go o1 until room 0x1b76 # a la terraza
 take o5                 # otro vaso
 use i12 o6              # lleno de ponche
 go o1 until room 0x1b80 # al vestíbulo
@@ -48,7 +48,7 @@ go o3 until room 0x1b94 # arriba
 give i13 o2             # (4): ya se mueve despacio
 take o8 fast until has i17   # la llave, mientras bebe
 use i17 o3              # llave con la primera puerta: el despacho de Hannover
-go o3 until not room 0x1b94
+go o3 until not room 0x1b94 # el despacho de Hannover
 use i16 o8              # trapo con carbón
 use i8 i15              # trapo con carbón con la hoja: se lee lo que escribió Frankie
 look i6                 # leer el mensaje
@@ -62,13 +62,13 @@ go o1 until room 0x1b80 # vestíbulo
 go o3 until room 0x1b94 # arriba
 go o3 until room 0x1b9e # despacho de Otto
 use i9 o5               # tarjeta con la puerta: el despacho de la secretaria
-go o5 until not room 0x1b9e
+go o5 until not room 0x1b9e # el despacho de la secretaria
 take o6                 # manivela
 go o1 until room 0x1b9e # al despacho de Otto
 use i19 o3              # manivela en el gramófono
 use o10                 # la manivela, ya en el gramófono: media vuelta
 go o5 until not room 0x1b9e   # despacho de la secretaria: ha cambiado
-go o1 until room 0x1b9e
+go o1 until room 0x1b9e # al despacho de Otto
 go o1 until room 0x1b94 # pasillo
 go o5 until room 0x1b80 # escalera: al vestíbulo
 go o1 until room 0x1b76 # terraza
@@ -286,7 +286,7 @@ use o6 until moved      # la coctelera (Nessie Boom: leche, grog y whisky, en cu
 go o1 until mem 0x639e60 = 11   # cambiar de bebida hasta la leche (clics sin verbo: el botón derecho sale de la máquina)
 go o2                  # abrir el grifo
 go o1 until mem 0x639e60 = 12   # el grog
-go o2
+go o2                   # abrir el grifo
 go o1 until mem 0x639e60 = 14   # el whisky
 go o2                  # el cóctel queda en la copa
 use o3 until moved      # el ascensor, botón del centro: el jacuzzi del Hombre Lobo
@@ -512,20 +512,20 @@ use i10                 # el invento del Dr. Mosca en el tejado: para provocar l
 go o2 until moved       # el suelo: bajar del tejado
 go o1 until moved       # la casa de Frankie, la de ladrillo rojo
 go o3 until moved       # la sala de la izquierda: la biblioteca
-use o9                  # botón izquierdo
-use o9                  # botón izquierdo
-use o9                  # botón izquierdo
-use o9                  # botón izquierdo
-use o9                  # botón izquierdo
-use o10                 # botón derecho
-use o10                 # botón derecho
-use o9
-use o9
-use o9
-use o10
-use o10
-use o10
-use o10
+use o9                  # botón izquierdo (1 de 5)
+use o9                  # botón izquierdo (2 de 5)
+use o9                  # botón izquierdo (3 de 5)
+use o9                  # botón izquierdo (4 de 5)
+use o9                  # botón izquierdo (5 de 5)
+use o10                 # botón derecho (1 de 2)
+use o10                 # botón derecho (2 de 2)
+use o9                  # botón izquierdo (1 de 3)
+use o9                  # botón izquierdo (2 de 3)
+use o9                  # botón izquierdo (3 de 3)
+use o10                 # botón derecho (1 de 4)
+use o10                 # botón derecho (2 de 4)
+use o10                 # botón derecho (3 de 4)
+use o10                 # botón derecho (4 de 4)
 use o11                 # botón rojo: se abre la puerta del laboratorio
 go o2 until moved       # la puerta secreta: el laboratorio
 open o8                 # el cajón de la mesa
@@ -570,7 +570,7 @@ go o2 until moved       # la puerta secreta: el laboratorio
 use i37 o3              # el cerebro, en la mesa de operaciones
 use i5                  # el mando a distancia: otra tormenta... ¡Frankie vive!
 
-== Estudios M.K.O.
+== Estudios M.K.O.: el rescate de Sue
 go o1 until moved       # el estudio de la derecha
 take o9 until has i96    # el bote de pintura
 open i45 until named i45 i109 # la navaja multiusos, hasta la lima

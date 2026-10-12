@@ -844,7 +844,9 @@ static void step_aside(void)
 static char *g_text;                 /* hm_actions.txt, lines split in place */
 static char *g_steps[MAX_STEPS];     /* action lines (section titles and comments left out) */
 static char *g_section[MAX_STEPS];   /* the title each step belongs to */
+static char *g_note[MAX_STEPS];      /* the comment after the step, "" if none (the port's menu shows it) */
 static int g_nsteps, g_step, g_play_left;
+static int g_play_failed;            /* playing stopped because a step's condition never came true */
 
 static void load_steps(void)
 {
@@ -863,15 +865,21 @@ static void load_steps(void)
         char *next = line;
         while (*next && *next != '\n') next++;
         if (*next) *next++ = 0; else next = 0;
-        char *hash = line;
+        char *hash = line, *note = "";
         while (*hash && *hash != '#') hash++;
-        *hash = 0;                                   /* comments, also at the end of a step */
+        if (*hash) {                                 /* comments, also at the end of a step */
+            note = (char *)trim(hash + 1);
+            int nl = 0;
+            while (note[nl]) nl++;
+            while (nl && (note[nl - 1] == ' ' || note[nl - 1] == '\r' || note[nl - 1] == '\t')) note[--nl] = 0;
+        }
+        *hash = 0;
         int len = 0;
         while (line[len]) len++;
         while (len && (line[len - 1] == ' ' || line[len - 1] == '\r' || line[len - 1] == '\t')) line[--len] = 0;
         line = (char *)trim(line);
         if (line[0] == '=' && line[1] == '=') title = (char *)trim(line + 2);
-        else if (*line) { g_section[g_nsteps] = title; g_steps[g_nsteps++] = line; }
+        else if (*line) { g_section[g_nsteps] = title; g_note[g_nsteps] = note; g_steps[g_nsteps++] = line; }
         line = next;
     }
     host_log("guide: %d steps in hm_actions.txt", g_nsteps);
@@ -914,7 +922,7 @@ static void play_tick(void)
     if (was_playing && !g_play_left) play_stopped();
     was_playing = g_play_left != 0;
     if (!g_play_left || hm_guide_busy()) return;
-    if (g_failed) { g_play_left = 0; host_log("guide: playing stopped at step %d", g_step + 1); return; }
+    if (g_failed) { g_play_left = 0; g_play_failed = 1; host_log("guide: playing stopped at step %d", g_step + 1); return; }
     if (g_tries) {                                   /* the last action ran: is its condition met? */
         const char *cond = until_of(g_steps[g_step]);
         if (!condition(cond)) {
@@ -922,12 +930,13 @@ static void play_tick(void)
             const char *w = trim(g_steps[g_step]);
             int max = 30;
             if (w[0] == 'w' && w[1] == 'a' && w[2] == 'i' && w[3] == 't') { w += 4; int ms = read_num(&w); max = ms > 0 ? 60000 / ms : 30; }
-            if (g_tries >= max) { host_log("guide: step %d: \"%s\" still not true", g_step + 1, cond); g_play_left = 0; return; }
+            if (g_tries >= max) { host_log("guide: step %d: \"%s\" still not true", g_step + 1, cond); g_play_left = 0; g_play_failed = 1; return; }
             g_tries++;
             /* "go to" an exit Sue already stands at does nothing (after loading a game she starts at one):
              * the next try opens it (doors), the one after first walks away from it */
             const char *st = trim(g_steps[g_step]);
             const char *u = trim(until_of(st));        /* only when the aim is to leave the room */
+            if (u[0] == 'n' && u[1] == 'o' && u[2] == 't' && u[3] == ' ' && trim(u + 4)[0] == 'r') u = trim(u + 4);   /* "not room" too */
             int go = st[0] == 'g' && st[1] == 'o' && st[2] == ' ' &&
                      ((u[0] == 'm' && u[1] == 'o' && u[2] == 'v') || (u[0] == 'r' && u[1] == 'o' && u[2] == 'o'));
             if (go && g_tries % 3 == 2) {
@@ -1022,4 +1031,36 @@ void hm_guide_command(const char *text)
         g_op_t0 = host_ticks_ms(); g_stable_since = 0;
     }
     else host_log("guide: unknown command");
+}
+
+/* ------------------------------------------------------------------ for the port's menu (menu.c) */
+int hm_guide_count(void) { load_steps(); return g_nsteps; }
+const char *hm_guide_step(int i) { return i >= 0 && i < g_nsteps ? g_steps[i] : ""; }
+const char *hm_guide_note(int i) { return i >= 0 && i < g_nsteps ? g_note[i] : ""; }
+const char *hm_guide_section(int i) { return i >= 0 && i < g_nsteps ? g_section[i] : ""; }
+int hm_guide_current(void) { return g_step; }
+int hm_guide_playing(void) { return g_play_left != 0 || hm_guide_busy(); }
+int hm_guide_failed(void) { return g_play_failed; }
+
+/* play n steps from step i (n < 0: to the end) */
+void hm_guide_run(int i, int n)
+{
+    load_steps();
+    if (i < 0 || i >= g_nsteps) return;
+    if (i != g_step) g_tries = 0;                    /* a step left half done is started again */
+    g_step = i;
+    g_play_left = n ? n : 1;
+    g_failed = 0; g_play_failed = 0;
+}
+
+void hm_guide_stop(void) { g_play_left = 0; }       /* the action under way finishes */
+
+/* The step's condition says it has been done already: the item it gives is in the inventory (has, named).
+ * Conditions about rooms or missing things say nothing outside the moment the step is played. */
+int hm_guide_done(int i)
+{
+    if (i < 0 || i >= g_nsteps) return 0;
+    const char *c = trim(until_of(g_steps[i]));
+    if (!((c[0] == 'h' && c[1] == 'a' && c[2] == 's') || (c[0] == 'n' && c[1] == 'a' && c[2] == 'm'))) return 0;
+    return condition(c);
 }
