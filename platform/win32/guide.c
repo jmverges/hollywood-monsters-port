@@ -575,6 +575,9 @@ static int idle_now(void)
 
 static void play_tick(void);
 
+static void locate(void);
+static int g_locate_pending;          /* a game without its .guide file was loaded: find the place (locate) */
+
 void hm_guide_tick(void)
 {
     play_tick();
@@ -969,6 +972,11 @@ static void play_stopped(void)
 
 static void play_tick(void)
 {
+    if (g_locate_pending && !g_play_left && in_control() && idle_now()) {
+        g_locate_pending = 0;
+        locate();
+        host_log("guide: step %d, found from the room (%#x) and the inventory", g_step + 1, room_id());
+    }
     static int was_playing;
     if (g_exit_after_save && !hm_guide_busy()) { host_log("guide: saved, step %d", g_step + 1); host_quit(0); }
     if (was_playing && !g_play_left) play_stopped();
@@ -1050,7 +1058,7 @@ void hm_guide_command(const char *text)
         g_play_left = n > 0 ? n : -1;
         g_tries = 0; g_failed = 0;
     }
-    else if (s[0] == 'g' && s[1] == 'o' && s[2] == 't') { load_steps(); s += 4; g_step = read_num(&s) - 1; if (g_step < 0) g_step = 0; }
+    else if (s[0] == 'g' && s[1] == 'o' && s[2] == 't') { load_steps(); s += 4; g_step = read_num(&s) - 1; if (g_step < 0) g_step = 0; g_locate_pending = 0; }
     else if (s[0] == 's' && s[1] == 't') g_play_left = 0;
     else if (s[0] == 'f' && s[1] == 'i' && s[2] == 'n') {   /* find <text>: item ids whose name has it (authoring) */
         const char *t = trim(s + 4);
@@ -1109,6 +1117,7 @@ void hm_guide_run(int i, int n)
     load_steps();
     if (i < 0 || i >= g_nsteps) return;
     if (i != g_step) g_tries = 0;                    /* a step left half done is started again */
+    g_locate_pending = 0;
     g_step = i;
     g_play_left = n ? n : 1;
     g_failed = 0; g_play_failed = 0;
@@ -1149,6 +1158,37 @@ static int put_num(char *o, int v)
     do { t[n++] = (char)('0' + v % 10); v /= 10; } while (v);
     while (n) o[k++] = t[--n];
     return k;
+}
+
+/* Sue's rooms are 7000 and up (0x1b58); Ron's are below. Item numbers are each character's own. */
+static int sue_room(unsigned r) { return r >= 0x1b58 && r < 0x1c20; }
+
+/* Where a game saved without the guide has got to: among the steps played in the room the game is in, the
+ * earliest one with the fewest items in the inventory that the walkthrough first gives later on ("has iN", for
+ * the character the game has now: an item a later step asks for again, like Dracula's second steak, says
+ * nothing). */
+static void locate(void)
+{
+    int here = room_id(), sue = sue_room((unsigned)here), best = -1, best_c = 1 << 30;
+    static short first[256];                          /* the first step that gives each item */
+    for (int k = 0; k < 256; k++) first[k] = -1;
+    for (int j = 0; j < g_nsteps; j++) {
+        if (!g_room[j] || sue_room(g_room[j]) != sue) continue;
+        const char *u = trim(until_of(g_steps[j]));
+        if (u[0] != 'h' || u[1] != 'a' || u[2] != 's') continue;
+        const char *q = trim(u + 3);
+        if (*q == 'i') q++;
+        int item = read_num(&q);
+        if (item > 0 && item < 256 && first[item] < 0) first[item] = (short)j;
+    }
+    for (int i = 0; i < g_nsteps; i++) {
+        if (!g_room[i] || g_room[i] / 10 != here / 10) continue;
+        int c = 0;
+        for (int item = 1; item < 256; item++) if (first[item] >= i && has_item(item)) c++;
+        if (c < best_c) { best_c = c; best = i; }
+    }
+    g_step = best < 0 ? 0 : best;
+    for (int i = 0; i < g_nsteps; i++) g_done[i] = i < g_step;
 }
 
 void hm_guide_saved(const char *save)
@@ -1199,9 +1239,7 @@ void hm_guide_loaded(const char *save)
         host_log("guide: %s read: step %d", name, g_step + 1);
         return;
     }
-    /* A game saved without the guide (or with another walkthrough): its place is not known. Item numbers can't
-     * tell it (each character has its own), so the guide starts over; the menu lets the player pick a section. */
-    g_step = 0;
-    for (int i = 0; i < g_nsteps; i++) g_done[i] = 0;
-    host_log("guide: no %s for this walkthrough: from the first step", name);
+    /* the room is that of the game being loaded only once it has loaded: hm_guide_tick looks then */
+    g_locate_pending = 1;
+    host_log("guide: no %s for this walkthrough: the place will be found from the room and the inventory", name);
 }
