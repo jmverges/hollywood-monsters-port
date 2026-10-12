@@ -1,7 +1,8 @@
 /* The port's own menu (F9, or X/Square on a controller), drawn over the game as a layer of its own
  * (host_overlay). While it is open the game waits: hm_pump_host_events keeps the game's thread here.
  *
- *   Easy mode     the walkthrough's steps (guide/hm_actions.txt) section by section, with a check on those done;
+ *   Easy mode     the walkthrough's steps (guide/hm_actions.txt) section by section, only those of the room the
+ *                 player is in, with a check on those done;
  *                 choosing one makes the guide play it (guide.c), then the list comes back
  *   Movie mode    the guide plays the walkthrough from the current step to the end, with nothing drawn over the
  *                 game (it can be recorded); opening the menu pauses it, and the menu offers to stop it
@@ -270,12 +271,22 @@ static void draw_main(void)
     footer(L("Intro: aceptar   Esc: volver   F9: cerrar", "Enter: choose   Esc: back   F9: close"));
 }
 
+/* The steps of the section shown that are played in the room the game is in: easy mode offers only those. */
+static int g_vis[600];
+
+static int easy_list(void)
+{
+    int n = 0, count = 0, first = section_steps(g_section, &n);
+    for (int k = 0; k < n && count < 600; k++) if (hm_guide_here(first + k)) g_vis[count++] = first + k;
+    return count;
+}
+
 static void draw_easy(void)
 {
-    int nsec = section_count(), n = 0;
+    int nsec = section_count();
     if (g_section >= nsec) g_section = nsec - 1;
     if (g_section < 0) g_section = 0;
-    int first = section_steps(g_section, &n);
+    int n = easy_list(), first = section_steps(g_section, &(int){ 0 });
     char title[200];
     int k = 0;
     const char *sec = hm_guide_section(first);
@@ -288,8 +299,19 @@ static void draw_easy(void)
     if (g_sel < 0) g_sel = 0;
     if (g_sel < g_top) g_top = g_sel;
     if (g_sel >= g_top + g_rows) g_top = g_sel - g_rows + 1;
+    if (!n) {                                    /* nothing of this section in this room */
+        int y = g_row_y0;
+        const char *s = L("Aquí no hay nada que hacer en esta parte de la guía.", "There is nothing to do here in this part of the guide.");
+        text(PX + 24, y, &menu_font_body, s, -1, WHITE, PW - 48);
+        int next = hm_guide_current();
+        if (next >= 0 && next < hm_guide_count()) {
+            text(PX + 24, y + 2 * ROW, &menu_font_body, L("La siguiente acción es en otro sitio:", "The next action is somewhere else:"), -1, GREY, PW - 48);
+            text(PX + 24, y + 3 * ROW, &menu_font_body, step_verb(next), -1, GOLD, 86);
+            text(PX + 116, y + 3 * ROW, &menu_font_body, step_label(next), -1, WHITE, PW - 140);
+        }
+    }
     for (int r = 0; r < g_rows && g_top + r < n; r++) {
-        int i = first + g_top + r, y = g_row_y0 + r * ROW;
+        int i = g_vis[g_top + r], y = g_row_y0 + r * ROW;
         if (g_top + r == g_sel) rect(PX + 14, y - 3, PW - 28, ROW, 0x60E0B860u);
         check(PX + 22, y, done(i));
         unsigned color = done(i) ? GREY : g_top + r == g_sel ? WHITE : 0xFFD8D0C0u;
@@ -438,8 +460,8 @@ static void close_menu(void) { open_screen(SCR_NONE, 0); }
 static void open_easy(void)
 {
     g_section = section_of(hm_guide_current());
-    int n = 0, first = section_steps(g_section, &n), sel = 0;
-    while (sel < n - 1 && done(first + sel)) sel++;
+    int n = easy_list(), sel = 0;
+    while (sel < n - 1 && done(g_vis[sel])) sel++;
     open_screen(SCR_EASY, sel);
 }
 
@@ -469,9 +491,9 @@ static void activate(void)
         else if (g_sel == 4) { hm_lang_toggle(); show(); }
         break;
     case SCR_EASY: {
-        int n = 0, first = section_steps(g_section, &n);
+        int n = easy_list();
         if (g_sel < 0 || g_sel >= n) break;
-        g_easy_step = first + g_sel; g_movie = 0;
+        g_easy_step = g_vis[g_sel]; g_movie = 0;
         hm_guide_run(g_easy_step, 1);
         set_hud_step("", g_easy_step);
         close_menu();
@@ -494,7 +516,7 @@ static void move(int d)
 {
     if (g_screen == SCR_STORY) { g_top += d; show(); return; }
     int n = g_screen == SCR_MAIN ? 5 : g_screen == SCR_STORY_LIST ? g_nchapters : 0;
-    if (g_screen == SCR_EASY) section_steps(g_section, &n);
+    if (g_screen == SCR_EASY) n = easy_list();
     g_sel += d;
     if (g_sel < 0) g_sel = 0;
     if (n && g_sel >= n) g_sel = n - 1;
@@ -559,7 +581,7 @@ void hm_menu_event(const struct host_event *ev)
         int r = (ev->y - g_row_y0 + 4) / step;
         if (ev->y < g_row_y0 - 4 || r >= g_rows || ev->x < PX || ev->x >= PX + PW) break;
         int n = g_screen == SCR_MAIN ? 5 : g_screen == SCR_STORY_LIST ? g_nchapters : 0;
-        if (g_screen == SCR_EASY) section_steps(g_section, &n);
+        if (g_screen == SCR_EASY) n = easy_list();
         if (top + r >= n) break;
         if (g_sel != top + r) { g_sel = top + r; show(); }
         if (ev->type == HOST_EV_MOUSEDOWN && ev->button == 1) activate();

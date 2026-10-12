@@ -3,628 +3,629 @@
 # Written from the walkthroughs at abandonsocios.org (cireja, 2025) and nosolobits.com (FX Interactive)
 # and checked by playing it in the port. "== title @N" starts a section; N is the chapter of FX's story guide that
 # tells it (the port's menu opens the story there). Comments and titles are "Spanish // English": the menu shows
-# the one of the language chosen.
+# the one of the language chosen. "@<room>" before a step is the room it is played in (hex, from replays:
+# tools/guide/rooms.py); easy mode shows only the steps of the room the player is in.
 
 == Sue en la mansión de Otto J. Hannover // Sue at Otto J. Hannover's mansion  @1
-go o1                   # escalera: a la terraza // stairs: up to the terrace
-take o5                 # vaso // glass
-use i12 o6              # vaso con ponchera // glass with the punch bowl
-go o1                   # puerta: el vestíbulo (Joseph mira la lista de invitados) // door: the hall (Joseph checks the guest list)
-talk o8                 # Joseph // Joseph
-open o2                 # la puerta de la fiesta (1 de 3) // the party door (1 of 3)
-open o2                 # la puerta de la fiesta (2 de 3) // the party door (2 of 3)
-open o2                 # la puerta de la fiesta (3 de 3): sale Frankie // the party door (3 of 3): Frankie comes out
-go o1 until room 0x1b76 # a la terraza // to the terrace
-wait 250 until mem 0x6baeba = 15 # esperar a que calle la música (la canción de la terraza; 15 es el silencio, unos 11 s) // wait for the music to stop (the terrace's song; 15 is the silence, about 11 s)
-take o3 until has i11   # el hueso de Húmero, ahora que no baila // Humerus's bone, now that he is not dancing
-go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
-use i11 o2              # hueso con caseta de perro: la planta persigue el hueso hasta el vestíbulo // bone with the doghouse: the plant chases the bone into the hall
-go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
-go o1 until room 0x1b80 # puerta: el vestíbulo, Joseph ha ido tras la planta // door: the hall, Joseph has gone after the plant
-take o7                 # la primera hoja de la libreta // the top sheet of the notepad
-look i15                # leer la hoja // read the sheet
-talk o2                 # Charlie, el del guardarropa // Charlie, the cloakroom attendant
-take o3                 # trapo // rag
-go o1 until room 0x1b80   # al vestíbulo // to the hall
-go o3 until not room 0x1b80   # escalera: al piso de arriba // stairs: upstairs
-give i13 o2             # vaso con ponche al gorila (1): deja ver una llave // glass of punch for the gorilla (1): a key shows
-go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
-go o1 until room 0x1b76 # terraza // terrace
-take o5                 # otro vaso // another glass
-use i12 o6              # lleno de ponche // filled with punch
-go o1 until room 0x1b80 # al vestíbulo // to the hall
-go o3 until room 0x1b94 # arriba // upstairs
-give i13 o2             # vaso con ponche al gorila (2): mientras bebe, la llave se puede coger // glass of punch for the gorilla (2): while he drinks, the key can be taken
-take o8 fast until has i17   # la llave, mientras bebe // the key, while he drinks
-use i17 o3              # llave con la primera puerta: el despacho de Hannover // key with the first door: Hannover's office
-go o3 until not room 0x1b94 # el despacho de Hannover // Hannover's office
-use i16 o8              # trapo con carbón // rag with the coal
-use i8 i15              # trapo con carbón con la hoja: aparece y se lee lo que escribió Frankie // rag with coal on the sheet: what Frankie wrote shows up and is read
-go o1 until room 0x1b94 # pasillo // corridor
-go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
-go o1 until room 0x1b76 # terraza // terrace
-go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
-go o3 until has i9      # edificio del fondo: Otto la para; darle plantón: da una tarjeta // building at the back: Otto stops her; stand him up: he gives her a card
-go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
-go o1 until room 0x1b80 # vestíbulo // hall
-go o3 until room 0x1b94 # arriba // upstairs
-go o3 until room 0x1b9e # despacho de Otto // Otto's office
-use i9 o5               # tarjeta con la puerta: el despacho de la secretaria // card with the door: the secretary's office
-go o5 until not room 0x1b9e # el despacho de la secretaria // the secretary's office
-take o6                 # manivela // crank
-go o1 until room 0x1b9e # al despacho de Otto // to Otto's office
-use i19 o3              # manivela en el gramófono // crank on the gramophone
-use o10                 # la manivela, ya en el gramófono: media vuelta // the crank, now on the gramophone: half a turn
-go o5 until not room 0x1b9e   # despacho de la secretaria: ha cambiado // the secretary's office: it has changed
-go o1 until room 0x1b9e # al despacho de Otto // to Otto's office
-go o1 until room 0x1b94 # pasillo // corridor
-go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
-go o1 until room 0x1b76 # terraza // terrace
-go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
-go o3                   # edificio del fondo: Otto ve la luz y cree que ha llegado su secretaria // building at the back: Otto sees the light and thinks his secretary is there
-go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
-go o1 until room 0x1b80 # vestíbulo // hall
-go o3 until room 0x1b94 # arriba // upstairs
-go o3 until room 0x1b9e # despacho de Otto // Otto's office
-go o5 until not room 0x1b9e   # la alcoba de la secretaria // the secretary's bedroom
-use o8                  # mover la armadura delante de la ventana // move the suit of armour in front of the window
-go o1 until room 0x1b9e # al despacho de Otto // to Otto's office
-go o1 until room 0x1b94 # pasillo // corridor
-go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
-go o1 until room 0x1b76 # terraza // terrace
-go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
-go o3 until not room 0x1b62   # edificio del fondo: Otto ve la silueta y la deja pasar; la bodega // building at the back: Otto sees the silhouette and lets her pass; the cellar
+@1b62 go o1                   # escalera: a la terraza // stairs: up to the terrace
+@1b76 take o5                 # vaso // glass
+@1b76 use i12 o6              # vaso con ponchera // glass with the punch bowl
+@1b76 go o1                   # puerta: el vestíbulo (Joseph mira la lista de invitados) // door: the hall (Joseph checks the guest list)
+@1b80 talk o8                 # Joseph // Joseph
+@1b80 open o2                 # la puerta de la fiesta (1 de 3) // the party door (1 of 3)
+@1b80 open o2                 # la puerta de la fiesta (2 de 3) // the party door (2 of 3)
+@1b80 open o2                 # la puerta de la fiesta (3 de 3): sale Frankie // the party door (3 of 3): Frankie comes out
+@1b80 go o1 until room 0x1b76 # a la terraza // to the terrace
+@1b77 wait 250 until mem 0x6baeba = 15 # esperar a que calle la música (la canción de la terraza; 15 es el silencio, unos 11 s) // wait for the music to stop (the terrace's song; 15 is the silence, about 11 s)
+@1b77 take o3 until has i11   # el hueso de Húmero, ahora que no baila // Humerus's bone, now that he is not dancing
+@1b77 go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
+@1b63 use i11 o2              # hueso con caseta de perro: la planta persigue el hueso hasta el vestíbulo // bone with the doghouse: the plant chases the bone into the hall
+@1b63 go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
+@1b76 go o1 until room 0x1b80 # puerta: el vestíbulo, Joseph ha ido tras la planta // door: the hall, Joseph has gone after the plant
+@1b80 take o7                 # la primera hoja de la libreta // the top sheet of the notepad
+@1b8a look i15                # leer la hoja // read the sheet
+@1b8a talk o2                 # Charlie, el del guardarropa // Charlie, the cloakroom attendant
+@1b8a take o3                 # trapo // rag
+@1b8a go o1 until room 0x1b80   # al vestíbulo // to the hall
+@1b81 go o3 until not room 0x1b80   # escalera: al piso de arriba // stairs: upstairs
+@1b94 give i13 o2             # vaso con ponche al gorila (1): deja ver una llave // glass of punch for the gorilla (1): a key shows
+@1b94 go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
+@1b82 go o1 until room 0x1b76 # terraza // terrace
+@1b77 take o5                 # otro vaso // another glass
+@1b77 use i12 o6              # lleno de ponche // filled with punch
+@1b77 go o1 until room 0x1b80 # al vestíbulo // to the hall
+@1b80 go o3 until room 0x1b94 # arriba // upstairs
+@1b94 give i13 o2             # vaso con ponche al gorila (2): mientras bebe, la llave se puede coger // glass of punch for the gorilla (2): while he drinks, the key can be taken
+@1b94 take o8 fast until has i17   # la llave, mientras bebe // the key, while he drinks
+@1b94 use i17 o3              # llave con la primera puerta: el despacho de Hannover // key with the first door: Hannover's office
+@1b9e go o3 until not room 0x1b94 # el despacho de Hannover // Hannover's office
+@1b9e use i16 o8              # trapo con carbón // rag with the coal
+@1b9e use i8 i15              # trapo con carbón con la hoja: aparece y se lee lo que escribió Frankie // rag with coal on the sheet: what Frankie wrote shows up and is read
+@1b9e go o1 until room 0x1b94 # pasillo // corridor
+@1b95 go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
+@1b82 go o1 until room 0x1b76 # terraza // terrace
+@1b77 go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
+@1b63 go o3 until has i9      # edificio del fondo: Otto la para; darle plantón: da una tarjeta // building at the back: Otto stops her; stand him up: he gives her a card
+@1b63 go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
+@1b76 go o1 until room 0x1b80 # vestíbulo // hall
+@1b80 go o3 until room 0x1b94 # arriba // upstairs
+@1b94 go o3 until room 0x1b9e # despacho de Otto // Otto's office
+@1b9f use i9 o5               # tarjeta con la puerta: el despacho de la secretaria // card with the door: the secretary's office
+@1b9f go o5 until not room 0x1b9e # el despacho de la secretaria // the secretary's office
+@1ba8 take o6                 # manivela // crank
+@1ba8 go o1 until room 0x1b9e # al despacho de Otto // to Otto's office
+@1ba0 use i19 o3              # manivela en el gramófono // crank on the gramophone
+@1ba0 use o10                 # la manivela, ya en el gramófono: media vuelta // the crank, now on the gramophone: half a turn
+@1ba0 go o5 until not room 0x1b9e   # despacho de la secretaria: ha cambiado // the secretary's office: it has changed
+@1bb2 go o1 until room 0x1b9e # al despacho de Otto // to Otto's office
+@1ba0 go o1 until room 0x1b94 # pasillo // corridor
+@1b95 go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
+@1b82 go o1 until room 0x1b76 # terraza // terrace
+@1b77 go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
+@1b63 go o3                   # edificio del fondo: Otto ve la luz y cree que ha llegado su secretaria // building at the back: Otto sees the light and thinks his secretary is there
+@1b63 go o1 until room 0x1b76 # escalera: a la terraza // stairs: up to the terrace
+@1b76 go o1 until room 0x1b80 # vestíbulo // hall
+@1b80 go o3 until room 0x1b94 # arriba // upstairs
+@1b94 go o3 until room 0x1b9e # despacho de Otto // Otto's office
+@1b9f go o5 until not room 0x1b9e   # la alcoba de la secretaria // the secretary's bedroom
+@1bb2 use o8                  # mover la armadura delante de la ventana // move the suit of armour in front of the window
+@1bb2 go o1 until room 0x1b9e # al despacho de Otto // to Otto's office
+@1ba0 go o1 until room 0x1b94 # pasillo // corridor
+@1b95 go o5 until room 0x1b80 # escalera: al vestíbulo // stairs: down to the hall
+@1b82 go o1 until room 0x1b76 # terraza // terrace
+@1b77 go o2 until room 0x1b62 # escalera: a la calle // stairs: down to the street
+@1b63 go o3 until not room 0x1b62   # edificio del fondo: Otto ve la silueta y la deja pasar; la bodega // building at the back: Otto sees the silhouette and lets her pass; the cellar
 
 == Ron entra en acción // Ron takes action  @2
-open i106               # cartera: unas monedas // wallet: some coins
-go o1 until moved        # escaleras: a la terraza // stairs: up to the terrace
-take o5 until gone o5   # ponchera // punch bowl
-take o8 until gone o8   # el Increíble Hombre Menguante // the Incredible Shrinking Man
-take o6 until gone o6   # rodaja de limón // slice of lemon
-go o1 until moved       # entrada: el vestíbulo // entrance: the hall
-go o2 until moved       # salón: la fiesta // living room: the party
-talk o5                 # el Hombre Invisible: da una nota // the Invisible Man: he hands over a note
-look i33                # leer la nota de Frankenstein // read Frankenstein's note
-go o2 until moved       # más a la derecha // further right
-take o4 until gone o4   # micrófono // microphone
-take o5 until gone o5   # pie de micro // microphone stand
-look o9                 # el cartel de la puerta de la cocina // the sign on the kitchen door
-talk o3                 # Spencer McDundee: Escocia, a la libreta // Spencer McDundee: Scotland, into the address book
-open i35                # micrófono: un imán // microphone: a magnet
-go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
-go o1 until moved       # hall // hall
-go o1 until moved       # puerta: el guardarropa // door: the cloakroom
-take o6 until gone o6   # maletín // briefcase
-open i25                # maletín: algodón, bisturí, jeringuilla y serrucho // briefcase: cotton wool, scalpel, syringe and saw
-talk o2                 # Charlie: varias direcciones // Charlie: several addresses
-go o1 until moved       # al vestíbulo // to the hall
-take o4 until gone o4   # el globo lila // the lilac balloon
-use i3 o3               # bisturí con el cordón rojo // scalpel with the red rope
-take o3 until gone o3   # cordón // rope
-go o2 until moved       # salón: la fiesta // living room: the party
-go o2 until moved       # más a la derecha // further right
-use i19 o10             # serrucho con la cadena del fantasma // saw with the ghost's chain
-go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
-take o7 fast until has i34   # el ticket amarillo, cuando el Dr. Mosca levanta el brazo // the yellow ticket, when Dr. Fly raises his arm
-go o1 until moved       # hall // hall
-go o1 until moved       # puerta: el guardarropa // door: the cloakroom
-give i34 o2             # el ticket a Charlie: un paquete // the ticket to Charlie: a parcel
-open i29                # paquete: control remoto y artilugio del Dr. Mosca // parcel: remote control and Dr. Fly's gadget
-go o1 until moved       # hall // hall
-go o10 until moved      # terraza // terrace
-use i2 o4               # algodón con el plato: algodón empapado de grasa // cotton wool with the plate: cotton wool soaked in grease
-go o7 until moved       # escaleras: a la calle // stairs: down to the street
-go o3 until moved       # edificio: la bodega // building: the cellar
-use i36 i23             # pie de micro con algodón grasiento (no al revés): engrasador // microphone stand with the greasy cotton wool (not the other way round): a long-reach greaser
-use i16 o4              # engrasador con el raíl del techo // greaser with the rail on the ceiling
-use o7                  # palanca izquierda: el gancho sobre la rejilla // left lever: the hook over the grating
-use o8                  # palanca derecha: lo baja // right lever: it lowers it
-use i30 o5              # cadena con el gancho // chain with the hook
-use o8                  # palanca derecha otra vez: la polea se estropea // right lever again: the pulley breaks
-go o1 until moved       # camino: a la calle // path: to the street
-go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
-go o1 until moved       # entrada: el vestíbulo // entrance: the hall
-go o2 until moved       # salón: la fiesta // living room: the party
-go o2 until moved       # más a la derecha // further right
-talk o6 until gone o6   # Quasimodo, dos veces: una demostración de las campanas en la bodega // Quasimodo, twice: he shows how he rings the bells, in the cellar
-take o3 until has i22   # la cinta de Sue (Quasimodo ha levantado la rejilla; Ron sigue en la bodega) // Sue's tape (Quasimodo has lifted the grating; Ron is still in the cellar)
-use i22 i9              # la cinta en el magnetófono // the tape in the tape recorder
-use i9                  # oír la grabación // listen to the recording
-open i9                 # sacar la cinta de Sue // take Sue's tape out
-go o1 until moved       # camino: a la calle // path: to the street
-go o4 until moved       # el coche, abajo a la derecha // the car, bottom right
+@3f4 open i106               # cartera: unas monedas // wallet: some coins
+@3f4 go o1 until moved        # escaleras: a la terraza // stairs: up to the terrace
+@406 take o5 until gone o5   # ponchera // punch bowl
+@406 take o8 until gone o8   # el Increíble Hombre Menguante // the Incredible Shrinking Man
+@406 take o6 until gone o6   # rodaja de limón // slice of lemon
+@406 go o1 until moved       # entrada: el vestíbulo // entrance: the hall
+@412 go o2 until moved       # salón: la fiesta // living room: the party
+@424 talk o5                 # el Hombre Invisible: da una nota // the Invisible Man: he hands over a note
+@424 look i33                # leer la nota de Frankenstein // read Frankenstein's note
+@424 go o2 until moved       # más a la derecha // further right
+@42e take o4 until gone o4   # micrófono // microphone
+@42e take o5 until gone o5   # pie de micro // microphone stand
+@42e look o9                 # el cartel de la puerta de la cocina // the sign on the kitchen door
+@42e talk o3                 # Spencer McDundee: Escocia, a la libreta // Spencer McDundee: Scotland, into the address book
+@42e open i35                # micrófono: un imán // microphone: a magnet
+@42e go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
+@425 go o1 until moved       # hall // hall
+@410 go o1 until moved       # puerta: el guardarropa // door: the cloakroom
+@41a take o6 until gone o6   # maletín // briefcase
+@41a open i25                # maletín: algodón, bisturí, jeringuilla y serrucho // briefcase: cotton wool, scalpel, syringe and saw
+@41a talk o2                 # Charlie: varias direcciones // Charlie: several addresses
+@41a go o1 until moved       # al vestíbulo // to the hall
+@411 take o4 until gone o4   # el globo lila // the lilac balloon
+@411 use i3 o3               # bisturí con el cordón rojo // scalpel with the red rope
+@411 take o3 until gone o3   # cordón // rope
+@411 go o2 until moved       # salón: la fiesta // living room: the party
+@424 go o2 until moved       # más a la derecha // further right
+@42e use i19 o10             # serrucho con la cadena del fantasma // saw with the ghost's chain
+@42e go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
+@425 take o7 fast until has i34   # el ticket amarillo, cuando el Dr. Mosca levanta el brazo // the yellow ticket, when Dr. Fly raises his arm
+@425 go o1 until moved       # hall // hall
+@410 go o1 until moved       # puerta: el guardarropa // door: the cloakroom
+@41a give i34 o2             # el ticket a Charlie: un paquete // the ticket to Charlie: a parcel
+@41a open i29                # paquete: control remoto y artilugio del Dr. Mosca // parcel: remote control and Dr. Fly's gadget
+@41a go o1 until moved       # hall // hall
+@411 go o10 until moved      # terraza // terrace
+@407 use i2 o4               # algodón con el plato: algodón empapado de grasa // cotton wool with the plate: cotton wool soaked in grease
+@407 go o7 until moved       # escaleras: a la calle // stairs: down to the street
+@3f2 go o3 until moved       # edificio: la bodega // building: the cellar
+@3fc use i36 i23             # pie de micro con algodón grasiento (no al revés): engrasador // microphone stand with the greasy cotton wool (not the other way round): a long-reach greaser
+@3fc use i16 o4              # engrasador con el raíl del techo // greaser with the rail on the ceiling
+@3fc use o7                  # palanca izquierda: el gancho sobre la rejilla // left lever: the hook over the grating
+@3fc use o8                  # palanca derecha: lo baja // right lever: it lowers it
+@3fc use i30 o5              # cadena con el gancho // chain with the hook
+@3fc use o8                  # palanca derecha otra vez: la polea se estropea // right lever again: the pulley breaks
+@3fc go o1 until moved       # camino: a la calle // path: to the street
+@3f3 go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
+@406 go o1 until moved       # entrada: el vestíbulo // entrance: the hall
+@412 go o2 until moved       # salón: la fiesta // living room: the party
+@424 go o2 until moved       # más a la derecha // further right
+@42e talk o6 until gone o6   # Quasimodo, dos veces: una demostración de las campanas en la bodega // Quasimodo, twice: he shows how he rings the bells, in the cellar
+@3fd take o3 until has i22   # la cinta de Sue (Quasimodo ha levantado la rejilla; Ron sigue en la bodega) // Sue's tape (Quasimodo has lifted the grating; Ron is still in the cellar)
+@3fd use i22 i9              # la cinta en el magnetófono // the tape in the tape recorder
+@3fd use i9                  # oír la grabación // listen to the recording
+@3fd open i9                 # sacar la cinta de Sue // take Sue's tape out
+@3fd go o1 until moved       # camino: a la calle // path: to the street
+@3f3 go o4 until moved       # el coche, abajo a la derecha // the car, bottom right
 
 == Estudios M.K.O. // M.K.O. Studios  @7
-click 165 160 until moved     # en la agenda: Estudios M.K.O. // in the address book: M.K.O. Studios
-go o1 until not gone o6 # el hangar de la derecha, hasta que tiran un rollo de película // the hangar on the right, until they throw out a reel of film
-take o6 until gone o6   # película // film
-go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy // stairs on the left and the door: Taffy's office
-take o7 until gone o7   # paraguas // umbrella
-take o6 fast until has i90   # la lupa de Taffy, cuando la suelta en la mesa // Taffy's magnifying glass, when she puts it down on the desk
-talk o5                 # Taffy: pedir hablar con el Sr. Hannover // Taffy: ask to speak to Mr. Hannover
-go o4 until room 0x1784 # a la oficina de Taffy (si Hannover no nos ha echado ya) // to Taffy's office (if Hannover hasn't thrown us out already)
-go o2 until moved       # exterior // outside
-go o7 until moved       # el coche: la agenda // the car: the address book
+@ffff click 165 160 until moved     # en la agenda: Estudios M.K.O. // in the address book: M.K.O. Studios
+@177a go o1 until not gone o6 # el hangar de la derecha, hasta que tiran un rollo de película // the hangar on the right, until they throw out a reel of film
+@177a take o6 until gone o6   # película // film
+@177a go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy // stairs on the left and the door: Taffy's office
+@1784 take o7 until gone o7   # paraguas // umbrella
+@1784 take o6 fast until has i90   # la lupa de Taffy, cuando la suelta en la mesa // Taffy's magnifying glass, when she puts it down on the desk
+@1784 talk o5                 # Taffy: pedir hablar con el Sr. Hannover // Taffy: ask to speak to Mr. Hannover
+@1785 go o4 until room 0x1784 # a la oficina de Taffy (si Hannover no nos ha echado ya) // to Taffy's office (if Hannover hasn't thrown us out already)
+@1785 go o2 until moved       # exterior // outside
+@177b go o7 until moved       # el coche: la agenda // the car: the address book
 
 == Suiza: la casa de Frankenstein // Switzerland: Frankenstein's house  @3
-click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
-go o4 until moved       # al bosque: una cabaña // to the woods: a hut
-take o8 until has i53   # un palo del suelo // a stick from the ground
-go o4 until moved       # la cabaña del ciego // the blind man's hut
-take o7 until has i55   # varita // wand
-take o6 until has i54   # salero // salt shaker
-talk o2                 # el ciego // the blind man
-go o4 until moved       # exterior // outside
-go o3 until moved       # el camino del fondo: la niña // the path at the back: the girl
-use i8 o4 until has i56 # jeringuilla con la planta: savia // syringe with the plant: sap
-talk o2                 # la niña: hablar de todo y pedirle una margarita // the girl: talk about everything and ask her for a daisy
-talk o2 say 3,3,3,3,3,3,3,3,3,3,3   # insistir con la margarita: a la décima, por las malas // keep asking for the daisy: the tenth time, the hard way
-take o3 until has i57   # la margarita // the daisy
-go o1 until moved       # camino: de vuelta a la cabaña // path: back to the hut
-go o4 until moved       # la cabaña del ciego // the blind man's hut
-talk o2                 # el ciego: de todo, también del laxante // the blind man: everything, the laxative too
-go o4 until moved       # exterior // outside
-go o1 until moved       # camino: donde llegamos a Suiza // path: where we arrived in Switzerland
-go o3 until moved       # el molino // the mill
-take o2 until has i49   # maza // mallet
-go o1 until moved       # camino: fuera del molino // path: out of the mill
-go o6 until room 0xffff       # camino, abajo: la agenda, para viajar // path, down: the address book, to travel
+@ffff click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
+@bc2 go o4 until moved       # al bosque: una cabaña // to the woods: a hut
+@c08 take o8 until has i53   # un palo del suelo // a stick from the ground
+@c08 go o4 until moved       # la cabaña del ciego // the blind man's hut
+@c12 take o7 until has i55   # varita // wand
+@c12 take o6 until has i54   # salero // salt shaker
+@c12 talk o2                 # el ciego // the blind man
+@c12 go o4 until moved       # exterior // outside
+@c0a go o3 until moved       # el camino del fondo: la niña // the path at the back: the girl
+@c1c use i8 o4 until has i56 # jeringuilla con la planta: savia // syringe with the plant: sap
+@c1c talk o2                 # la niña: hablar de todo y pedirle una margarita // the girl: talk about everything and ask her for a daisy
+@c1c talk o2 say 3,3,3,3,3,3,3,3,3,3,3   # insistir con la margarita: a la décima, por las malas // keep asking for the daisy: the tenth time, the hard way
+@c1c take o3 until has i57   # la margarita // the daisy
+@c1c go o1 until moved       # camino: de vuelta a la cabaña // path: back to the hut
+@c09 go o4 until moved       # la cabaña del ciego // the blind man's hut
+@c12 talk o2                 # el ciego: de todo, también del laxante // the blind man: everything, the laxative too
+@c12 go o4 until moved       # exterior // outside
+@c0a go o1 until moved       # camino: donde llegamos a Suiza // path: where we arrived in Switzerland
+@bc3 go o3 until moved       # el molino // the mill
+@bcc take o2 until has i49   # maza // mallet
+@bcc go o1 until moved       # camino: fuera del molino // path: out of the mill
+@bc3 go o6 until room 0xffff       # camino, abajo: la agenda, para viajar // path, down: the address book, to travel
 
 == Mansión Hannover // Hannover's mansion  @3
-click 175 67 until moved      # en la agenda: Mansión Hannover // in the address book: Hannover's mansion
-go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
-go o1 until moved       # entrada: el vestíbulo // entrance: the hall
-go o2 until moved       # salón: la fiesta // living room: the party
-give i54 o3             # el salero a Junior: el revienta-cráneos // the salt shaker to Junior: the skull-crusher
-go o1 until moved       # hall // hall
-go o10 until moved      # terraza // terrace
-go o7 until moved       # escaleras: a la calle // stairs: down to the street
-go o4 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 175 67 until moved      # en la agenda: Mansión Hannover // in the address book: Hannover's mansion
+@3f4 go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
+@406 go o1 until moved       # entrada: el vestíbulo // entrance: the hall
+@412 go o2 until moved       # salón: la fiesta // living room: the party
+@424 give i54 o3             # el salero a Junior: el revienta-cráneos // the salt shaker to Junior: the skull-crusher
+@424 go o1 until moved       # hall // hall
+@410 go o10 until moved      # terraza // terrace
+@407 go o7 until moved       # escaleras: a la calle // stairs: down to the street
+@3f2 go o4 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Transilvania: el castillo de Drácula // Transylvania: Dracula's castle  @4
-click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
-go o3 until moved       # el foso: tirarse, insistiendo // the moat: jump in, insisting
-use i32 o1              # revienta-cráneos con la reja // skull-crusher with the grating
-use o2 until moved      # la escalera: a las mazmorras // the stairs: down to the dungeons
-talk o4                 # el esqueleto de pie: se le cae un hueso // the standing skeleton: a bone falls off
-take o11 until gone o11 # el hueso que se le cae // the bone that falls off
-use i53 o10             # el palo en el agujero de la dama de hierro // the stick in the hole of the iron maiden
-use o10                 # la palanca improvisada // the makeshift lever
-take o9 until gone o9   # cuerda // rope
-use i61 i27 until has i107    # cuerda con el cordón rojo: cuerda larga // rope with the red rope: a long rope
-go o1 until moved       # puerta del fondo: el corredor // door at the back: the corridor
-take o8 until has i60   # candil // oil lamp
-go o1 until moved       # el balcón // the balcony
-use i107 o1             # la cuerda larga con el saliente // the long rope with the ledge
-use o3 until moved      # subir por la cuerda: la habitación de Sherilyn // climb the rope: Sherilyn's room
-take o6 until has i65   # el frasco de perfume // the perfume bottle
-take o3 until has i64   # el cuadro pequeño // the small painting
-go o1 until moved       # sal por la puerta // go out through the door
-go o2 until moved       # la puerta del centro: Gwendolyn comiendo // the middle door: Gwendolyn eating
-use i3 o4 until has i69 # bisturí con la carne: un filete // scalpel with the meat: a steak
-take o5 until has i67   # la botella de aceite // the bottle of oil
-use i67 i60             # aceite con el candil // oil with the oil lamp
-go o1 until moved       # a la galería // to the gallery
-go o7 until moved       # todo a la derecha: la sala // all the way right: the hall
-open o3                 # la placa de la base del trofeo: aparece Drácula // the plaque on the trophy's base: Dracula appears
-talk o6                 # Drácula // Dracula
-go o1 until moved       # corredor // corridor
-go o5 until moved       # baja al patio // go down to the courtyard
-take o2 until has i70   # un poco de paja // some straw
-use o6                  # la rueda: baja el puente levadizo // the wheel: lowers the drawbridge
-go o1 until moved       # el puente levadizo // the drawbridge
-take o5 until has i58   # el objeto brillante: el camafeo de Samarkanda // the shiny object: the Samarkand cameo
-look o6                 # leer la postal: la dirección del Hombre Lobo en Australia // read the postcard: the Wolfman's address in Australia
-go o8 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
+@faa go o3 until moved       # el foso: tirarse, insistiendo // the moat: jump in, insisting
+@fb4 use i32 o1              # revienta-cráneos con la reja // skull-crusher with the grating
+@fb4 use o2 until moved      # la escalera: a las mazmorras // the stairs: down to the dungeons
+@fbe talk o4                 # el esqueleto de pie: se le cae un hueso // the standing skeleton: a bone falls off
+@fbe take o11 until gone o11 # el hueso que se le cae // the bone that falls off
+@fbe use i53 o10             # el palo en el agujero de la dama de hierro // the stick in the hole of the iron maiden
+@fbe use o10                 # la palanca improvisada // the makeshift lever
+@fbe take o9 until gone o9   # cuerda // rope
+@fbe use i61 i27 until has i107    # cuerda con el cordón rojo: cuerda larga // rope with the red rope: a long rope
+@fbe go o1 until moved       # puerta del fondo: el corredor // door at the back: the corridor
+@fc8 take o8 until has i60   # candil // oil lamp
+@fc8 go o1 until moved       # el balcón // the balcony
+@fd2 use i107 o1             # la cuerda larga con el saliente // the long rope with the ledge
+@fd2 use o3 until moved      # subir por la cuerda: la habitación de Sherilyn // climb the rope: Sherilyn's room
+@fdc take o6 until has i65   # el frasco de perfume // the perfume bottle
+@fdc take o3 until has i64   # el cuadro pequeño // the small painting
+@fdc go o1 until moved       # sal por la puerta // go out through the door
+@1005 go o2 until moved       # la puerta del centro: Gwendolyn comiendo // the middle door: Gwendolyn eating
+@ff0 use i3 o4 until has i69 # bisturí con la carne: un filete // scalpel with the meat: a steak
+@ff0 take o5 until has i67   # la botella de aceite // the bottle of oil
+@ff0 use i67 i60             # aceite con el candil // oil with the oil lamp
+@ff0 go o1 until moved       # a la galería // to the gallery
+@1006 go o7 until moved       # todo a la derecha: la sala // all the way right: the hall
+@fe6 open o3                 # la placa de la base del trofeo: aparece Drácula // the plaque on the trophy's base: Dracula appears
+@fe6 talk o6                 # Drácula // Dracula
+@fe6 go o1 until moved       # corredor // corridor
+@1008 go o5 until moved       # baja al patio // go down to the courtyard
+@100e take o2 until has i70   # un poco de paja // some straw
+@100e use o6                  # la rueda: baja el puente levadizo // the wheel: lowers the drawbridge
+@100e go o1 until moved       # el puente levadizo // the drawbridge
+@fab take o5 until has i58   # el objeto brillante: el camafeo de Samarkanda // the shiny object: the Samarkand cameo
+@fab look o6                 # leer la postal: la dirección del Hombre Lobo en Australia // read the postcard: the Wolfman's address in Australia
+@fab go o8 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Mansión Hannover, otra vez // Hannover's mansion, again  @4
-click 175 67 until moved      # en la agenda: Mansión Hannover // in the address book: Hannover's mansion
-go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
-go o1 until moved       # entrada: el vestíbulo // entrance: the hall
-go o2 until moved       # salón: la fiesta // living room: the party
-use i65 o6              # el frasco de perfume con las babas del Dr. Mosca // the perfume bottle with Dr. Fly's drool
-go o1 until moved       # hall // hall
-go o10 until moved      # terraza // terrace
-go o7 until moved       # escaleras: a la calle // stairs: down to the street
-go o4 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 175 67 until moved      # en la agenda: Mansión Hannover // in the address book: Hannover's mansion
+@3f4 go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
+@406 go o1 until moved       # entrada: el vestíbulo // entrance: the hall
+@412 go o2 until moved       # salón: la fiesta // living room: the party
+@424 use i65 o6              # el frasco de perfume con las babas del Dr. Mosca // the perfume bottle with Dr. Fly's drool
+@424 go o1 until moved       # hall // hall
+@410 go o10 until moved      # terraza // terrace
+@407 go o7 until moved       # escaleras: a la calle // stairs: down to the street
+@3f2 go o4 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Estudios M.K.O., otra vez // M.K.O. Studios, again  @7
-click 165 160 until moved     # en la agenda: Estudios M.K.O. // in the address book: M.K.O. Studios
-go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy // stairs on the left and the door: Taffy's office
-use i57 o4              # la margarita en la máquina de café (es laxante) // the daisy in the coffee machine (it is a laxative)
-talk o5                 # Taffy: pedir hablar con el Sr. Hannover; Otto toma el café y sale corriendo // Taffy: ask to speak to Mr. Hannover; Otto drinks the coffee and runs off
-take o3 until has i92   # el saxofón del despacho de Otto // the saxophone in Otto's office
-go o4 until room 0x1784 # a la oficina de Taffy (si Hannover no nos ha echado ya) // to Taffy's office (if Hannover hasn't thrown us out already)
-go o2 until moved       # exterior // outside
-go o7 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 165 160 until moved     # en la agenda: Estudios M.K.O. // in the address book: M.K.O. Studios
+@177a go o3 until moved       # escaleras de la izquierda y la puerta: el despacho de Taffy // stairs on the left and the door: Taffy's office
+@1784 use i57 o4              # la margarita en la máquina de café (es laxante) // the daisy in the coffee machine (it is a laxative)
+@1784 talk o5                 # Taffy: pedir hablar con el Sr. Hannover; Otto toma el café y sale corriendo // Taffy: ask to speak to Mr. Hannover; Otto drinks the coffee and runs off
+@178e take o3 until has i92   # el saxofón del despacho de Otto // the saxophone in Otto's office
+@178e go o4 until room 0x1784 # a la oficina de Taffy (si Hannover no nos ha echado ya) // to Taffy's office (if Hannover hasn't thrown us out already)
+@1785 go o2 until moved       # exterior // outside
+@177b go o7 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Suiza, otra vez // Switzerland, again  @14
-click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
-go o4 until moved       # al bosque: la cabaña // to the woods: the hut
-go o4 until moved       # la cabaña del ciego // the blind man's hut
-give i92 o2             # el saxofón al ciego // the saxophone to the blind man
-use i70 o5              # la paja en la chimenea: el ciego abre la ventana // the straw in the fireplace: the blind man opens the window
-go o4 until moved       # exterior // outside
-take o5 until has i51   # el diario secreto del Dr. Frankenstein, que ha caído por la ventana // Dr. Frankenstein's secret diary, which has fallen out of the window
-look i51 nowait         # leerlo // read it
-key 27                  # cerrar el libro // close the book
-go o1 until moved       # camino: donde llegamos a Suiza // path: where we arrived in Switzerland
-go o6 until room 0xffff # camino, abajo: la agenda // path, down: the address book
+@ffff click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
+@bc2 go o4 until moved       # al bosque: la cabaña // to the woods: the hut
+@c08 go o4 until moved       # la cabaña del ciego // the blind man's hut
+@c12 give i92 o2             # el saxofón al ciego // the saxophone to the blind man
+@c12 use i70 o5              # la paja en la chimenea: el ciego abre la ventana // the straw in the fireplace: the blind man opens the window
+@c12 go o4 until moved       # exterior // outside
+@c0a take o5 until has i51   # el diario secreto del Dr. Frankenstein, que ha caído por la ventana // Dr. Frankenstein's secret diary, which has fallen out of the window
+@c0a look i51 nowait         # leerlo // read it
+@c0a key 27                  # cerrar el libro // close the book
+@c0a go o1 until moved       # camino: donde llegamos a Suiza // path: where we arrived in Switzerland
+@bc3 go o6 until room 0xffff # camino, abajo: la agenda // path, down: the address book
 
 == Escocia // Scotland  @6
-click 160 256 until moved     # en la agenda: Clan McDundee // in the address book: Clan McDundee
-talk o1 say @0x6349a2,@0x6349a2,@0x6349a2   # el pescador: tres preguntas sobre el árbol genealógico (la respuesta que el juego eligió al azar) // the fisherman: three questions about the family tree (the answer the game picked at random)
-go o6 until room 0xffff # el hidroavión: la agenda // the seaplane: the address book
+@ffff click 160 256 until moved     # en la agenda: Clan McDundee // in the address book: Clan McDundee
+@1f4a talk o1 say @0x6349a2,@0x6349a2,@0x6349a2   # el pescador: tres preguntas sobre el árbol genealógico (la respuesta que el juego eligió al azar) // the fisherman: three questions about the family tree (the answer the game picked at random)
+@1f4a go o6 until room 0xffff # el hidroavión: la agenda // the seaplane: the address book
 
 == Australia: las minas, la casa del Hombre Lobo // Australia: the mines, the Wolfman's house  @5
-click 420 252 until moved     # en la agenda: Hombre Lobo // in the address book: Wolfman
-go o3                   # entrar en la mina andando (vuelve agotado; ya se puede usar la vagoneta) // walk into the mine (he comes back worn out; now the cart can be used)
-use o1 until moved      # la vagoneta, la primera vez: siempre a la misma parada // the cart, the first time: always to the same stop
+@ffff click 420 252 until moved     # en la agenda: Hombre Lobo // in the address book: Wolfman
+@1392 go o3                   # entrar en la mina andando (vuelve agotado; ya se puede usar la vagoneta) // walk into the mine (he comes back worn out; now the cart can be used)
+@1392 use o1 until moved      # la vagoneta, la primera vez: siempre a la misma parada // the cart, the first time: always to the same stop
 # la mina: cada parada se elige con "mine <sala>", que pone las agujas según la tabla de esta partida
-take o4 until has i78   # gas: una piedra del suelo // gas: a stone from the ground
-use i28 o3 until has i77      # el globo con la grieta: lleno de gas // the balloon on the crack: filled with gas
-use o1 until moved      # la vagoneta: de vuelta a la entrada // the cart: back to the entrance
-mine 0x13e2             # las cascadas y el lago subterráneo // the waterfalls and the underground lake
-use i26 o5 until has i82      # la ponchera con la cascada: llena de agua // the punch bowl with the waterfall: filled with water
-use o3 until moved      # la vagoneta // the cart
-mine 0x13ec             # el ascensor // the lift
-use o5 until moved      # el botón de arriba: la sala del proyector // the top button: the projector room
-take o13 until has i86  # las pinzas // the tongs
-use o6 until moved      # la coctelera (Nessie Boom: leche, grog y whisky, en cualquier orden) // the cocktail shaker (Nessie Boom: milk, grog and whisky, in any order)
-go o1 until mem 0x639e60 = 11   # cambiar de bebida hasta la leche (clics sin verbo: el botón derecho sale de la máquina) // change drinks until the milk (clicks with no verb: the right button leaves the machine)
-go o2                  # abrir el grifo // open the tap
-go o1 until mem 0x639e60 = 12   # el grog // the grog
-go o2                   # abrir el grifo // open the tap
-go o1 until mem 0x639e60 = 14   # el whisky // the whisky
-go o2                  # el cóctel queda en la copa // the cocktail stays in the glass
-use o3 until moved      # el ascensor, botón del centro: el jacuzzi del Hombre Lobo // the lift, middle button: the Wolfman's jacuzzi
-take o5 until has i83   # el calzoncillo // the underpants
-talk o7                 # el Hombre Lobo: de todo // the Wolfman: everything
-give i89 o7             # la película: pide que se la pongamos en el proyector // the film: he asks us to put it on the projector
-use o2 until moved      # el ascensor, botón de arriba: el proyector // the lift, top button: the projector
-use i89 o8              # la película en el proyector: el Hombre Lobo sube a verla // the film on the projector: the Wolfman comes up to watch it
-use o3 until moved      # botón del centro: el jacuzzi // middle button: the jacuzzi
-take o12 until has i85  # el espejo // the mirror
-take o6 until has i84   # el tratamiento capilar // the hair treatment
-use o4 until moved      # el ascensor, botón de abajo: la vagoneta // the lift, bottom button: the cart
-use o1 until moved      # la vagoneta: a la entrada // the cart: to the entrance
-mine 0x13a6             # las niñas scouts // the girl scouts
-talk o7                 # la chica de la guitarra // the girl with the guitar
-give i83 o7 until has i72     # el calzoncillo, a cambio de una baraja de cartas // the underpants, in exchange for a pack of cards
-use o1 until moved      # la vagoneta // the cart
-mine 0x13b0             # el minero // the miner
-look o8                 # la caja // the box
-take o9 until gone o9   # el calcetín viejo // the old sock
-look o8                 # la caja otra vez: una llave // the box again: a key
-take o10 until has i75  # la llave // the key
-use o1 until moved      # la vagoneta // the cart
-mine 0x13d8             # la casa del minero: escaleras // the miner's house: stairs
-use i75 o8              # sube, abre la puerta con la llave y entra // go up, open the door with the key and go in
-take o2 until has i81   # el libro de Karl, del sofá // Karl's book, from the sofa
-look i81 read           # leerlo // read it
-open i81                # abrirlo: un sobre // open it: an envelope
-open i20                # abrir el sobre: un papiro // open the envelope: a papyrus
-look i18 read           # leerlo // read it
-go o7 until not gone o1 # escalera: bajar (la casa y la parada son la misma sala) // stairs: go down (the house and the stop are the same room)
-use o1 until moved      # la vagoneta // the cart
-mine 0x13ce             # la caseta abandonada // the abandoned shed
-take o6 until has i79   # "algo colgado": un gorro de aviador // "something hanging": an aviator's cap
-take o2 until has i80   # la pala // the shovel
-use o1 until moved      # la vagoneta // the cart
-mine 0x139c             # el TNT // the TNT
-take o4 until has i71   # un madero // a log
-use o1 until moved      # la vagoneta // the cart
-go o7 until moved       # el camino de la derecha: hacia Escocia // the path on the right: towards Scotland
+@13c4 take o4 until has i78   # gas: una piedra del suelo // gas: a stone from the ground
+@13c4 use i28 o3 until has i77      # el globo con la grieta: lleno de gas // the balloon on the crack: filled with gas
+@13c4 use o1 until moved      # la vagoneta: de vuelta a la entrada // the cart: back to the entrance
+@1393 mine 0x13e2             # las cascadas y el lago subterráneo // the waterfalls and the underground lake
+@13e2 use i26 o5 until has i82      # la ponchera con la cascada: llena de agua // the punch bowl with the waterfall: filled with water
+@13e2 use o3 until moved      # la vagoneta // the cart
+@1393 mine 0x13ec             # el ascensor // the lift
+@13ec use o5 until moved      # el botón de arriba: la sala del proyector // the top button: the projector room
+@1400 take o13 until has i86  # las pinzas // the tongs
+@1400 use o6 until moved      # la coctelera (Nessie Boom: leche, grog y whisky, en cualquier orden) // the cocktail shaker (Nessie Boom: milk, grog and whisky, in any order)
+@140a go o1 until mem 0x639e60 = 11   # cambiar de bebida hasta la leche (clics sin verbo: el botón derecho sale de la máquina) // change drinks until the milk (clicks with no verb: the right button leaves the machine)
+@140a go o2                  # abrir el grifo // open the tap
+@140a go o1 until mem 0x639e60 = 12   # el grog // the grog
+@140a go o2                   # abrir el grifo // open the tap
+@140a go o1 until mem 0x639e60 = 14   # el whisky // the whisky
+@140a go o2                  # el cóctel queda en la copa // the cocktail stays in the glass
+@1401 use o3 until moved      # el ascensor, botón del centro: el jacuzzi del Hombre Lobo // the lift, middle button: the Wolfman's jacuzzi
+@13f7 take o5 until has i83   # el calzoncillo // the underpants
+@13f7 talk o7                 # el Hombre Lobo: de todo // the Wolfman: everything
+@13f7 give i89 o7             # la película: pide que se la pongamos en el proyector // the film: he asks us to put it on the projector
+@13f7 use o2 until moved      # el ascensor, botón de arriba: el proyector // the lift, top button: the projector
+@1400 use i89 o8              # la película en el proyector: el Hombre Lobo sube a verla // the film on the projector: the Wolfman comes up to watch it
+@1400 use o3 until moved      # botón del centro: el jacuzzi // middle button: the jacuzzi
+@13f7 take o12 until has i85  # el espejo // the mirror
+@13f7 take o6 until has i84   # el tratamiento capilar // the hair treatment
+@13f7 use o4 until moved      # el ascensor, botón de abajo: la vagoneta // the lift, bottom button: the cart
+@13ed use o1 until moved      # la vagoneta: a la entrada // the cart: to the entrance
+@1393 mine 0x13a6             # las niñas scouts // the girl scouts
+@13a6 talk o7                 # la chica de la guitarra // the girl with the guitar
+@13a6 give i83 o7 until has i72     # el calzoncillo, a cambio de una baraja de cartas // the underpants, in exchange for a pack of cards
+@13a6 use o1 until moved      # la vagoneta // the cart
+@1393 mine 0x13b0             # el minero // the miner
+@13b0 look o8                 # la caja // the box
+@13b0 take o9 until gone o9   # el calcetín viejo // the old sock
+@13b0 look o8                 # la caja otra vez: una llave // the box again: a key
+@13b0 take o10 until has i75  # la llave // the key
+@13b0 use o1 until moved      # la vagoneta // the cart
+@1393 mine 0x13d8             # la casa del minero: escaleras // the miner's house: stairs
+@13d8 use i75 o8              # sube, abre la puerta con la llave y entra // go up, open the door with the key and go in
+@13d8 take o2 until has i81   # el libro de Karl, del sofá // Karl's book, from the sofa
+@13d8 look i81 read           # leerlo // read it
+@13d8 open i81                # abrirlo: un sobre // open it: an envelope
+@13d8 open i20                # abrir el sobre: un papiro // open the envelope: a papyrus
+@13d8 look i18 read           # leerlo // read it
+@13d8 go o7 until not gone o1 # escalera: bajar (la casa y la parada son la misma sala) // stairs: go down (the house and the stop are the same room)
+@13d8 use o1 until moved      # la vagoneta // the cart
+@1393 mine 0x13ce             # la caseta abandonada // the abandoned shed
+@13ce take o6 until has i79   # "algo colgado": un gorro de aviador // "something hanging": an aviator's cap
+@13ce take o2 until has i80   # la pala // the shovel
+@13ce use o1 until moved      # la vagoneta // the cart
+@1393 mine 0x139c             # el TNT // the TNT
+@139c take o4 until has i71   # un madero // a log
+@139c use o1 until moved      # la vagoneta // the cart
+@1393 go o7 until moved       # el camino de la derecha: hacia Escocia // the path on the right: towards Scotland
 
 == Escocia, otra vez // Scotland, again  @6
-click 160 256 until moved     # en la agenda: Clan McDundee // in the address book: Clan McDundee
-go o4 until moved       # el alto del acantilado // the top of the cliff
-take o3 until has i108  # el huevo // the egg
-use i108 i79            # el huevo con el gorro de aviador: nace el polluelo // the egg with the aviator's cap: the chick hatches
-take o5 until has i93   # la cáscara que ha caído al suelo // the shell that has fallen to the ground
-go o1 until moved       # camino: abajo, junto al lago // path: down, by the lake
-go o6 until room 0xffff # el hidroavión: la agenda // the seaplane: the address book
+@ffff click 160 256 until moved     # en la agenda: Clan McDundee // in the address book: Clan McDundee
+@1f4a go o4 until moved       # el alto del acantilado // the top of the cliff
+@1f54 take o3 until has i108  # el huevo // the egg
+@1f54 use i108 i79            # el huevo con el gorro de aviador: nace el polluelo // the egg with the aviator's cap: the chick hatches
+@1f54 take o5 until has i93   # la cáscara que ha caído al suelo // the shell that has fallen to the ground
+@1f54 go o1 until moved       # camino: abajo, junto al lago // path: down, by the lake
+@1f4b go o6 until room 0xffff # el hidroavión: la agenda // the seaplane: the address book
 
 == Estudios M.K.O., el buzón // M.K.O. Studios, the mailbox  @7
-click 165 160 until moved     # en la agenda: Estudios M.K.O. // in the address book: M.K.O. Studios
-use i86 o5 until has i88      # las pinzas en el buzón: un folleto // the tongs in the mailbox: a leaflet
-look i88 read           # leerlo // read it
-go o7 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 165 160 until moved     # en la agenda: Estudios M.K.O. // in the address book: M.K.O. Studios
+@177a use i86 o5 until has i88      # las pinzas en el buzón: un folleto // the tongs in the mailbox: a leaflet
+@177a look i88 read           # leerlo // read it
+@177a go o7 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Suiza: el molino // Switzerland: the mill  @8
-click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
-go o4 until moved       # al bosque: la cabaña // to the woods: the hut
-use i88 o2 until has i52      # el folleto con el árbol del centro del camino: resina, folleto pegajoso // the leaflet with the tree in the middle of the path: resin, a sticky leaflet
-use i52 i84 until has i21     # el folleto pegajoso con el tratamiento capilar: tratamiento adelgazante // the sticky leaflet with the hair treatment: a slimming treatment
-go o1 until moved       # camino: donde llegamos a Suiza // path: where we arrived in Switzerland
-go o6 until room 0xffff # camino, abajo: la agenda // path, down: the address book
+@ffff click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
+@bc2 go o4 until moved       # al bosque: la cabaña // to the woods: the hut
+@c08 use i88 o2 until has i52      # el folleto con el árbol del centro del camino: resina, folleto pegajoso // the leaflet with the tree in the middle of the path: resin, a sticky leaflet
+@c08 use i52 i84 until has i21     # el folleto pegajoso con el tratamiento capilar: tratamiento adelgazante // the sticky leaflet with the hair treatment: a slimming treatment
+@c08 go o1 until moved       # camino: donde llegamos a Suiza // path: where we arrived in Switzerland
+@bc3 go o6 until room 0xffff # camino, abajo: la agenda // path, down: the address book
 
 == Transilvania, segunda visita // Transylvania, second visit  @10
-click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
-go o1 until moved       # el puente levadizo: el patio // the drawbridge: the courtyard
-go o5 until moved       # interior del castillo // inside the castle
-go o1 until moved       # la puerta de Sherilyn // Sherilyn's door
-talk o9                 # Sherilyn: una partida de strip-póquer (se pierde) // Sherilyn: a game of strip poker (Ron loses)
-use i85 o4              # el espejo en la alcayata: así se ven sus cartas // the mirror on the hook: now her cards show
-talk o9 until has i63   # otra partida: esta vez gana Ron, el camisón de Sherilyn // another game: this time Ron wins Sherilyn's nightgown
-go o1 until moved       # salir a la galería // out to the gallery
-go o3 until moved       # dos puertas a la derecha: la cripta del órgano // two doors to the right: the organ crypt
-use i58 o2              # el camafeo en el órgano: Drácula viene y se va // the cameo on the organ: Dracula comes and goes
-go o1 until moved       # a la galería // to the gallery
-go o7 until moved       # la sala // the hall
-open o3                 # la base del trofeo: vuelve Drácula // the trophy's base: Dracula comes back
-give i21 o6             # el tratamiento adelgazante a Drácula: tira el pastillero por la ventana // the slimming treatment to Dracula: he throws the pillbox out of the window
-go o1 until moved       # corredor: a la galería // corridor: to the gallery
-go o5 until moved       # baja al patio // go down to the courtyard
-go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
-take o7 until has i59   # el pastillero, junto a la postal // the pillbox, next to the postcard
-go o1 until moved       # entrada: el patio // entrance: the courtyard
-go o5 until moved       # interior del castillo // inside the castle
-go o2 until moved       # la habitación de Gwendolyn // Gwendolyn's room
-open i59 until has i14  # abrir el pastillero: las píldoras del Dr. Mabuse // open the pillbox: Dr. Mabuse's pills
-use i14 o9              # las píldoras en las bolsas de comida // the pills in the food bags
-go o1 until moved       # a la galería // to the gallery
-go o5 until moved       # baja al patio // go down to the courtyard
-go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
-go o8 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
+@faa go o1 until moved       # el puente levadizo: el patio // the drawbridge: the courtyard
+@100f go o5 until moved       # interior del castillo // inside the castle
+@1004 go o1 until moved       # la puerta de Sherilyn // Sherilyn's door
+@fdd talk o9                 # Sherilyn: una partida de strip-póquer (se pierde) // Sherilyn: a game of strip poker (Ron loses)
+@fdd use i85 o4              # el espejo en la alcayata: así se ven sus cartas // the mirror on the hook: now her cards show
+@fdd talk o9 until has i63   # otra partida: esta vez gana Ron, el camisón de Sherilyn // another game: this time Ron wins Sherilyn's nightgown
+@fdd go o1 until moved       # salir a la galería // out to the gallery
+@1005 go o3 until moved       # dos puertas a la derecha: la cripta del órgano // two doors to the right: the organ crypt
+@ffa use i58 o2              # el camafeo en el órgano: Drácula viene y se va // the cameo on the organ: Dracula comes and goes
+@ffb go o1 until moved       # a la galería // to the gallery
+@1007 go o7 until moved       # la sala // the hall
+@fe6 open o3                 # la base del trofeo: vuelve Drácula // the trophy's base: Dracula comes back
+@fe6 give i21 o6             # el tratamiento adelgazante a Drácula: tira el pastillero por la ventana // the slimming treatment to Dracula: he throws the pillbox out of the window
+@fe6 go o1 until moved       # corredor: a la galería // corridor: to the gallery
+@1008 go o5 until moved       # baja al patio // go down to the courtyard
+@100e go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
+@fab take o7 until has i59   # el pastillero, junto a la postal // the pillbox, next to the postcard
+@fab go o1 until moved       # entrada: el patio // entrance: the courtyard
+@100f go o5 until moved       # interior del castillo // inside the castle
+@1004 go o2 until moved       # la habitación de Gwendolyn // Gwendolyn's room
+@ff0 open i59 until has i14  # abrir el pastillero: las píldoras del Dr. Mabuse // open the pillbox: Dr. Mabuse's pills
+@ff0 use i14 o9              # las píldoras en las bolsas de comida // the pills in the food bags
+@ff0 go o1 until moved       # a la galería // to the gallery
+@1006 go o5 until moved       # baja al patio // go down to the courtyard
+@100e go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
+@fab go o8 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Egipto // Egypt  @11
-click 405 158 until moved     # en la agenda: La Momia // in the address book: The Mummy
-go o2 until moved       # la pirámide, a la izquierda // the pyramid, on the left
-go o2 until moved       # la rampa: la piscina de la princesa // the ramp: the princess's pool
-talk o1                 # la princesa Amesis-Huni: de todo // Princess Amesis-Huni: everything
-give i69 o4             # el filete al tigre: se lo come sin pestañear // the steak to the tiger: he eats it without blinking
-go o6 until moved       # entrada de la pirámide // the pyramid's entrance
-go o1 until moved       # al mercado // to the market
-give i63 o4 until not has i63 # vender el camisón al mercader de azul // sell the nightgown to the merchant in blue
-give i73 o4 until not has i73 # y el calcetín remendado // and the darned sock
-go o2 until moved       # la pirámide // the pyramid
-use o3                  # la anilla: llamar; sale la Momia y se habla de todo (conjuro, resurrección, laberinto) // the ring: knock; the Mummy comes out, talk about everything (spell, resurrection, maze)
-go o1 until moved       # al mercado // to the market
-talk o3 say 1,2 until has i43   # el mercader de la izquierda: flores del Nilo, "me lo llevo" (unas semillas) // the merchant on the left: Nile flowers, "I'll take it" (some seeds)
-talk o3 say 1,2 until has i42   # y el pergamino con el conjuro, "me lo llevo" // and the parchment with the spell, "I'll take it"
-go o1 until moved       # la esfinge // the sphinx
-use i80 o8              # la pala con la pata delantera más cercana: un montoncito de arena // the shovel with the nearest front paw: a little pile of sand
-use i43 o3              # las semillas en la montañita de arena // the seeds in the little pile of sand
-use i82 o3              # regarlas con el agua de la ponchera // water them with the water in the punch bowl
-take o6 until has i44   # la flor del Nilo // the Nile flower
-go o1 until moved       # al mercado // to the market
-go o8 until room 0xffff # la avioneta: la agenda // the light plane: the address book
+@ffff click 405 158 until moved     # en la agenda: La Momia // in the address book: The Mummy
+@7ee go o2 until moved       # la pirámide, a la izquierda // the pyramid, on the left
+@7da go o2 until moved       # la rampa: la piscina de la princesa // the ramp: the princess's pool
+@7e4 talk o1                 # la princesa Amesis-Huni: de todo // Princess Amesis-Huni: everything
+@7e4 give i69 o4             # el filete al tigre: se lo come sin pestañear // the steak to the tiger: he eats it without blinking
+@7e4 go o6 until moved       # entrada de la pirámide // the pyramid's entrance
+@7db go o1 until moved       # al mercado // to the market
+@7ef give i63 o4 until not has i63 # vender el camisón al mercader de azul // sell the nightgown to the merchant in blue
+@7ef give i73 o4 until not has i73 # y el calcetín remendado // and the darned sock
+@7ef go o2 until moved       # la pirámide // the pyramid
+@7da use o3                  # la anilla: llamar; sale la Momia y se habla de todo (conjuro, resurrección, laberinto) // the ring: knock; the Mummy comes out, talk about everything (spell, resurrection, maze)
+@7dc go o1 until moved       # al mercado // to the market
+@7ef talk o3 say 1,2 until has i43   # el mercader de la izquierda: flores del Nilo, "me lo llevo" (unas semillas) // the merchant on the left: Nile flowers, "I'll take it" (some seeds)
+@7ef talk o3 say 1,2 until has i42   # y el pergamino con el conjuro, "me lo llevo" // and the parchment with the spell, "I'll take it"
+@7ef go o1 until moved       # la esfinge // the sphinx
+@7f8 use i80 o8              # la pala con la pata delantera más cercana: un montoncito de arena // the shovel with the nearest front paw: a little pile of sand
+@7f8 use i43 o3              # las semillas en la montañita de arena // the seeds in the little pile of sand
+@7f8 use i82 o3              # regarlas con el agua de la ponchera // water them with the water in the punch bowl
+@7f8 take o6 until has i44   # la flor del Nilo // the Nile flower
+@7f8 go o1 until moved       # al mercado // to the market
+@7f0 go o8 until room 0xffff # la avioneta: la agenda // the light plane: the address book
 
 == Transilvania, otro filete // Transylvania, another steak  @10
-click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
-go o1 until moved       # el puente levadizo: el patio // the drawbridge: the courtyard
-go o5 until moved       # interior del castillo // inside the castle
-go o2 until moved       # la habitación de Gwendolyn // Gwendolyn's room
-use i3 o4 until has i69 # otro filete // another steak
-go o1 until moved       # a la galería // to the gallery
-go o5 until moved       # baja al patio // go down to the courtyard
-go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
-go o8 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
+@faa go o1 until moved       # el puente levadizo: el patio // the drawbridge: the courtyard
+@100f go o5 until moved       # interior del castillo // inside the castle
+@1004 go o2 until moved       # la habitación de Gwendolyn // Gwendolyn's room
+@ff0 use i3 o4 until has i69 # otro filete // another steak
+@ff0 go o1 until moved       # a la galería // to the gallery
+@1006 go o5 until moved       # baja al patio // go down to the courtyard
+@100e go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
+@fab go o8 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Egipto, el colmillo // Egypt, the tooth  @11
-click 405 158 until moved     # en la agenda: La Momia // in the address book: The Mummy
-go o2 until moved       # la pirámide // the pyramid
-go o2 until moved       # la rampa: la piscina // the ramp: the pool
-use i78 i69             # el pedrusco dentro del filete // the rock inside the steak
-give i17 o4             # el filete durillo al tigre: pierde un colmillo // the tough steak to the tiger: he loses a tooth
-take o3 until gone o3   # el diente de tigre, junto a la rueda de la hamaca // the tiger's tooth, next to the hammock's wheel
-go o6 until moved       # entrada de la pirámide // the pyramid's entrance
-go o1 until moved       # al mercado // to the market
-go o1 until moved       # la esfinge // the sphinx
-use i38 o4              # el colmillo en la hendidura: se abre un pasadizo // the tooth in the crack: a passage opens
-go o2 until moved       # el pasadizo: la sala del mural // the passage: the mural room
-use i18 o3 nowait       # el papiro con el mural: el puzle // the papyrus with the mural: the puzzle
-mural                   # reconstruir el mural (el motor coloca las 48 piezas) // rebuild the mural (the guide places the 48 pieces)
-go o5 until moved       # el laberinto, siguiendo al escarabajo // the maze, following the beetle
-maze                    # seguir el camino del escarabajo hasta la cámara de las dos columnas // follow the beetle's path to the chamber with two columns
-go o5 until moved       # la habitación contigua: Gunther Hecker // the next room: Gunther Hecker
-talk o2 say 1,1,1,@0x688cc6,@0x688cc7,@0x688cc8   # Gunther: "Yo sé lo que significa ese jeroglífico" y las tres respuestas buenas (el juego las coloca al azar) // Gunther: "I know what that hieroglyph means" and the three right answers (the game places them at random)
-go o1 until moved       # salir a la cámara: Gunther, aplastado, ha soltado su navaja // out to the chamber: Gunther, crushed, has dropped his knife
-take o7 until gone o7   # la navaja de Gunther // Gunther's knife
-go o5 until moved       # volver a entrar // go back in
-use i90 o4 until has i46      # la lupa con el sarcófago abierto: un pelo de la princesa // the magnifying glass with the open sarcophagus: a hair of the princess
-use o3 until moved      # el bastón del sarcófago de la izquierda: una columna sube hasta el altar de Karnak // the staff of the left sarcophagus: a column rises to the altar of Karnak
-use i42 o2 until not has i42  # el pergamino en el altar // the parchment on the altar
-use i44 o2 until not has i44  # el polen de la flor del Nilo // the Nile flower's pollen
-use i46 o2 until not has i46  # el pelo de la princesa: la princesa vuelve al Más Allá // the princess's hair: the princess returns to the Beyond
-go o3 until moved       # entrada: bajar del altar // entrance: down from the altar
-go o1 until moved       # la cámara // the chamber
-go o1 until moved       # el laberinto // the maze
-maze back               # deshacer el camino del escarabajo hasta el mural // retrace the beetle's path back to the mural
-go o1 until moved       # la escalera: la esfinge // the stairs: the sphinx
-go o1 until moved       # al mercado // to the market
-go o2 until moved       # la pirámide // the pyramid
-go o2 until moved       # la rampa: la piscina // the ramp: the pool
-take o8 until gone o8   # las gafas de sol de la princesa // the princess's sunglasses
-take o2 until gone o2   # y su pamela // and her sun hat
-go o6 until moved       # entrada de la pirámide // the pyramid's entrance
-use o3                  # la anilla: la Momia, agradecida // the ring: the Mummy, grateful
-take o5 until has i47   # el bastón de Ra // the staff of Ra
-use i47 o1              # usarlo con la puerta de piedra // use it with the stone door
-open o3 until has i48   # la base del trofeo: las piernas de Frankenstein // the trophy's base: Frankenstein's legs
-go o1 until moved       # entrada: fuera de la pirámide // entrance: out of the pyramid
-go o2 until moved       # exterior de la pirámide // outside the pyramid
-go o1 until moved       # al mercado // to the market
-go o8 until room 0xffff # la avioneta: la agenda // the light plane: the address book
+@ffff click 405 158 until moved     # en la agenda: La Momia // in the address book: The Mummy
+@7ee go o2 until moved       # la pirámide // the pyramid
+@7da go o2 until moved       # la rampa: la piscina // the ramp: the pool
+@7e4 use i78 i69             # el pedrusco dentro del filete // the rock inside the steak
+@7e4 give i17 o4             # el filete durillo al tigre: pierde un colmillo // the tough steak to the tiger: he loses a tooth
+@7e4 take o3 until gone o3   # el diente de tigre, junto a la rueda de la hamaca // the tiger's tooth, next to the hammock's wheel
+@7e4 go o6 until moved       # entrada de la pirámide // the pyramid's entrance
+@7db go o1 until moved       # al mercado // to the market
+@7ef go o1 until moved       # la esfinge // the sphinx
+@7f8 use i38 o4              # el colmillo en la hendidura: se abre un pasadizo // the tooth in the crack: a passage opens
+@7f8 go o2 until moved       # el pasadizo: la sala del mural // the passage: the mural room
+@802 use i18 o3 nowait       # el papiro con el mural: el puzle // the papyrus with the mural: the puzzle
+@802 mural                   # reconstruir el mural (el motor coloca las 48 piezas) // rebuild the mural (the guide places the 48 pieces)
+@802 go o5 until moved       # el laberinto, siguiendo al escarabajo // the maze, following the beetle
+@80e maze                    # seguir el camino del escarabajo hasta la cámara de las dos columnas // follow the beetle's path to the chamber with two columns
+@816 go o5 until moved       # la habitación contigua: Gunther Hecker // the next room: Gunther Hecker
+@820 talk o2 say 1,1,1,@0x688cc6,@0x688cc7,@0x688cc8   # Gunther: "Yo sé lo que significa ese jeroglífico" y las tres respuestas buenas (el juego las coloca al azar) // Gunther: "I know what that hieroglyph means" and the three right answers (the game places them at random)
+@820 go o1 until moved       # salir a la cámara: Gunther, aplastado, ha soltado su navaja // out to the chamber: Gunther, crushed, has dropped his knife
+@817 take o7 until gone o7   # la navaja de Gunther // Gunther's knife
+@817 go o5 until moved       # volver a entrar // go back in
+@820 use i90 o4 until has i46      # la lupa con el sarcófago abierto: un pelo de la princesa // the magnifying glass with the open sarcophagus: a hair of the princess
+@820 use o3 until moved      # el bastón del sarcófago de la izquierda: una columna sube hasta el altar de Karnak // the staff of the left sarcophagus: a column rises to the altar of Karnak
+@82a use i42 o2 until not has i42  # el pergamino en el altar // the parchment on the altar
+@82a use i44 o2 until not has i44  # el polen de la flor del Nilo // the Nile flower's pollen
+@82a use i46 o2 until not has i46  # el pelo de la princesa: la princesa vuelve al Más Allá // the princess's hair: the princess returns to the Beyond
+@82a go o3 until moved       # entrada: bajar del altar // entrance: down from the altar
+@821 go o1 until moved       # la cámara // the chamber
+@817 go o1 until moved       # el laberinto // the maze
+@803 maze back               # deshacer el camino del escarabajo hasta el mural // retrace the beetle's path back to the mural
+@803 go o1 until moved       # la escalera: la esfinge // the stairs: the sphinx
+@7f9 go o1 until moved       # al mercado // to the market
+@7f0 go o2 until moved       # la pirámide // the pyramid
+@7da go o2 until moved       # la rampa: la piscina // the ramp: the pool
+@7e4 take o8 until gone o8   # las gafas de sol de la princesa // the princess's sunglasses
+@7e4 take o2 until gone o2   # y su pamela // and her sun hat
+@7e4 go o6 until moved       # entrada de la pirámide // the pyramid's entrance
+@7db use o3                  # la anilla: la Momia, agradecida // the ring: the Mummy, grateful
+@834 take o5 until has i47   # el bastón de Ra // the staff of Ra
+@834 use i47 o1              # usarlo con la puerta de piedra // use it with the stone door
+@83e open o3 until has i48   # la base del trofeo: las piernas de Frankenstein // the trophy's base: Frankenstein's legs
+@83e go o1 until moved       # entrada: fuera de la pirámide // entrance: out of the pyramid
+@836 go o2 until moved       # exterior de la pirámide // outside the pyramid
+@7dc go o1 until moved       # al mercado // to the market
+@7ef go o8 until room 0xffff # la avioneta: la agenda // the light plane: the address book
 
 == De vuelta a Australia // Back to Australia  @12
-click 420 252 until moved     # en la agenda: Hombre Lobo // in the address book: Wolfman
-mine 0x13ec             # el ascensor // the lift
-use o5 until moved      # el botón de arriba: el proyector // the top button: the projector
-use i15 o7              # el pastillero con la copa del Nessie-Boom: un pastillero bomba // the pillbox with the Nessie-Boom glass: a bomb pillbox
-use i7 i12 until has i11 # el imán con el pastillero bomba (aquí: en la mina, junto al minero, a veces no sale) // the magnet with the bomb pillbox (here: in the mine, next to the miner, it sometimes fails)
-use o4 until moved      # botón de abajo: la vagoneta // bottom button: the cart
-use o1 until moved      # la vagoneta: a la entrada // the cart: to the entrance
-mine 0x13b0             # el minero // the miner
-use i55 o5 fast until mem 0x668be1 = 1 # cuando se para, cambiarle su varita de buscar diamantes por la de buscar oro: se pone a picar // when he stops, swap his diamond-finding wand for the gold-finding one: he starts digging
-use i11 o6 fast until not has i11   # el pastillero bomba con imán en el pico, cuando el viejo descansa: ¡explota! // the bomb pillbox with the magnet on the pick, when the old man rests: it explodes!
-mine 0x13b0             # tras la explosión (Ron sale pitando hasta la entrada), volver con el viejo // after the explosion (Ron runs off to the entrance), back to the old man
-take o7 until has i74   # el diamante // the diamond
-go o3 until moved       # por el boquete: el trofeo del Hombre Lobo // through the hole: the Wolfman's trophy
-open o4 until has i66   # la base del trofeo: el tronco y los brazos de Frankenstein // the trophy's base: Frankenstein's torso and arms
-go o1 until moved       # el boquete: de vuelta con el minero // the hole: back to the miner
-use o1 until moved      # la vagoneta: a la entrada // the cart: to the entrance
-go o7 until room 0xffff # el camino de la derecha: la agenda // the path on the right: the address book
+@ffff click 420 252 until moved     # en la agenda: Hombre Lobo // in the address book: Wolfman
+@1392 mine 0x13ec             # el ascensor // the lift
+@13ec use o5 until moved      # el botón de arriba: el proyector // the top button: the projector
+@1400 use i15 o7              # el pastillero con la copa del Nessie-Boom: un pastillero bomba // the pillbox with the Nessie-Boom glass: a bomb pillbox
+@1400 use i7 i12 until has i11 # el imán con el pastillero bomba (aquí: en la mina, junto al minero, a veces no sale) // the magnet with the bomb pillbox (here: in the mine, next to the miner, it sometimes fails)
+@1400 use o4 until moved      # botón de abajo: la vagoneta // bottom button: the cart
+@13ed use o1 until moved      # la vagoneta: a la entrada // the cart: to the entrance
+@1393 mine 0x13b0             # el minero // the miner
+@13b0 use i55 o5 fast until mem 0x668be1 = 1 # cuando se para, cambiarle su varita de buscar diamantes por la de buscar oro: se pone a picar // when he stops, swap his diamond-finding wand for the gold-finding one: he starts digging
+@13b0 use i11 o6 fast until not has i11   # el pastillero bomba con imán en el pico, cuando el viejo descansa: ¡explota! // the bomb pillbox with the magnet on the pick, when the old man rests: it explodes!
+@1393 mine 0x13b0             # tras la explosión (Ron sale pitando hasta la entrada), volver con el viejo // after the explosion (Ron runs off to the entrance), back to the old man
+@13b0 take o7 until has i74   # el diamante // the diamond
+@13b0 go o3 until moved       # por el boquete: el trofeo del Hombre Lobo // through the hole: the Wolfman's trophy
+@13bb open o4 until has i66   # la base del trofeo: el tronco y los brazos de Frankenstein // the trophy's base: Frankenstein's torso and arms
+@13bb go o1 until moved       # el boquete: de vuelta con el minero // the hole: back to the miner
+@13b1 use o1 until moved      # la vagoneta: a la entrada // the cart: to the entrance
+@1393 go o7 until room 0xffff # el camino de la derecha: la agenda // the path on the right: the address book
 
 == Otra vez en casa de Drácula // Dracula's house once more  @13
-click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
-go o1 until moved       # el puente levadizo: el patio // the drawbridge: the courtyard
-go o5 until moved       # interior del castillo // inside the castle
-go o2 until moved       # la habitación de Gwendolyn // Gwendolyn's room
-open i45 until named i45 i111 # abrir la navaja multiusos hasta que salga el cuchillo // open the multi-tool knife until the knife comes out
-use i45 i71 until has i6      # el cuchillo con el madero: una estaca // the knife with the log: a stake
-use i6 o8               # la estaca con Gwendolyn // the stake with Gwendolyn
-take o10 until has i68  # la gominola del suelo // the jelly bean on the floor
-take o3                 # el ataúd de la vampiresa, para cambiarlo por el del conde // the vampire's coffin, to swap it for the count's
-go o1 until moved       # a la galería // to the gallery
-go o3 until moved       # la cripta del órgano // the organ crypt
-use i58 o2              # el camafeo en el órgano: viene Drácula // the cameo on the organ: Dracula comes
-go o1 until moved       # a la galería // to the gallery
-go o7 until moved       # la sala // the hall
-open o3 until has i76   # la base del trofeo: la cabeza de Frankenstein // the trophy's base: Frankenstein's head
-go o1 until moved       # corredor: a la galería // corridor: to the gallery
-go o5 until moved       # baja al patio // go down to the courtyard
-go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
-go o8 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 140 346 until moved     # en la agenda: Drácula // in the address book: Dracula
+@faa go o1 until moved       # el puente levadizo: el patio // the drawbridge: the courtyard
+@100f go o5 until moved       # interior del castillo // inside the castle
+@1004 go o2 until moved       # la habitación de Gwendolyn // Gwendolyn's room
+@ff0 open i45 until named i45 i111 # abrir la navaja multiusos hasta que salga el cuchillo // open the multi-tool knife until the knife comes out
+@ff0 use i45 i71 until has i6      # el cuchillo con el madero: una estaca // the knife with the log: a stake
+@ff0 use i6 o8               # la estaca con Gwendolyn // the stake with Gwendolyn
+@ff0 take o10 until has i68  # la gominola del suelo // the jelly bean on the floor
+@ff0 take o3                 # el ataúd de la vampiresa, para cambiarlo por el del conde // the vampire's coffin, to swap it for the count's
+@ff0 go o1 until moved       # a la galería // to the gallery
+@1006 go o3 until moved       # la cripta del órgano // the organ crypt
+@ffa use i58 o2              # el camafeo en el órgano: viene Drácula // the cameo on the organ: Dracula comes
+@ffb go o1 until moved       # a la galería // to the gallery
+@1007 go o7 until moved       # la sala // the hall
+@fe6 open o3 until has i76   # la base del trofeo: la cabeza de Frankenstein // the trophy's base: Frankenstein's head
+@fe6 go o1 until moved       # corredor: a la galería // corridor: to the gallery
+@1008 go o5 until moved       # baja al patio // go down to the courtyard
+@100e go o1 until moved       # el puente levadizo: fuera // the drawbridge: outside
+@fab go o8 until room 0xffff # el coche: la agenda // the car: the address book
 
 == En casa de Frankie // At Frankie's house  @14
-click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
-go o3 until moved       # el molino // the mill
-go o3 until moved       # subir las escaleras // go up the stairs
-use i31 o2              # las babas de mosca sobre la piedra que bloquea el engranaje // the fly drool on the stone that jams the gear
-go o1 until moved       # escalera: bajar // stairs: go down
-go o1 until moved       # camino: fuera del molino // path: out of the mill
-use i91 o2              # el paraguas con las aspas: sube al tejado // the umbrella with the sails: up to the roof
-use i10                 # el invento del Dr. Mosca en el tejado: para provocar la lluvia // Dr. Fly's gadget on the roof: to make it rain
-go o2 until moved       # el suelo: bajar del tejado // the ground: down from the roof
-go o1 until moved       # la casa de Frankie, la de ladrillo rojo // Frankie's house, the red brick one
-go o3 until moved       # la sala de la izquierda: la biblioteca // the room on the left: the library
-use o9                  # botón izquierdo (1 de 5) // left button (1 of 5)
-use o9                  # botón izquierdo (2 de 5) // left button (2 of 5)
-use o9                  # botón izquierdo (3 de 5) // left button (3 of 5)
-use o9                  # botón izquierdo (4 de 5) // left button (4 of 5)
-use o9                  # botón izquierdo (5 de 5) // left button (5 of 5)
-use o10                 # botón derecho (1 de 2) // right button (1 of 2)
-use o10                 # botón derecho (2 de 2) // right button (2 of 2)
-use o9                  # botón izquierdo (1 de 3) // left button (1 of 3)
-use o9                  # botón izquierdo (2 de 3) // left button (2 of 3)
-use o9                  # botón izquierdo (3 de 3) // left button (3 of 3)
-use o10                 # botón derecho (1 de 4) // right button (1 of 4)
-use o10                 # botón derecho (2 de 4) // right button (2 of 4)
-use o10                 # botón derecho (3 de 4) // right button (3 of 4)
-use o10                 # botón derecho (4 de 4) // right button (4 of 4)
-use o11                 # botón rojo: se abre la puerta del laboratorio // red button: the laboratory door opens
-go o2 until moved       # la puerta secreta: el laboratorio // the secret door: the laboratory
-open o8                 # el cajón de la mesa // the table drawer
-look o8                 # mirar dentro // look inside
-take o9 until has i50   # aguja e hilo quirúrgicos // surgical needle and thread
-use i50 i76             # coser los trozos de Frankie // sew Frankie's pieces together
-use i62 o5              # el hueso del esqueleto en las cubetas: calcio // the skeleton's bone in the trays: calcium
-use i68 o5              # la gominola: glucosa // the jelly bean: glucose
-use i87 o5              # la rodaja de limón: ácido cítrico // the slice of lemon: citric acid
-use i93 o5              # la cáscara de huevo: líquido amniótico // the eggshell: amniotic fluid
-use i56 o5              # la jeringuilla con savia: la sangre de un ser vivo // the syringe with sap: the blood of a living being
-use i5                  # el mando a distancia del invento del Dr. Mosca: la tormenta... pero falta el cerebro // the remote control of Dr. Fly's gadget: the storm... but the brain is missing
-go o1 until moved       # escalera: la biblioteca // stairs: the library
-go o1 until moved       # recibidor // entrance hall
-go o1 until moved       # exterior // outside
-go o6 until room 0xffff # camino, abajo: la agenda // path, down: the address book
+@ffff click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
+@bc2 go o3 until moved       # el molino // the mill
+@bcc go o3 until moved       # subir las escaleras // go up the stairs
+@bd6 use i31 o2              # las babas de mosca sobre la piedra que bloquea el engranaje // the fly drool on the stone that jams the gear
+@bd6 go o1 until moved       # escalera: bajar // stairs: go down
+@bcd go o1 until moved       # camino: fuera del molino // path: out of the mill
+@bc3 use i91 o2              # el paraguas con las aspas: sube al tejado // the umbrella with the sails: up to the roof
+@be0 use i10                 # el invento del Dr. Mosca en el tejado: para provocar la lluvia // Dr. Fly's gadget on the roof: to make it rain
+@be0 go o2 until moved       # el suelo: bajar del tejado // the ground: down from the roof
+@bc3 go o1 until moved       # la casa de Frankie, la de ladrillo rojo // Frankie's house, the red brick one
+@bea go o3 until moved       # la sala de la izquierda: la biblioteca // the room on the left: the library
+@bf4 use o9                  # botón izquierdo (1 de 5) // left button (1 of 5)
+@bf4 use o9                  # botón izquierdo (2 de 5) // left button (2 of 5)
+@bf4 use o9                  # botón izquierdo (3 de 5) // left button (3 of 5)
+@bf4 use o9                  # botón izquierdo (4 de 5) // left button (4 of 5)
+@bf4 use o9                  # botón izquierdo (5 de 5) // left button (5 of 5)
+@bf4 use o10                 # botón derecho (1 de 2) // right button (1 of 2)
+@bf4 use o10                 # botón derecho (2 de 2) // right button (2 of 2)
+@bf4 use o9                  # botón izquierdo (1 de 3) // left button (1 of 3)
+@bf4 use o9                  # botón izquierdo (2 de 3) // left button (2 of 3)
+@bf4 use o9                  # botón izquierdo (3 de 3) // left button (3 of 3)
+@bf4 use o10                 # botón derecho (1 de 4) // right button (1 of 4)
+@bf4 use o10                 # botón derecho (2 de 4) // right button (2 of 4)
+@bf4 use o10                 # botón derecho (3 de 4) // right button (3 of 4)
+@bf4 use o10                 # botón derecho (4 de 4) // right button (4 of 4)
+@bf4 use o11                 # botón rojo: se abre la puerta del laboratorio // red button: the laboratory door opens
+@bf4 go o2 until moved       # la puerta secreta: el laboratorio // the secret door: the laboratory
+@bfe open o8                 # el cajón de la mesa // the table drawer
+@bfe look o8                 # mirar dentro // look inside
+@bfe take o9 until has i50   # aguja e hilo quirúrgicos // surgical needle and thread
+@bfe use i50 i76             # coser los trozos de Frankie // sew Frankie's pieces together
+@bfe use i62 o5              # el hueso del esqueleto en las cubetas: calcio // the skeleton's bone in the trays: calcium
+@bfe use i68 o5              # la gominola: glucosa // the jelly bean: glucose
+@bfe use i87 o5              # la rodaja de limón: ácido cítrico // the slice of lemon: citric acid
+@bfe use i93 o5              # la cáscara de huevo: líquido amniótico // the eggshell: amniotic fluid
+@bfe use i56 o5              # la jeringuilla con savia: la sangre de un ser vivo // the syringe with sap: the blood of a living being
+@bfe use i5                  # el mando a distancia del invento del Dr. Mosca: la tormenta... pero falta el cerebro // the remote control of Dr. Fly's gadget: the storm... but the brain is missing
+@bff go o1 until moved       # escalera: la biblioteca // stairs: the library
+@bf5 go o1 until moved       # recibidor // entrance hall
+@beb go o1 until moved       # exterior // outside
+@bc4 go o6 until room 0xffff # camino, abajo: la agenda // path, down: the address book
 
 == Mansión Hannover: el cerebro // Hannover's mansion: the brain  @14
-click 175 67 until moved      # en la agenda: Mansión Hannover // in the address book: Hannover's mansion
-go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
-go o1 until moved       # entrada: el vestíbulo // entrance: the hall
-go o2 until moved       # salón: la fiesta // living room: the party
-go o2 until moved       # más a la derecha // further right
-go o2 until moved       # la puerta de la cocina, ahora abierta // the kitchen door, open now
-use i77 o3              # el globo con gas: el cocinero sale corriendo // the gas balloon: the cook runs off
-go o2 until moved       # la despensa // the pantry
-use o2                  # el interruptor de la luz // the light switch
-take o4 until has i37   # el objeto envuelto en un trapo: el cerebro de Frankenstein // the thing wrapped in a rag: Frankenstein's brain
-go o1 until moved       # a la cocina // to the kitchen
-go o1 until moved       # escalera: al salón // stairs: to the living room
-go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
-go o1 until moved       # hall // hall
-go o10 until moved      # terraza // terrace
-go o7 until moved       # escaleras: a la calle // stairs: down to the street
-go o4 until room 0xffff # el coche: la agenda // the car: the address book
+@ffff click 175 67 until moved      # en la agenda: Mansión Hannover // in the address book: Hannover's mansion
+@3f4 go o1 until moved       # escaleras: a la terraza // stairs: up to the terrace
+@406 go o1 until moved       # entrada: el vestíbulo // entrance: the hall
+@412 go o2 until moved       # salón: la fiesta // living room: the party
+@424 go o2 until moved       # más a la derecha // further right
+@42e go o2 until moved       # la puerta de la cocina, ahora abierta // the kitchen door, open now
+@438 use i77 o3              # el globo con gas: el cocinero sale corriendo // the gas balloon: the cook runs off
+@438 go o2 until moved       # la despensa // the pantry
+@442 use o2                  # el interruptor de la luz // the light switch
+@442 take o4 until has i37   # el objeto envuelto en un trapo: el cerebro de Frankenstein // the thing wrapped in a rag: Frankenstein's brain
+@442 go o1 until moved       # a la cocina // to the kitchen
+@439 go o1 until moved       # escalera: al salón // stairs: to the living room
+@42f go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
+@425 go o1 until moved       # hall // hall
+@410 go o10 until moved      # terraza // terrace
+@407 go o7 until moved       # escaleras: a la calle // stairs: down to the street
+@3f2 go o4 until room 0xffff # el coche: la agenda // the car: the address book
 
 == Frankie vive // Frankie lives  @14
-click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
-go o1 until moved       # la casa de Frankie // Frankie's house
-go o3 until moved       # la biblioteca // the library
-go o2 until moved       # la puerta secreta: el laboratorio // the secret door: the laboratory
-use i37 o3              # el cerebro, en la mesa de operaciones // the brain, on the operating table
-use i5                  # el mando a distancia: otra tormenta... ¡Frankie vive! // the remote control: another storm... Frankie lives!
+@ffff click 425 67 until moved      # en la agenda: Frankenstein // in the address book: Frankenstein
+@bc2 go o1 until moved       # la casa de Frankie // Frankie's house
+@bea go o3 until moved       # la biblioteca // the library
+@bf4 go o2 until moved       # la puerta secreta: el laboratorio // the secret door: the laboratory
+@bfe use i37 o3              # el cerebro, en la mesa de operaciones // the brain, on the operating table
+@bfe use i5                  # el mando a distancia: otra tormenta... ¡Frankie vive! // the remote control: another storm... Frankie lives!
 
 == Estudios M.K.O.: el rescate de Sue // M.K.O. Studios: rescuing Sue  @15
-go o1 until moved       # el estudio de la derecha // the studio on the right
-take o9 until has i96    # el bote de pintura // the paint pot
-open i45 until named i45 i109 # la navaja multiusos, hasta la lima // the multi-tool knife, to the file
-use i45 o10 until has i95     # la lima con el alambre de la cuerda: un trozo de alambre // the file with the wire on the rope: a piece of wire
-go o1 until moved       # al exterior // outside
-go o2 until moved       # la casa del fondo: el museo de cera // the house at the back: the wax museum
-open i45 until named i45 i112 # la navaja, hasta el alicate // the knife, to the pliers
-use i45 i95 until named i95 i114 # el alicate con el alambre: una ganzúa // the pliers with the wire: a lock pick
-use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano // the lock pick on the left door: down to the basement
-look o1                 # mirar por la puerta del fondo del pasillo: ¡Sue! // look through the door at the end of the corridor: Sue!
-give i96 o4 until not has i96 # el bote de pintura, a Sue // the paint pot, to Sue
-give i45 o4 until not has i45 # la navaja multiusos, a Sue // the multi-tool knife, to Sue
-talk o4 until room 0x1bbc # "mira a ver si puedes hacer algo desde dentro": ahora llevamos a Sue // "see if you can do something from inside": now we play Sue
-take o3 until has i21   # Sue: el póster junto a la puerta // Sue: the poster by the door
-open i26 until named i26 i39 # la navaja, hasta el destornillador // the knife, to the screwdriver
-use i26 o5 until has i20 # desatornillar la placa del pilar // unscrew the plate from the pillar
-walk 364 420            # la rata solo entra o sale con Sue lejos de ella (x > 360): esperar justo ahí // the rat only goes in or out with Sue far from it (x > 360): wait right there
-wait 100 fast until mem 0x6e1ebe = 1 # hasta que empiece a salir (esa animación no se interrumpe) // until it starts coming out (that animation is not interrupted)
-walk 300 420 fast       # y apartarse en ese momento: la rata se queda fuera // and step aside at that moment: the rat stays outside
-use i20 o4 until not has i20 # la placa, en la ratonera de la izquierda, cuando la rata está fuera // the plate, on the left mousehole, while the rat is out
-use i32 o5 until has i22 # pintar un agujero en la placa: la rata se da un trompazo // paint a hole on the plate: the rat crashes into it
-give i22 o2 until not has i22 # la rata, a Ron // the rat, to Ron
-give i26 o2 until not has i26 # la navaja, a Ron // the knife, to Ron
-give i21 o2 until not has i21 # el póster, a Ron // the poster, to Ron
-talk o2 say 1 until room 0x17bb # "piensa tú un poco": ahora llevamos a Ron otra vez // "you think of something": now we play Ron again
-go o3 until moved       # Ron: escalera arriba, al vestíbulo del museo // Ron: upstairs, to the museum's hall
-go o4 until moved       # salida: la calle // exit: the street
-go o3 until moved       # el despacho de Taffy, la secretaria de Otto // the office of Taffy, Otto's secretary
-give i100 o5 until not has i100 # la rata, a Taffy: cree que es un gatito y va a por leche // the rat, to Taffy: she thinks it is a kitten and goes for milk
-take o8 until has i94   # el bolso amarillo del perchero // the yellow handbag on the coat stand
-open i94 until has i103 # dentro, el pase de Taffy para el museo // inside, Taffy's pass for the museum
-open i45 until named i45 i110 # la navaja, hasta las tijeras // the knife, to the scissors
-use i45 i99 until has i104 # recortar la cara del actor del póster // cut out the actor's face from the poster
-use i104 i103 until has i102 # la foto, en el pase: un pase trucado // the photo, on the pass: a forged pass
-go o2 until moved       # a la calle // to the street
-go o2 until moved       # el museo de cera // the wax museum
-give i102 o7            # el pase trucado, al guardia: nos deja pasar // the forged pass, to the guard: he lets us in
-go o8 until moved       # el interior del museo // inside the museum
-go o4 until moved       # a la izquierda, por la escalera // to the left, up the stairs
-talk o3                 # Charlie: hablar de todo // Charlie: talk about everything
-go o6 until moved       # bajar la escalera // go down the stairs
-go o6 until moved       # salida del museo // museum exit
-go o4 until moved       # salida: la calle // exit: the street
-go o3 until moved       # el despacho de Taffy // Taffy's office
-look o9                 # la agenda: el número de Billy Ford // the address book: Billy Ford's number
-use o10                 # el teléfono: llamar a Billy Ford // the phone: call Billy Ford
-go o2 until moved       # a la calle // to the street
-take o5 until has i105  # el paquete que ha llegado al buzón: el sobre de Billy Ford // the parcel that has arrived in the mailbox: Billy Ford's envelope
-go o2 until moved       # el museo de cera // the wax museum
-go o8 until moved       # el interior del museo // inside the museum
-go o4 until moved       # la escalera: Charlie // the stairs: Charlie
-give i105 o3 until not has i105 # el sobre, a Charlie: sale corriendo y se olvida el maletín // the envelope, to Charlie: he runs off and forgets his briefcase
-take o7 until has i101  # el maletín de Charlie // Charlie's briefcase
-go o6 until moved       # bajar la escalera // go down the stairs
-go o6 until moved       # salida del museo: el vestíbulo // museum exit: the hall
-use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano // the lock pick on the left door: down to the basement
-give i101 o4 until not has i101 # el maletín, a Sue // the briefcase, to Sue
-talk o4 until room 0x1bbc # "¿puedes hacer algo desde ahí?": ahora llevamos a Sue // "can you do something from there?": now we play Sue
-open i33 until has i34  # Sue abre el maletín de maquillaje: un pintauñas multicolor // Sue opens the make-up case: a multicolour nail polish
-use o8 say 5,5 until room 0x17ba # el timbre: "¿puedes hacerme un favor?", "píntame las uñas de los pies"; Ron se esconde // the bell: "can you do me a favour?", "paint my toenails"; Ron hides
-go o3 until moved       # Ron: arriba, al vestíbulo // Ron: upstairs, to the hall
-use i74 o2 until has i98 # el diamante corta el cristal de la vitrina del jugador de béisbol: la pelota // the diamond cuts the glass of the baseball player's showcase: the ball
-use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano // the lock pick on the left door: down to the basement
-go o1 until moved       # entrar en la celda: el guardia pinta las uñas a Sue // into the cell: the guard paints Sue's nails
-use i98 o1              # la pelota, contra la cabeza del guardia // the ball, at the guard's head
-wait 5000 until mem 0x6e1ebc = 1 # atados: tras ocho rondas de charla de Otto y Karloff llega el hombre menguante y nos desata // tied up: after eight rounds of Otto and Karloff's talk, the shrinking man comes and unties us
-wait 100 until not mem 0x69d232 = 0 # la cuerda solo sirve mientras habla Otto o Karloff // the rope only works while Otto or Karloff is talking
-use o1 nowait until mem 0x6baeba = 17 # la cuerda... (si se acaba la charla, otra vez) // the rope... (if the talk ends, again)
+@177a go o1 until moved       # el estudio de la derecha // the studio on the right
+@1798 take o9 until has i96    # el bote de pintura // the paint pot
+@1798 open i45 until named i45 i109 # la navaja multiusos, hasta la lima // the multi-tool knife, to the file
+@1798 use i45 o10 until has i95     # la lima con el alambre de la cuerda: un trozo de alambre // the file with the wire on the rope: a piece of wire
+@1798 go o1 until moved       # al exterior // outside
+@177c go o2 until moved       # la casa del fondo: el museo de cera // the house at the back: the wax museum
+@17a2 open i45 until named i45 i112 # la navaja, hasta el alicate // the knife, to the pliers
+@17a2 use i45 i95 until named i95 i114 # el alicate con el alambre: una ganzúa // the pliers with the wire: a lock pick
+@17a2 use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano // the lock pick on the left door: down to the basement
+@17b6 look o1                 # mirar por la puerta del fondo del pasillo: ¡Sue! // look through the door at the end of the corridor: Sue!
+@17b6 give i96 o4 until not has i96 # el bote de pintura, a Sue // the paint pot, to Sue
+@17b6 give i45 o4 until not has i45 # la navaja multiusos, a Sue // the multi-tool knife, to Sue
+@17b6 talk o4 until room 0x1bbc # "mira a ver si puedes hacer algo desde dentro": ahora llevamos a Sue // "see if you can do something from inside": now we play Sue
+@1bbc take o3 until has i21   # Sue: el póster junto a la puerta // Sue: the poster by the door
+@1bbc open i26 until named i26 i39 # la navaja, hasta el destornillador // the knife, to the screwdriver
+@1bbc use i26 o5 until has i20 # desatornillar la placa del pilar // unscrew the plate from the pillar
+@1bbc walk 364 420            # la rata solo entra o sale con Sue lejos de ella (x > 360): esperar justo ahí // the rat only goes in or out with Sue far from it (x > 360): wait right there
+@1bbc wait 100 fast until mem 0x6e1ebe = 1 # hasta que empiece a salir (esa animación no se interrumpe) // until it starts coming out (that animation is not interrupted)
+@1bbc walk 300 420 fast       # y apartarse en ese momento: la rata se queda fuera // and step aside at that moment: the rat stays outside
+@1bbc use i20 o4 until not has i20 # la placa, en la ratonera de la izquierda, cuando la rata está fuera // the plate, on the left mousehole, while the rat is out
+@1bbc use i32 o5 until has i22 # pintar un agujero en la placa: la rata se da un trompazo // paint a hole on the plate: the rat crashes into it
+@1bbc give i22 o2 until not has i22 # la rata, a Ron // the rat, to Ron
+@1bbc give i26 o2 until not has i26 # la navaja, a Ron // the knife, to Ron
+@1bbc give i21 o2 until not has i21 # el póster, a Ron // the poster, to Ron
+@1bbc talk o2 say 1 until room 0x17bb # "piensa tú un poco": ahora llevamos a Ron otra vez // "you think of something": now we play Ron again
+@17bb go o3 until moved       # Ron: escalera arriba, al vestíbulo del museo // Ron: upstairs, to the museum's hall
+@17a4 go o4 until moved       # salida: la calle // exit: the street
+@177d go o3 until moved       # el despacho de Taffy, la secretaria de Otto // the office of Taffy, Otto's secretary
+@1784 give i100 o5 until not has i100 # la rata, a Taffy: cree que es un gatito y va a por leche // the rat, to Taffy: she thinks it is a kitten and goes for milk
+@1784 take o8 until has i94   # el bolso amarillo del perchero // the yellow handbag on the coat stand
+@1784 open i94 until has i103 # dentro, el pase de Taffy para el museo // inside, Taffy's pass for the museum
+@1784 open i45 until named i45 i110 # la navaja, hasta las tijeras // the knife, to the scissors
+@1784 use i45 i99 until has i104 # recortar la cara del actor del póster // cut out the actor's face from the poster
+@1784 use i104 i103 until has i102 # la foto, en el pase: un pase trucado // the photo, on the pass: a forged pass
+@1784 go o2 until moved       # a la calle // to the street
+@177b go o2 until moved       # el museo de cera // the wax museum
+@17a2 give i102 o7            # el pase trucado, al guardia: nos deja pasar // the forged pass, to the guard: he lets us in
+@17a2 go o8 until moved       # el interior del museo // inside the museum
+@17ac go o4 until moved       # a la izquierda, por la escalera // to the left, up the stairs
+@17d4 talk o3                 # Charlie: hablar de todo // Charlie: talk about everything
+@17d4 go o6 until moved       # bajar la escalera // go down the stairs
+@17ad go o6 until moved       # salida del museo // museum exit
+@17a3 go o4 until moved       # salida: la calle // exit: the street
+@177d go o3 until moved       # el despacho de Taffy // Taffy's office
+@1784 look o9                 # la agenda: el número de Billy Ford // the address book: Billy Ford's number
+@1784 use o10                 # el teléfono: llamar a Billy Ford // the phone: call Billy Ford
+@1784 go o2 until moved       # a la calle // to the street
+@177b take o5 until has i105  # el paquete que ha llegado al buzón: el sobre de Billy Ford // the parcel that has arrived in the mailbox: Billy Ford's envelope
+@177b go o2 until moved       # el museo de cera // the wax museum
+@17a2 go o8 until moved       # el interior del museo // inside the museum
+@17ac go o4 until moved       # la escalera: Charlie // the stairs: Charlie
+@17d4 give i105 o3 until not has i105 # el sobre, a Charlie: sale corriendo y se olvida el maletín // the envelope, to Charlie: he runs off and forgets his briefcase
+@17d4 take o7 until has i101  # el maletín de Charlie // Charlie's briefcase
+@17d4 go o6 until moved       # bajar la escalera // go down the stairs
+@17ad go o6 until moved       # salida del museo: el vestíbulo // museum exit: the hall
+@17a3 use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano // the lock pick on the left door: down to the basement
+@17b6 give i101 o4 until not has i101 # el maletín, a Sue // the briefcase, to Sue
+@17b6 talk o4 until room 0x1bbc # "¿puedes hacer algo desde ahí?": ahora llevamos a Sue // "can you do something from there?": now we play Sue
+@1bbc open i33 until has i34  # Sue abre el maletín de maquillaje: un pintauñas multicolor // Sue opens the make-up case: a multicolour nail polish
+@1bbc use o8 say 5,5 until room 0x17ba # el timbre: "¿puedes hacerme un favor?", "píntame las uñas de los pies"; Ron se esconde // the bell: "can you do me a favour?", "paint my toenails"; Ron hides
+@17ba go o3 until moved       # Ron: arriba, al vestíbulo // Ron: upstairs, to the hall
+@17a4 use i74 o2 until has i98 # el diamante corta el cristal de la vitrina del jugador de béisbol: la pelota // the diamond cuts the glass of the baseball player's showcase: the ball
+@17a4 use i95 o5 until room 0x17b6 # la ganzúa en la puerta de la izquierda: al sótano // the lock pick on the left door: down to the basement
+@17b6 go o1 until moved       # entrar en la celda: el guardia pinta las uñas a Sue // into the cell: the guard paints Sue's nails
+@17c0 use i98 o1              # la pelota, contra la cabeza del guardia // the ball, at the guard's head
+@17ca wait 5000 until mem 0x6e1ebc = 1 # atados: tras ocho rondas de charla de Otto y Karloff llega el hombre menguante y nos desata // tied up: after eight rounds of Otto and Karloff's talk, the shrinking man comes and unties us
+@17ca wait 100 until not mem 0x69d232 = 0 # la cuerda solo sirve mientras habla Otto o Karloff // the rope only works while Otto or Karloff is talking
+@17ca use o1 nowait until mem 0x6baeba = 17 # la cuerda... (si se acaba la charla, otra vez) // the rope... (if the talk ends, again)
 wait 5000 until not room 0x17ca  # ... ¡y el final! // ... and the end!

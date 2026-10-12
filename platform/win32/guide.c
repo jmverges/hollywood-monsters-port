@@ -848,6 +848,7 @@ static char *g_note[MAX_STEPS];      /* the comment after the step, "" if none (
 static char *g_note_en[MAX_STEPS];   /* ... in English: the comments are "Spanish // English" */
 static char *g_section_en[MAX_STEPS];
 static unsigned char g_chapter[MAX_STEPS];   /* the story guide's chapter for the step's section ("@N"), 0 if none */
+static unsigned short g_room[MAX_STEPS];     /* the room the step is played in ("@<room>" before it), 0 if not known */
 static int g_nsteps, g_step, g_play_left;
 static int g_play_failed;            /* playing stopped because a step's condition never came true */
 static unsigned char g_done[MAX_STEPS];   /* steps played through (kept with each saved game: hm_guide_saved) */
@@ -920,6 +921,14 @@ static void load_steps(void)
             title_en = split_en(title);
         }
         else if (*line) {
+            g_room[g_nsteps] = 0;
+            if (line[0] == '@') {                        /* "@1b62 go o1": the room, in hex */
+                unsigned r = 0;
+                for (line++; (*line >= '0' && *line <= '9') || ((*line | 32) >= 'a' && (*line | 32) <= 'f'); line++)
+                    r = r * 16 + (unsigned)(*line <= '9' ? *line - '0' : (*line | 32) - 'a' + 10);
+                g_room[g_nsteps] = (unsigned short)r;
+                line = (char *)trim(line);
+            }
             g_section[g_nsteps] = title; g_section_en[g_nsteps] = title_en; g_chapter[g_nsteps] = (unsigned char)chapter;
             g_note[g_nsteps] = note; g_note_en[g_nsteps] = note_en; g_steps[g_nsteps++] = line;
         }
@@ -1083,6 +1092,14 @@ const char *hm_guide_note(int i) { return i >= 0 && i < g_nsteps ? (hm_lang_engl
 const char *hm_guide_section(int i) { return i >= 0 && i < g_nsteps ? (hm_lang_english() ? g_section_en : g_section)[i] : ""; }
 int hm_guide_current(void) { return g_step; }
 int hm_guide_chapter(int i) { return i >= 0 && i < g_nsteps ? g_chapter[i] : 0; }
+
+/* The step is played in the room the game is in now (rooms go in tens, the last digit is a state), or the
+ * walkthrough does not say where it is played. */
+int hm_guide_here(int i)
+{
+    if (i < 0 || i >= g_nsteps) return 0;
+    return !g_room[i] || g_room[i] / 10 == room_id() / 10;
+}
 int hm_guide_playing(void) { return g_play_left != 0 || hm_guide_busy(); }
 int hm_guide_failed(void) { return g_play_failed; }
 

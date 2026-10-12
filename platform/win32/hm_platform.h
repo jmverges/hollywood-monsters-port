@@ -54,6 +54,7 @@ const char *hm_guide_note(int i);
 const char *hm_guide_section(int i);
 int  hm_guide_current(void);
 int  hm_guide_chapter(int i);                   /* the story guide's chapter for step i, 0 if unknown */
+int  hm_guide_here(int i);                      /* step i is played in the room the game is in now */
 int  hm_guide_playing(void);
 int  hm_guide_failed(void);
 void hm_guide_run(int i, int n);
