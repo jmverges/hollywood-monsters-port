@@ -14,3 +14,6 @@ __pycache__/
 tools/test/hmpoke.exe
 /build-*/
 tools/test/hmpeek.exe
+
+# LiveArea art made from the game (tools/vita/make_livearea.sh)
+/livearea/*.png

@@ -109,7 +109,17 @@ add_executable(hollywood-monsters $<TARGET_OBJECTS:hm_game> $<TARGET_OBJECTS:hm_
 if(VITA)
   target_link_libraries(hollywood-monsters PRIVATE ${SDL2_LDFLAGS})
   vita_create_self(eboot.bin hollywood-monsters UNSAFE)
-  vita_create_vpk(hollywood-monsters.vpk HMON00001 eboot.bin VERSION 01.00 NAME "Hollywood Monsters")
+  # LiveArea art comes from the game, so it is not in the repo: tools/vita/make_livearea.sh
+  # makes livearea/*.png from your data, and the VPK picks them up when they are there.
+  set(HM_LIVEAREA)
+  if(EXISTS ${CMAKE_SOURCE_DIR}/livearea/icon0.png)
+    set(HM_LIVEAREA FILE
+        ${CMAKE_SOURCE_DIR}/livearea/icon0.png sce_sys/icon0.png
+        ${CMAKE_SOURCE_DIR}/livearea/bg0.png sce_sys/livearea/contents/bg0.png
+        ${CMAKE_SOURCE_DIR}/livearea/startup.png sce_sys/livearea/contents/startup.png
+        ${CMAKE_SOURCE_DIR}/livearea/template.xml sce_sys/livearea/contents/template.xml)
+  endif()
+  vita_create_vpk(hollywood-monsters.vpk HMON00001 eboot.bin VERSION 01.00 NAME "Hollywood Monsters" ${HM_LIVEAREA})
 elseif(WIN32)
   # Linked at the game's original base with the image range reserved by the .hmimg section; no ASLR.
   target_link_options(hollywood-monsters PRIVATE -Wl,--image-base,0x400000 -Wl,--disable-dynamicbase

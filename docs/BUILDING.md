@@ -46,6 +46,10 @@ docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp -v $PWD:/src -w /src vitasdk/v
   'cmake -S . -B build-vita -DCMAKE_TOOLCHAIN_FILE=$VITASDK/share/vita.toolchain.cmake -DCMAKE_BUILD_TYPE=Release && make -C build-vita -j8'
 ```
 
+For the LiveArea icon and background, run `tools/vita/make_livearea.sh` first (after the Linux build): it
+makes them from frames of the game's intro into `livearea/`, which git ignores; without them the VPK has the
+system's default bubble.
+
 This produces `build-vita/hollywood-monsters.vpk` (title id HMON00001); the Vita build is always relocatable
 (see PORTING.md). Install it with VitaShell and copy the game data (MONSTERS.EXE, the RESOURCE files, and the
 `en` folder for English) to `ux0:data/hollywood-monsters/`. Controls: on the touch screen a tap is a click, dragging
