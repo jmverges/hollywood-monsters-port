@@ -240,6 +240,55 @@ static void panel(const char *title)
 
 static void footer(const char *s) { text(PX + 20, PY + PH - 26, &menu_font_body, s, -1, GREY, PW - 40); }
 
+#ifdef __vita__
+/* A Vita button drawn in front of its label (the font is Latin-1, so the shapes are drawn): cross, circle,
+ * triangle, square, the d-pad's "updown" and "leftright", or a word in a pill (L, R, START). Returns the width. */
+static int same(const char *a, const char *b) { while (*a && *a == *b) { a++; b++; } return *a == *b; }
+
+static int button(int x, int y, const char *b)
+{
+    int cy = y + menu_font_body.ascent / 2 + 3, cx = x + 7;
+    if (same(b, "cross")) {
+        for (int i = -5; i <= 5; i++) { rect(cx + i, cy + i, 2, 2, 0xFF7CA8E8u); rect(cx + i, cy - i, 2, 2, 0xFF7CA8E8u); }
+        return 16;
+    }
+    if (same(b, "circle")) {
+        for (int j = -7; j <= 7; j++)
+            for (int i = -7; i <= 7; i++) { int d = i * i + j * j; if (d >= 26 && d <= 44) rect(cx + i, cy + j, 1, 1, 0xFFE86464u); }
+        return 16;
+    }
+    if (same(b, "triangle")) {
+        for (int j = 0; j <= 11; j++) { rect(cx - j / 2, cy - 6 + j, 2, 1, 0xFF64C890u); rect(cx + j / 2, cy - 6 + j, 2, 1, 0xFF64C890u); }
+        rect(cx - 6, cy + 5, 14, 2, 0xFF64C890u);
+        return 16;
+    }
+    if (same(b, "square")) { frame_rect(cx - 6, cy - 6, 13, 13, 0xFFD890D0u); frame_rect(cx - 5, cy - 5, 11, 11, 0xFFD890D0u); return 16; }
+    if (same(b, "updown") || same(b, "leftright")) {   /* two small arrows */
+        int v = b[0] == 'u';
+        for (int k = 0; k < 5; k++) {
+            if (v) { rect(cx - k, cy - 7 + k, 2 * k + 1, 1, WHITE); rect(cx - k, cy + 7 - k, 2 * k + 1, 1, WHITE); }
+            else { rect(cx - 6 + k, cy - k, 1, 2 * k + 1, WHITE); rect(cx + 6 - k, cy - k, 1, 2 * k + 1, WHITE); }
+        }
+        return 16;
+    }
+    int w = text_w(&menu_font_body, b, -1) + 8;
+    rect(x, y + 1, w, menu_font_body.height, 0xFF4A443Cu);
+    text(x + 4, y, &menu_font_body, b, -1, WHITE, 0);
+    return w;
+}
+
+/* button, label, button, label... along a line; an empty label puts the next button right after this one */
+static void hints(int y, const char *const *pairs, int n)
+{
+    int x = PX + 20;
+    for (int i = 0; i < n; i++) {
+        x += button(x, y, pairs[2 * i]) + 5;
+        if (pairs[2 * i + 1][0]) x += text(x, y, &menu_font_body, pairs[2 * i + 1], -1, GREY, 0) + 18;
+    }
+}
+#define FOOTER_HINTS(...) do { const char *const h_[] = { __VA_ARGS__ }; hints(PY + PH - 26, h_, (int)(sizeof h_ / sizeof h_[0]) / 2); } while (0)
+#endif
+
 static void draw_main(void)
 {
     panel("Hollywood Monsters");
@@ -268,7 +317,20 @@ static void draw_main(void)
         line[k] = 0;
         text(PX + 20, PY + PH - 52, &menu_font_body, line, -1, GREY, PW - 40);
     }
+#ifdef __vita__
+    /* what the buttons do in the game, which nothing else on screen says */
+    int y = PY + PH - 112;
+    rect(PX + 20, y - 8, PW - 40, 1, 0x40E0B860u);
+    text(PX + 20, y, &menu_font_body, L("En el juego:", "In the game:"), -1, GOLD, 0);
+    {
+        const char *const h[] = { "cross", L("acción", "action"), "circle", L("cambiar acción", "change action"),
+                                  "triangle", L("inventario", "inventory"), "START", L("saltar", "skip") };
+        hints(y + 24, h, 4);
+    }
+    FOOTER_HINTS("cross", L("elegir", "choose"), "circle", L("volver", "back"), "square", L("cerrar", "close"));
+#else
     footer(L("Intro: aceptar   Esc: volver   F9: cerrar", "Enter: choose   Esc: back   F9: close"));
+#endif
 }
 
 /* What easy mode offers from the section shown: the steps played in the room the game is in, those done and the
@@ -338,7 +400,25 @@ static void draw_easy(void)
     if (hm_lang_english()) a = ")   Esc: back";
     while (*a) hint[h++] = *a++;
     hint[h] = 0;
+#ifdef __vita__
+    if (g_msg_until && g_hud[0]) footer(g_hud);
+    else {
+        char sec_n[16];
+        int q = 0;
+        for (const char *p = hint; *p; p++) if (*p == '(') { while (*++p && *p != ')' && q < 14) sec_n[q++] = *p; break; }
+        sec_n[q] = 0;
+        char other[48];
+        int o = 0;
+        for (const char *p = L("otra sección ", "other section "); *p; ) other[o++] = *p++;
+        other[o++] = '(';
+        for (int i = 0; sec_n[i]; i++) other[o++] = sec_n[i];
+        other[o++] = ')';
+        other[o] = 0;
+        FOOTER_HINTS("cross", L("hacerla", "do it"), "leftright", other, "circle", L("volver", "back"));
+    }
+#else
     footer(g_msg_until && g_hud[0] ? g_hud : hint);  /* a message about the last action, for a moment */
+#endif
 }
 
 static void draw_story_list(void)
@@ -357,7 +437,11 @@ static void draw_story_list(void)
             int len = wrap(&menu_font_body, p, PW - 40, &next);
             text(PX + 20, y, &menu_font_body, p, len, WHITE, 0);
         }
+#ifdef __vita__
+        FOOTER_HINTS("circle", L("volver", "back"));
+#else
         footer(L("Esc: volver", "Esc: back"));
+#endif
         return;
     }
     if (g_sel >= g_nchapters) g_sel = g_nchapters - 1;
@@ -368,7 +452,11 @@ static void draw_story_list(void)
         if (g_top + r == g_sel) rect(PX + 14, y - 3, PW - 28, ROW, 0x60E0B860u);
         text(PX + 24, y, &menu_font_body, g_chapter[g_top + r], -1, g_top + r == g_sel ? WHITE : 0xFFD8D0C0u, PW - 50);
     }
+#ifdef __vita__
+    FOOTER_HINTS("cross", L("leer", "read"), "L", "", "R", L("página", "page"), "circle", L("volver", "back"));
+#else
     footer(L("Intro: leer   Esc: volver", "Enter: read   Esc: back"));
+#endif
 }
 
 /* the chapter's lines, wrapped; with out == NULL only counts them */
@@ -401,7 +489,12 @@ static void draw_story(void)
         rect(PX + PW - 12, PY + 58, 3, bar, 0x40E0B860u);
         rect(PX + PW - 12, y, 3, h < 8 ? 8 : h, GOLD);
     }
+#ifdef __vita__
+    FOOTER_HINTS("updown", L("leer", "read"), "L", "", "R", L("página", "page"), "leftright", L("otro capítulo", "other chapter"),
+                 "circle", L("volver", "back"));
+#else
     footer(L("Flechas: leer   <- ->: otro capítulo   Esc: volver", "Arrows: read   <- ->: other chapter   Esc: back"));
+#endif
 }
 
 /* the line over the game while the guide plays */
