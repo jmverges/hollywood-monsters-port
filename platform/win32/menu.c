@@ -1,6 +1,7 @@
 /* The port's own menu (F9, or X/Square on a controller), drawn over the game as a layer of its own
  * (host_overlay). While it is open the game waits: hm_pump_host_events keeps the game's thread here.
  *
+ *   Normal mode   the player plays: stops whatever the guide is doing (the action under way finishes)
  *   Easy mode     the walkthrough's steps (guide/hm_actions.txt) section by section, only those of the room the
  *                 player is in and up to the next one somewhere else, with a check on those done;
  *                 choosing one makes the guide play it (guide.c), then the list comes back
@@ -238,6 +239,9 @@ static void panel(const char *title)
     rect(PX + 20, PY + 44, PW - 40, 1, 0x80E0B860u);
 }
 
+/* the main menu's rows */
+enum { MAIN_BACK, MAIN_NORMAL, MAIN_EASY, MAIN_MOVIE, MAIN_STORY, MAIN_LANG, MAIN_ROWS };
+
 static void footer(const char *s) { text(PX + 20, PY + PH - 26, &menu_font_body, s, -1, GREY, PW - 40); }
 
 #ifdef __vita__
@@ -292,19 +296,22 @@ static void hints(int y, const char *const *pairs, int n)
 static void draw_main(void)
 {
     panel("Hollywood Monsters");
-    const char *items[] = {
-        L("Volver al juego", "Back to the game"),
-        L("Modo fácil: la lista de acciones", "Easy mode: the list of actions"),
-        g_movie ? L("Pausar el modo película (jugar tú)", "Pause the movie (play yourself)")
-                : L("Modo película: ver la partida sola", "Movie mode: watch the game play itself"),
-        L("La historia (guía de FX Interactive)", "The story (FX Interactive's guide)"),
-        L("Idioma: español", "Language: English"),
+    const char *items[MAIN_ROWS] = {
+        [MAIN_BACK] = L("Volver al juego", "Back to the game"),
+        [MAIN_NORMAL] = L("Modo normal: juegas tú", "Normal mode: you play"),
+        [MAIN_EASY] = L("Modo fácil: la lista de acciones", "Easy mode: the list of actions"),
+        [MAIN_MOVIE] = g_movie ? L("Modo película: en pausa (seguir)", "Movie mode: paused (go on)")
+                               : L("Modo película: ver la partida sola", "Movie mode: watch the game play itself"),
+        [MAIN_STORY] = L("La historia (guía de FX Interactive)", "The story (FX Interactive's guide)"),
+        [MAIN_LANG] = L("Idioma: español", "Language: English"),
     };
-    g_rows = 5; g_row_y0 = PY + 70;
+    g_rows = MAIN_ROWS; g_row_y0 = PY + 64;
     for (int i = 0; i < g_rows; i++) {
-        int y = g_row_y0 + i * (ROW + 12);
+        int y = g_row_y0 + i * (ROW + 10);
         if (i == g_sel) rect(PX + 14, y - 4, PW - 28, ROW + 4, 0x60E0B860u);
-        if (i == 2) play_icon(PX + 26, y + 3, 13, i == g_sel ? WHITE : GOLD);
+        /* which mode the game is in: easy mode is not one that stays on, it plays the action chosen */
+        if (i == MAIN_NORMAL) check(PX + 24, y + 2, !g_movie);
+        if (i == MAIN_MOVIE) check(PX + 24, y + 2, g_movie);
         text(PX + 46, y, &menu_font_body, items[i], -1, i == g_sel ? WHITE : 0xFFD8D0C0u, PW - 80);
     }
     int n = hm_guide_count();
@@ -567,26 +574,27 @@ static void activate(void)
 {
     switch (g_screen) {
     case SCR_MAIN:
-        if (g_sel == 0) close_menu();
-        else if (g_sel == 1) { if (hm_guide_count()) open_easy(); }
-        else if (g_sel == 2 && g_movie) {         /* pause: the action under way finishes, then the player plays */
-            hm_guide_stop();
-            g_movie = 0;
+        if (g_sel == MAIN_BACK) close_menu();
+        else if (g_sel == MAIN_NORMAL) {         /* the action under way finishes, then the player plays */
+            if (g_movie || g_easy_step >= 0) hm_guide_stop();
+            g_movie = 0; g_easy_step = -1; g_hud[0] = 0;
             close_menu();
         }
-        else if (g_sel == 2) {                   /* from the next step: also how a paused movie goes on */
+        else if (g_sel == MAIN_EASY) { if (hm_guide_count()) open_easy(); }
+        else if (g_sel == MAIN_MOVIE && g_movie) close_menu();   /* the paused movie goes on */
+        else if (g_sel == MAIN_MOVIE) {          /* from the next step */
             if (!hm_guide_count()) break;
             g_movie = 1; g_easy_step = -1;      /* nothing over the game: the movie can be recorded as it is */
             hm_guide_run(hm_guide_current(), -1);
             close_menu();
         }
-        else if (g_sel == 3) {                   /* the chapter of the next action, if the walkthrough says it */
+        else if (g_sel == MAIN_STORY) {          /* the chapter of the next action, if the walkthrough says it */
             load_story();
             int c = hm_guide_chapter(hm_guide_current());
             if (c > 0 && c <= g_nchapters) g_chapter_sel = c - 1;
             open_screen(SCR_STORY_LIST, g_chapter_sel);
         }
-        else if (g_sel == 4) { hm_lang_toggle(); show(); }
+        else if (g_sel == MAIN_LANG) { hm_lang_toggle(); show(); }
         break;
     case SCR_EASY: {
         int n = easy_list();
@@ -607,13 +615,13 @@ static void back(void)
 {
     if (g_screen == SCR_STORY) open_screen(SCR_STORY_LIST, g_chapter_sel);
     else if (g_screen == SCR_MAIN) close_menu();
-    else open_screen(SCR_MAIN, g_screen == SCR_EASY ? 1 : 3);
+    else open_screen(SCR_MAIN, g_screen == SCR_EASY ? MAIN_EASY : MAIN_STORY);
 }
 
 static void move(int d)
 {
     if (g_screen == SCR_STORY) { g_top += d; show(); return; }
-    int n = g_screen == SCR_MAIN ? 5 : g_screen == SCR_STORY_LIST ? g_nchapters : 0;
+    int n = g_screen == SCR_MAIN ? MAIN_ROWS : g_screen == SCR_STORY_LIST ? g_nchapters : 0;
     if (g_screen == SCR_EASY) n = easy_list();
     g_sel += d;
     if (g_sel < 0) g_sel = 0;
@@ -644,7 +652,7 @@ void hm_menu_toggle(void)
         g_easy_step = -1; g_hud[0] = 0;
     }
     /* a movie only waits while the menu is open (the game waits too): "Back to the game" lets it go on */
-    open_screen(SCR_MAIN, g_movie ? 2 : 0);
+    open_screen(SCR_MAIN, g_movie ? MAIN_MOVIE : MAIN_BACK);
 }
 
 int hm_menu_is_open(void) { return g_screen != SCR_NONE; }
@@ -675,10 +683,10 @@ void hm_menu_event(const struct host_event *ev)
     case HOST_EV_MOUSEDOWN: {
         if (ev->type == HOST_EV_MOUSEDOWN && ev->button == 3) { back(); break; }
         if (g_screen == SCR_STORY) break;
-        int step = g_screen == SCR_MAIN ? ROW + 12 : ROW, top = g_screen == SCR_MAIN ? 0 : g_top;
+        int step = g_screen == SCR_MAIN ? ROW + 10 : ROW, top = g_screen == SCR_MAIN ? 0 : g_top;
         int r = (ev->y - g_row_y0 + 4) / step;
         if (ev->y < g_row_y0 - 4 || r >= g_rows || ev->x < PX || ev->x >= PX + PW) break;
-        int n = g_screen == SCR_MAIN ? 5 : g_screen == SCR_STORY_LIST ? g_nchapters : 0;
+        int n = g_screen == SCR_MAIN ? MAIN_ROWS : g_screen == SCR_STORY_LIST ? g_nchapters : 0;
         if (g_screen == SCR_EASY) n = easy_list();
         if (top + r >= n) break;
         if (g_sel != top + r) { g_sel = top + r; show(); }
