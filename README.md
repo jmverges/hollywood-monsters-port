@@ -1,7 +1,12 @@
 # Hollywood Monsters (1997, Pendulo Studios) — portable recompilation
 
 This repository turns the **FX Interactive Windows edition** of *Hollywood Monsters* into portable C code that
-runs natively on Linux (and is designed to be ported to other systems) using SDL2.
+runs natively on Linux, Windows and the PS Vita, using SDL2.
+
+[![Hollywood Monsters: the port in movie mode, with the English fan translation](https://img.youtube.com/vi/txw7Vk0wMj0/maxresdefault.jpg)](https://youtu.be/txw7Vk0wMj0)
+
+*The port in movie mode, playing the walkthrough by itself with the English fan translation (Linux build;
+the Vita runs the same code).*
 
 It contains **no game code and no game data**. The C sources are generated locally from your own copy of the
 game by a Ghidra-based pipeline; the game's data files are read at run time from your copy.
