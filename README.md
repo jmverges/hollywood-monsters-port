@@ -8,6 +8,13 @@ runs natively on Linux, Windows and the PS Vita, using SDL2.
 *The port in movie mode, playing the walkthrough by itself with the English fan translation (Linux build;
 the Vita runs the same code).*
 
+| | |
+|---|---|
+| ![Sue outside Otto J. Hannover's mansion, in English](docs/assets/game.png) | ![Easy mode playing an action: "Go to: stairs: up to the terrace"](docs/assets/easy-mode-playing.png) |
+| ![The port's menu on the Vita: normal, easy and movie modes, the story, the language, and the buttons](docs/assets/menu.png) | ![Easy mode: the next actions in this room](docs/assets/easy-mode-list.png) |
+
+*Screenshots from the Vita build (in the Vita3K emulator), English fan translation.*
+
 It contains **no game code and no game data**. The C sources are generated locally from your own copy of the
 game by a Ghidra-based pipeline; the game's data files are read at run time from your copy.
 
