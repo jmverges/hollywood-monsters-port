@@ -86,8 +86,12 @@ is open. Arrows or the d-pad move, Enter or A chooses, Escape or B goes back; th
   section by section, with a check on the steps done. Choosing one makes the guide do it as a player would,
   then the list comes back. Left and right change section.
 * **Movie mode**: the guide plays the game from the next step to the end, with nothing drawn over it (it can
-  be recorded). Opening the menu pauses it; "Back to the game" lets it go on, "Pause the movie" hands the game
-  back to the player, and choosing movie mode again goes on from there.
+  be recorded). Opening the menu pauses it; "Back to the game" or the movie row lets it go on, and
+  **Normal mode** hands the game back to the player (the action under way finishes). A check marks which of
+  the two the game is in; choosing movie mode again goes on from the next step.
+
+On the Vita the menu's footers show the buttons (cross, circle, square, the d-pad, L/R), and the main menu
+also lists what the buttons do in the game.
 * **The story**: FX Interactive's walkthrough, written as a story. It is not in this repository; download it
   into the data directory once with
 
