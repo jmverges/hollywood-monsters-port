@@ -90,6 +90,7 @@
 @42e take o4 until gone o4   # micrófono // microphone
 @42e take o5 until gone o5   # pie de micro // microphone stand
 @42e look o9                 # el cartel de la puerta de la cocina // the sign on the kitchen door
+@42e wait 500 until not gone o3 # Spencer McDundee va y viene por la fiesta: esperar a que vuelva // Spencer McDundee walks around the party: wait for him to come back
 @42e talk o3                 # Spencer McDundee: Escocia, a la libreta // Spencer McDundee: Scotland, into the address book
 @42e open i35                # micrófono: un imán // microphone: a magnet
 @42e go o1 until moved       # a la otra parte de la fiesta // to the other side of the party
