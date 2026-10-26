@@ -8,6 +8,11 @@ runs natively on Linux, Windows and the PS Vita, using SDL2.
 *The port in movie mode, playing the walkthrough by itself with the English fan translation (Linux build;
 the Vita runs the same code).*
 
+**Full walkthrough on YouTube.** The port's automatic walkthrough also played the whole game in Spanish, with the
+original voices and subtitles and no commentary, recorded as 19 episodes on the
+[AI Walkthroughs](https://www.youtube.com/@AIWalkthroughs) channel
+([playlist](https://www.youtube.com/playlist?list=PLI5UB10ipMHw)).
+
 | | |
 |---|---|
 | ![Sue outside Otto J. Hannover's mansion, in English](docs/assets/game.png) | ![Easy mode playing an action: "Go to: stairs: up to the terrace"](docs/assets/easy-mode-playing.png) |
