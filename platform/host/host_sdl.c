@@ -557,34 +557,67 @@ static void touch_hold(void)
     }
 }
 
+/* One script line ("<time> <command> [args]") as an event; returns 0 for a line that is not one. */
+static int parse_script_line(const char *line, unsigned *last)
+{
+    if (line[0] == '#' || line[0] == '\n') return 0;
+    struct script_ev ev;
+    memset(&ev, 0, sizeof ev);
+    char tbuf[32];
+    int rest = 0;
+    int n = sscanf(line, "%31s %15s %n%63s %d", tbuf, ev.cmd, &rest, ev.name, &ev.b);
+    if (n < 2) return 0;
+    snprintf(ev.rest, sizeof ev.rest, "%s", line + rest);
+    ev.rest[strcspn(ev.rest, "\r\n")] = 0;
+    unsigned t = tbuf[0] == '+' ? *last + (unsigned)atoi(tbuf + 1) : (unsigned)atoi(tbuf);
+    ev.t = *last = t;
+    ev.a = atoi(ev.name);
+    g_script = realloc(g_script, sizeof *g_script * (g_script_n + 1));
+    g_script[g_script_n++] = ev;
+    return 1;
+}
+
 static void load_script(void)
 {
     g_script_loaded = 1;
+    g_script_t0 = SDL_GetTicks();
     const char *path = getenv("HM_SCRIPT");
     if (!path) return;
     FILE *f = fopen(path, "r");
     if (!f) { host_log("HM_SCRIPT %s not found", path); return; }
     char line[256];
     unsigned last = 0;
-    while (fgets(line, sizeof line, f)) {
-        if (line[0] == '#' || line[0] == '\n') continue;
-        struct script_ev ev;
-        memset(&ev, 0, sizeof ev);
-        char tbuf[32];
-        int rest = 0;
-        int n = sscanf(line, "%31s %15s %n%63s %d", tbuf, ev.cmd, &rest, ev.name, &ev.b);
-        if (n < 2) continue;
-        snprintf(ev.rest, sizeof ev.rest, "%s", line + rest);
-        ev.rest[strcspn(ev.rest, "\r\n")] = 0;
-        unsigned t = tbuf[0] == '+' ? last + (unsigned)atoi(tbuf + 1) : (unsigned)atoi(tbuf);
-        ev.t = last = t;
-        ev.a = atoi(ev.name);
-        g_script = realloc(g_script, sizeof *g_script * (g_script_n + 1));
-        g_script[g_script_n++] = ev;
+    while (fgets(line, sizeof line, f)) parse_script_line(line, &last);
+    fclose(f);
+    host_log("HM_SCRIPT: %d events", g_script_n);
+}
+
+/* HM_CONTROL=file: commands appended to it while the game runs, one per line and in the script's language
+ * without the time ("guide stop", "guide save 3 S03", "shot name", "quit"...), run as soon as they appear.
+ * For driving a long unattended run (a recording) from outside. */
+static void poll_control(void)
+{
+    static const char *path;
+    static int checked;
+    static long offset;
+    static Uint32 next;
+    if (!checked) { checked = 1; path = getenv("HM_CONTROL"); }
+    if (!path || SDL_GetTicks() < next) return;
+    next = SDL_GetTicks() + 250;
+    FILE *f = fopen(path, "r");
+    if (!f) return;
+    if (fseek(f, offset, SEEK_SET) == 0) {
+        char line[240], timed[256];
+        unsigned now = SDL_GetTicks() - g_script_t0;
+        while (fgets(line, sizeof line, f)) {
+            if (!strchr(line, '\n')) break;          /* a line still being written: next time */
+            offset = ftell(f);
+            snprintf(timed, sizeof timed, "%u %s", now, line);
+            unsigned last = now;
+            if (parse_script_line(timed, &last)) host_log("HM_CONTROL: %s", strtok(line, "\r\n"));
+        }
     }
     fclose(f);
-    g_script_t0 = SDL_GetTicks();
-    host_log("HM_SCRIPT: %d events", g_script_n);
 }
 
 static void save_shot(const char *name);
@@ -592,6 +625,7 @@ static void save_shot(const char *name);
 static void run_script(void)
 {
     if (!g_script_loaded) load_script();
+    poll_control();
     unsigned now = SDL_GetTicks() - g_script_t0;
     while (g_script_i < g_script_n && g_script[g_script_i].t <= now && g_inject_n < 6) {
         struct script_ev *s = &g_script[g_script_i++];

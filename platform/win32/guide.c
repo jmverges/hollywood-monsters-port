@@ -1040,6 +1040,24 @@ static void play_tick(void)
         if (g_play_left > 0) g_play_left--;
         return;
     }
+    /* HM_GUIDE_SAVE_SECTIONS: save the game as each section starts, so a long unattended run (a recording)
+     * can be picked up again from the start of a section.  Rows 1-8 in turn, named "S<section>". */
+    {
+        static int saved_for = -1;
+        if (hm_getenv("HM_GUIDE_SAVE_SECTIONS") && saved_for != g_step &&
+            (g_step == 0 || g_section[g_step] != g_section[g_step - 1])) {
+            int section = 0;
+            for (int i = 1; i <= g_step; i++) if (g_section[i] != g_section[i - 1]) section++;
+            saved_for = g_step;
+            char cmd[16] = "save 1 S00";
+            cmd[5] = (char)('1' + section % 8);
+            cmd[8] = (char)('0' + (section + 1) / 10 % 10);
+            cmd[9] = (char)('0' + (section + 1) % 10);
+            host_log("guide: %u section %d [%s] starts at step %d: %s", host_ticks_ms(), section + 1, g_section[g_step], g_step + 1, cmd);
+            hm_guide_command(cmd);
+            return;
+        }
+    }
     host_log("guide: %u room %#x step %d [%s] %s", host_ticks_ms(), room_id(), g_step + 1, g_section[g_step], g_steps[g_step]);
     if (!start_action(g_steps[g_step])) { g_play_left = 0; return; }   /* it reads the action, not the "until" */
     g_tries = 1;
